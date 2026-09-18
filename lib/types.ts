@@ -1,0 +1,89 @@
+export type CategorySlug =
+  | "mehanika"
+  | "holod"
+  | "zhar"
+  | "mbs"
+  | "himiya"
+  | "kragi"
+  | "rukavitsy";
+
+export type Product = {
+  id: string;
+  slug: string;
+  name: string;
+  sku: string;
+  category: CategorySlug;
+  base: string;
+  coating: string;
+  color: string;
+  sizes: string[];
+  price: number;
+  packQty: number;
+  stock: number;
+  unit: string;
+  weight?: string;
+  length?: string;
+  tex?: string;
+  knitClass?: string;
+  coatingType?: string;
+  description: string;
+  image: string;
+  images: string[];
+  featured?: boolean;
+  documents?: { title: string; href: string }[];
+};
+
+export type Article = {
+  slug: string;
+  title: string;
+  excerpt: string;
+  date: string;
+  category: string;
+  image: string;
+  content: string[];
+  slides?: { src: string; title: string; alt: string }[];
+  home?: boolean;
+};
+
+export type OrderStatus =
+  | "accepted"
+  | "picking"
+  | "shipped"
+  | "delivery"
+  | "delivered"
+  | "cancelled";
+
+export type PaymentMethod = "invoice_auto" | "invoice_manager" | "online";
+
+export type CartItem = {
+  productId: string;
+  size: string;
+  qty: number;
+};
+
+export type UserProfile = {
+  email: string;
+  name: string;
+  phone: string;
+  company: string;
+  inn: string;
+  kpp?: string;
+  address: string;
+};
+
+export type Order = {
+  id: string;
+  createdAt: string;
+  items: CartItem[];
+  profile: UserProfile;
+  comment: string;
+  payment: PaymentMethod;
+  paymentStatus: "pending" | "invoiced" | "paid" | "failed";
+  status: OrderStatus;
+  total: number;
+  guest: boolean;
+  city?: string;
+  carrier?: string;
+  carrierName?: string;
+  deliveryCost?: number;
+};

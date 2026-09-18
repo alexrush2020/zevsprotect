@@ -1,0 +1,27 @@
+export const brand = {
+  nameEn: "zevsprotect",
+  nameRu: "зевспротект",
+  mark: "zevsprotect®",
+  markRu: "зевспротект®",
+  tagline: "Сила в ваших руках",
+  taglineUpper: "СИЛА В ВАШИХ РУКАХ",
+  sister: "зевстекс®",
+  legal: "ООО «ЗЕВС»",
+  inn: "6154170275",
+  kpp: "615401001",
+  ogrn: "1256100024091",
+  address: "Таганрог, Поляковское шоссе, 17",
+  phone: "+7 863 443-09-85",
+  phoneHref: "tel:+78634430985",
+  whatsapp: "+7 988 585-13-93",
+  whatsappHref: "https://wa.me/79885851393",
+  telegramHref: "https://t.me/zevsprotect",
+  email: "sales@zevsprotect.ru",
+  domain: "zevsprotect.ru",
+  bank: "ФИЛИАЛ «РОСТОВСКИЙ» АО «АЛЬФА-БАНК»",
+  account: "40702810226320000703",
+  corr: "30101810500000000207",
+  bik: "046015207",
+} as const;
+
+export const brandTitle = `${brand.mark} — ${brand.tagline}`;

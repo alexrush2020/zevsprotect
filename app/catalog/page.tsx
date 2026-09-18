@@ -1,0 +1,33 @@
+import { Suspense } from "react";
+import { CatalogBrowser } from "@/components/catalog-browser";
+import { PurchaseGuideTeaser } from "@/components/purchase-guide-teaser";
+import { brand } from "@/lib/brand";
+
+export const metadata = {
+  title: "Каталог рабочих перчаток",
+};
+
+export default function CatalogPage() {
+  return (
+    <div>
+      <div className="hidden border-b bg-card lg:block">
+        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 lg:grid-cols-[1fr_340px] lg:items-end">
+          <div>
+            <p className="text-xs uppercase tracking-[0.22em] text-orange">
+              Каталог
+            </p>
+            <h1 className="mt-2 font-heading text-4xl">Рабочие перчатки под задачу</h1>
+            <p className="mt-3 max-w-2xl text-steel">
+              Семь видов защиты {brand.markRu}: основа, покрытие, цвет и размер.
+              В карточке — фасовка, остаток из 1С и заявка, если нужна консультация.
+            </p>
+          </div>
+          <PurchaseGuideTeaser />
+        </div>
+      </div>
+      <Suspense fallback={<div className="p-10 text-center text-steel">Загрузка каталога…</div>}>
+        <CatalogBrowser />
+      </Suspense>
+    </div>
+  );
+}

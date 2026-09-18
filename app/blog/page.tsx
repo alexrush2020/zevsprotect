@@ -1,0 +1,36 @@
+import Link from "next/link";
+import { articles } from "@/lib/data/catalog";
+import { formatDate } from "@/lib/format";
+import { brand } from "@/lib/brand";
+
+export const metadata = { title: "Статьи" };
+
+export default function BlogPage() {
+  return (
+    <div className="mx-auto max-w-5xl px-4 py-10">
+      <h1 className="font-heading text-4xl">Статьи</h1>
+      <p className="mt-3 max-w-2xl text-steel">
+        Материалы {brand.markRu} для закупщиков: подбор, покрытия, производство.
+      </p>
+      <div className="mt-8 grid auto-rows-fr items-stretch gap-5 md:grid-cols-2">
+        {articles.map((a) => (
+          <Link
+            key={a.slug}
+            href={`/blog/${a.slug}`}
+            className="flex h-full flex-col overflow-hidden rounded-2xl border bg-card"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={a.image} alt="" className="aspect-[16/9] w-full object-cover" />
+              <div className="p-5">
+                <p className="text-xs text-steel">
+                  {a.category} · {formatDate(a.date)}
+                </p>
+                <h2 className="mt-2 line-clamp-3 font-heading text-xl leading-snug">{a.title}</h2>
+              <p className="mt-2 text-sm text-steel">{a.excerpt}</p>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
