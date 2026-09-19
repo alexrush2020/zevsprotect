@@ -54,17 +54,6 @@ export function PassageBoard() {
   return (
     <section className="relative overflow-hidden bg-ink py-20 text-paper">
       <div className="home-grain absolute inset-0 opacity-40" />
-      <motion.div
-        aria-hidden
-        className="pointer-events-none absolute -left-10 top-8 font-heading text-[16vw] leading-none text-white/[0.04] uppercase"
-        initial={reduce ? false : { x: -40 }}
-        whileInView={{ x: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-      >
-        ПРОХОДНАЯ
-      </motion.div>
-
       <div className="relative mx-auto max-w-6xl px-4">
         <Reveal>
           <p className="text-xs uppercase tracking-[0.22em] text-orange">
@@ -117,18 +106,13 @@ export function PassageBoard() {
                         if (hoverOpens) setOpen((current) => (current === index ? null : current));
                       }}
                     >
-                      <p className="font-heading text-xl uppercase tracking-[0.12em]">
+                      <p className="min-h-[1.75rem] font-heading text-xl uppercase tracking-[0.12em]">
                         {plate.company}
                       </p>
-                      {plate.city ? (
-                        <p className="mt-1 text-xs uppercase tracking-[0.18em] text-white/45">
-                          {plate.city}
-                        </p>
-                      ) : null}
-                      <p className="mt-3 text-sm text-paper/70">{plate.line}</p>
-                      <p className="mt-2 text-xs uppercase tracking-[0.2em] text-orange/90">
-                        берут с {plate.since}
+                      <p className="mt-1 min-h-4 text-xs uppercase tracking-[0.18em] text-white/45">
+                        {plate.city}
                       </p>
+                      <p className="mt-3 min-h-10 text-sm text-paper/70">{plate.line}</p>
                     </button>
                     <div
                       id={slotId}

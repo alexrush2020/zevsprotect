@@ -7,6 +7,15 @@ export type CategorySlug =
   | "kragi"
   | "rukavitsy";
 
+export type PackType = "komplekt" | "meshok" | "press";
+
+export type ProductLot = {
+  id: string;
+  type: PackType;
+  pairs: number;
+  price: number;
+};
+
 export type Product = {
   id: string;
   slug: string;
@@ -19,6 +28,7 @@ export type Product = {
   sizes: string[];
   price: number;
   packQty: number;
+  lots?: ProductLot[];
   stock: number;
   unit: string;
   weight?: string;
@@ -59,6 +69,8 @@ export type CartItem = {
   productId: string;
   size: string;
   qty: number;
+  lotId?: string;
+  packCount?: number;
 };
 
 export type UserProfile = {
@@ -90,9 +102,8 @@ export type Order = {
 
 export type PassagePlate = {
   company: string;
-  city?: string;
+  city: string;
   line: string;
-  since: number;
   text: string;
   fact: string;
 };

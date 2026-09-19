@@ -13,6 +13,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useStore } from "@/lib/store";
 import { getProductById, products } from "@/lib/data/catalog";
 import { formatPrice } from "@/lib/format";
+import { cartLineKey, cartLineOfferLabel, cartLineTotal } from "@/lib/lots";
 import { cartWeightKg, quoteCarriers, type CarrierId } from "@/lib/delivery";
 import { splitVat } from "@/lib/vat";
 import type { PaymentMethod } from "@/lib/types";
@@ -216,11 +217,11 @@ export default function CheckoutPage() {
             const p = getProductById(item.productId);
             if (!p) return null;
             return (
-              <li key={`${item.productId}-${item.size}`} className="flex justify-between gap-3">
+              <li key={cartLineKey(item)} className="flex justify-between gap-3">
                 <span>
-                  {p.name} · {item.size} × {item.qty}
+                  {p.name} · {item.size} · {cartLineOfferLabel(p, item)}
                 </span>
-                <span>{formatPrice(p.price * item.qty)}</span>
+                <span>{formatPrice(cartLineTotal(p, item))}</span>
               </li>
             );
           })}

@@ -120,8 +120,13 @@ export const products: Product[] = [
     coatingType: "Жаростойкое силиконовое покрытие, рисунок",
     color: "Оранжевый",
     sizes: ["XL"],
-    price: 790,
-    packQty: 1,
+    price: 710,
+    packQty: 10,
+    lots: [
+      { id: "fenix-kit-10", type: "komplekt", pairs: 10, price: 790 },
+      { id: "fenix-press-40", type: "press", pairs: 40, price: 750 },
+      { id: "fenix-bag-80", type: "meshok", pairs: 80, price: 710 },
+    ],
     stock: 420,
     unit: "пара",
     weight: "270–280 г",
@@ -146,8 +151,13 @@ export const products: Product[] = [
     coating: "Без покрытия",
     color: "Оранжевый",
     sizes: ["XL"],
-    price: 590,
-    packQty: 1,
+    price: 500,
+    packQty: 25,
+    lots: [
+      { id: "fenix-lite-kit-25", type: "komplekt", pairs: 25, price: 590 },
+      { id: "fenix-lite-kit-35", type: "komplekt", pairs: 35, price: 560 },
+      { id: "fenix-lite-bag-200", type: "meshok", pairs: 200, price: 500 },
+    ],
     stock: 310,
     unit: "пара",
     weight: "210–250 г",
@@ -170,8 +180,13 @@ export const products: Product[] = [
     coatingType: "Без покрытия / рисунок ПВХ",
     color: "Оранжевый",
     sizes: ["XL"],
-    price: 240,
-    packQty: 10,
+    price: 210,
+    packQty: 250,
+    lots: [
+      { id: "prometey-bag-250", type: "meshok", pairs: 250, price: 240 },
+      { id: "prometey-bag-275", type: "meshok", pairs: 275, price: 228 },
+      { id: "prometey-press-400", type: "press", pairs: 400, price: 210 },
+    ],
     stock: 860,
     unit: "пара",
     weight: "78–82 г",
@@ -801,23 +816,22 @@ export const articles: Article[] = [
 export const reviews: PassagePlate[] = [
   {
     company: "ООО «Анод»",
+    city: "Ростов-на-Дону",
     line: "стабильность партий",
-    since: 2019,
     text: "Стабильность поставок и качество партий. Менеджеры решают расхождения по артикулам в тот же день, без «перезвоним».",
     fact: "расхождения — в тот же день",
   },
   {
     company: "ГК «Ланмар»",
+    city: "Волгоград",
     line: "ХБ · спилок · нитрил · КЩС",
-    since: 2021,
     text: "Берём ХБ, спилок, нитрил и КЩС. Можно нанести логотип, цена держится при регулярном объёме.",
     fact: "логотип · цена держится",
   },
   {
-    company: "ООО «Арсеналтрейдинг»",
+    company: "ООО «Прибой»",
     city: "Краснодар",
     line: "отгрузка вовремя",
-    since: 2020,
     text: "Ассортимент широкий, отгрузка вовремя. Важно, что по срочным заказам сразу говорят, реально это или нет.",
     fact: "по срочным говорят сразу",
   },
@@ -850,7 +864,6 @@ export function getCategory(slug: string) {
 
 export const DEFAULT_DOCS = [
   { title: "Декларация соответствия ТР ТС", href: "/docs/declaration-tr-ts.pdf" },
-  { title: "Протокол испытаний", href: "/docs/test-protocol.pdf" },
   { title: "Внутренний контроль качества", href: "/docs/iso-control.pdf" },
 ];
 

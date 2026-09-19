@@ -8,6 +8,7 @@ import { IntegrationLog } from "@/components/integration-log";
 import { useStore } from "@/lib/store";
 import { getProductById } from "@/lib/data/catalog";
 import { formatDate, formatPrice, PAYMENT_LABEL, STATUS_LABEL } from "@/lib/format";
+import { cartLineKey, cartLineOfferLabel, cartLineTotal } from "@/lib/lots";
 import { splitVat } from "@/lib/vat";
 
 export default function OrderPage() {
@@ -56,11 +57,11 @@ export default function OrderPage() {
           const p = getProductById(item.productId);
           if (!p) return null;
           return (
-            <div key={`${item.productId}-${item.size}`} className="flex justify-between">
+            <div key={cartLineKey(item)} className="flex justify-between">
               <span>
-                {p.name} · {item.size} × {item.qty}
+                {p.name} · {item.size} · {cartLineOfferLabel(p, item)}
               </span>
-              <span>{formatPrice(p.price * item.qty)}</span>
+              <span>{formatPrice(cartLineTotal(p, item))}</span>
             </div>
           );
         })}

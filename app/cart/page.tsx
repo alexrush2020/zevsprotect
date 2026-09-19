@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store";
 import { getProductById } from "@/lib/data/catalog";
 import { formatPrice } from "@/lib/format";
+import { cartLineCaption, cartLineKey, cartLineTotal, getLot } from "@/lib/lots";
 
 export default function CartPage() {
   const { cart, setQty, removeFromCart, cartTotal } = useStore();
@@ -32,9 +33,12 @@ export default function CartPage() {
           {cart.map((item) => {
             const p = getProductById(item.productId);
             if (!p) return null;
+            const lot = getLot(p, item.lotId);
+            const step = lot ? 1 : p.packQty;
+            const value = lot ? (item.packCount ?? 0) : item.qty;
             return (
               <div
-                key={`${item.productId}-${item.size}`}
+                key={cartLineKey(item)}
                 className="flex gap-4 rounded-2xl border bg-card p-4"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -47,15 +51,13 @@ export default function CartPage() {
                   <Link href={`/product/${p.slug}`} className="font-heading">
                     {p.name}
                   </Link>
-                  <p className="text-sm text-steel">
-                    {p.sku} · размер {item.size}
-                  </p>
+                  <p className="text-sm text-steel">{cartLineCaption(p, item)}</p>
                   <div className="mt-3 flex items-center gap-2">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() =>
-                        setQty(item.productId, item.size, item.qty - p.packQty)
+                        setQty(item.productId, item.size, value - step, item.lotId)
                       }
                     >
                       −
@@ -63,34 +65,46 @@ export default function CartPage() {
                     <input
                       className="h-8 w-16 rounded-lg border bg-background text-center text-sm"
                       type="number"
-                      min={p.packQty}
-                      step={p.packQty}
-                      value={item.qty}
+                      min={lot ? 0 : p.packQty}
+                      step={step}
+                      value={value}
                       onChange={(e) =>
-                        setQty(item.productId, item.size, Number(e.target.value))
+                        setQty(
+                          item.productId,
+                          item.size,
+                          Number(e.target.value),
+                          item.lotId,
+                        )
                       }
                       onBlur={(e) =>
-                        setQty(item.productId, item.size, Number(e.target.value))
+                        setQty(
+                          item.productId,
+                          item.size,
+                          Number(e.target.value),
+                          item.lotId,
+                        )
                       }
                     />
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() =>
-                        setQty(item.productId, item.size, item.qty + p.packQty)
+                        setQty(item.productId, item.size, value + step, item.lotId)
                       }
                     >
                       +
                     </Button>
                     <button
                       className="ml-3 text-xs text-steel underline"
-                      onClick={() => removeFromCart(item.productId, item.size)}
+                      onClick={() =>
+                        removeFromCart(item.productId, item.size, item.lotId)
+                      }
                     >
                       Удалить
                     </button>
                   </div>
                 </div>
-                <p className="font-medium">{formatPrice(p.price * item.qty)}</p>
+                <p className="font-medium">{formatPrice(cartLineTotal(p, item))}</p>
               </div>
             );
           })}

@@ -10,6 +10,7 @@ import { StatusTimeline } from "@/components/status-timeline";
 import { useStore } from "@/lib/store";
 import { getProductById } from "@/lib/data/catalog";
 import { formatDate, formatPrice, PAYMENT_LABEL, STATUS_LABEL } from "@/lib/format";
+import { cartLineKey, cartLineOfferLabel } from "@/lib/lots";
 
 export default function AccountPage() {
   const { user, logout, orders, updateProfile, addToCart, clearCart } = useStore();
@@ -31,7 +32,16 @@ export default function AccountPage() {
     const order = orders.find((o) => o.id === orderId);
     if (!order) return;
     clearCart();
-    order.items.forEach((item) => addToCart(item.productId, item.size, item.qty));
+    order.items.forEach((item) =>
+      addToCart(
+        item.productId,
+        item.size,
+        item.qty,
+        item.lotId
+          ? { lotId: item.lotId, packCount: item.packCount ?? 1 }
+          : undefined,
+      ),
+    );
     toast.success("Состав заказа в корзине. Цены пересчитаны по текущему прайсу 1С.");
     router.push("/cart");
   }
@@ -120,8 +130,8 @@ export default function AccountPage() {
                     {order.items.map((item) => {
                       const p = getProductById(item.productId);
                       return (
-                        <li key={`${item.productId}-${item.size}`}>
-                          {p?.name} × {item.qty}
+                        <li key={cartLineKey(item)}>
+                          {p?.name} {p ? cartLineOfferLabel(p, item) : `× ${item.qty}`}
                         </li>
                       );
                     })}

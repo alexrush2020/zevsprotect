@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { products } from "@/lib/data/catalog";
+import { cartLineKey, cartLineTotal, getLot } from "@/lib/lots";
 import { snapPackQty } from "@/lib/qty";
 import type {
   CartItem,
@@ -22,6 +23,7 @@ const CART_KEY = "zp-cart";
 const USER_KEY = "zp-user";
 const ORDERS_KEY = "zp-orders";
 const LEADS_KEY = "zp-leads";
+const FAVORITES_KEY = "zp-favorites";
 
 const demoProfile: UserProfile = {
   email: "zakup@roststroy.ru",
@@ -59,9 +61,15 @@ type Store = {
   user: UserProfile | null;
   orders: Order[];
   leads: Lead[];
-  addToCart: (productId: string, size: string, qty: number) => void;
-  setQty: (productId: string, size: string, qty: number) => void;
-  removeFromCart: (productId: string, size: string) => void;
+  favoriteIds: string[];
+  addToCart: (
+    productId: string,
+    size: string,
+    qty: number,
+    lot?: { lotId: string; packCount: number },
+  ) => void;
+  setQty: (productId: string, size: string, qty: number, lotId?: string) => void;
+  removeFromCart: (productId: string, size: string, lotId?: string) => void;
   clearCart: () => void;
   login: (email: string, password: string) => boolean;
   register: (profile: UserProfile, password: string) => boolean;
@@ -79,6 +87,8 @@ type Store = {
   }) => Order;
   updateOrder: (id: string, patch: Partial<Order>) => void;
   addLead: (type: string, payload: Record<string, string>) => Lead;
+  toggleFavorite: (productId: string) => boolean;
+  isFavorite: (productId: string) => boolean;
   cartCount: number;
   cartTotal: number;
 };
@@ -159,6 +169,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -166,6 +177,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const nextUser = readJson<UserProfile | null>(USER_KEY, null);
     const nextOrders = readJson<Order[]>(ORDERS_KEY, []);
     const nextLeads = readJson<Lead[]>(LEADS_KEY, []);
+    const nextFavorites = readJson<string[]>(FAVORITES_KEY, []);
     setCart(nextCart);
     setUser(nextUser);
     setOrders(
@@ -176,6 +188,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           : seedGuestOrders()
     );
     setLeads(nextLeads);
+    setFavoriteIds(Array.isArray(nextFavorites) ? nextFavorites : []);
     setReady(true);
   }, []);
 
@@ -200,37 +213,104 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(LEADS_KEY, JSON.stringify(leads));
   }, [leads, ready]);
 
-  const addToCart = useCallback((productId: string, size: string, qty: number) => {
-    const product = products.find((x) => x.id === productId);
-    const snapped = snapPackQty(qty, product?.packQty ?? 1);
-    if (!snapped) return;
-    setCart((prev) => {
-      const i = prev.findIndex((x) => x.productId === productId && x.size === size);
-      if (i === -1) return [...prev, { productId, size, qty: snapped }];
-      const copy = [...prev];
-      copy[i] = {
-        ...copy[i],
-        qty: snapPackQty(copy[i].qty + snapped, product?.packQty ?? 1),
-      };
-      return copy;
-    });
-  }, []);
+  useEffect(() => {
+    if (!ready) return;
+    localStorage.setItem(FAVORITES_KEY, JSON.stringify(favoriteIds));
+  }, [favoriteIds, ready]);
 
-  const setQty = useCallback((productId: string, size: string, qty: number) => {
-    const product = products.find((x) => x.id === productId);
-    const snapped = snapPackQty(qty, product?.packQty ?? 1);
-    setCart((prev) =>
-      prev
-        .map((x) =>
-          x.productId === productId && x.size === size ? { ...x, qty: snapped } : x
-        )
-        .filter((x) => x.qty > 0)
-    );
-  }, []);
+  const addToCart = useCallback(
+    (
+      productId: string,
+      size: string,
+      qty: number,
+      lot?: { lotId: string; packCount: number },
+    ) => {
+      const product = products.find((x) => x.id === productId);
+      if (lot) {
+        const offer = getLot(product, lot.lotId);
+        const packCount = Math.max(0, Math.floor(lot.packCount));
+        if (!offer || !packCount) return;
+        const pairs = offer.pairs * packCount;
+        setCart((prev) => {
+          const i = prev.findIndex(
+            (x) => cartLineKey(x) === cartLineKey({ productId, size, lotId: lot.lotId }),
+          );
+          if (i === -1) {
+            return [
+              ...prev,
+              { productId, size, qty: pairs, lotId: lot.lotId, packCount },
+            ];
+          }
+          const copy = [...prev];
+          const nextCount = (copy[i].packCount ?? 0) + packCount;
+          copy[i] = {
+            ...copy[i],
+            packCount: nextCount,
+            qty: offer.pairs * nextCount,
+          };
+          return copy;
+        });
+        return;
+      }
+      const snapped = snapPackQty(qty, product?.packQty ?? 1);
+      if (!snapped) return;
+      setCart((prev) => {
+        const i = prev.findIndex(
+          (x) => x.productId === productId && x.size === size && !x.lotId,
+        );
+        if (i === -1) return [...prev, { productId, size, qty: snapped }];
+        const copy = [...prev];
+        copy[i] = {
+          ...copy[i],
+          qty: snapPackQty(copy[i].qty + snapped, product?.packQty ?? 1),
+        };
+        return copy;
+      });
+    },
+    [],
+  );
 
-  const removeFromCart = useCallback((productId: string, size: string) => {
-    setCart((prev) => prev.filter((x) => !(x.productId === productId && x.size === size)));
-  }, []);
+  const setQty = useCallback(
+    (productId: string, size: string, qty: number, lotId?: string) => {
+      const product = products.find((x) => x.id === productId);
+      const offer = getLot(product, lotId);
+      if (lotId && offer) {
+        const packCount = Math.max(0, Math.floor(qty));
+        setCart((prev) =>
+          prev
+            .map((x) =>
+              cartLineKey(x) === cartLineKey({ productId, size, lotId })
+                ? { ...x, packCount, qty: offer.pairs * packCount }
+                : x,
+            )
+            .filter((x) => x.qty > 0),
+        );
+        return;
+      }
+      const snapped = snapPackQty(qty, product?.packQty ?? 1);
+      setCart((prev) =>
+        prev
+          .map((x) =>
+            x.productId === productId && x.size === size && !x.lotId
+              ? { ...x, qty: snapped }
+              : x,
+          )
+          .filter((x) => x.qty > 0),
+      );
+    },
+    [],
+  );
+
+  const removeFromCart = useCallback(
+    (productId: string, size: string, lotId?: string) => {
+      setCart((prev) =>
+        prev.filter(
+          (x) => cartLineKey(x) !== cartLineKey({ productId, size, lotId }),
+        ),
+      );
+    },
+    [],
+  );
 
   const clearCart = useCallback(() => setCart([]), []);
 
@@ -278,7 +358,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }) => {
       const goods = cart.reduce((sum, item) => {
         const p = products.find((x) => x.id === item.productId);
-        return sum + (p ? p.price * item.qty : 0);
+        return sum + (p ? cartLineTotal(p, item) : 0);
       }, 0);
       const deliveryCost = input.deliveryCost ?? 0;
       const order: Order = {
@@ -324,10 +404,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return lead;
   }, []);
 
+  const toggleFavorite = useCallback((productId: string) => {
+    const added = !favoriteIds.includes(productId);
+    setFavoriteIds((prev) =>
+      prev.includes(productId)
+        ? prev.filter((id) => id !== productId)
+        : [...prev, productId]
+    );
+    return added;
+  }, [favoriteIds]);
+
+  const isFavorite = useCallback(
+    (productId: string) => favoriteIds.includes(productId),
+    [favoriteIds]
+  );
+
   const cartCount = cart.reduce((s, i) => s + i.qty, 0);
   const cartTotal = cart.reduce((sum, item) => {
     const p = products.find((x) => x.id === item.productId);
-    return sum + (p ? p.price * item.qty : 0);
+    return sum + (p ? cartLineTotal(p, item) : 0);
   }, 0);
 
   const value = useMemo(
@@ -336,6 +431,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       user,
       orders,
       leads,
+      favoriteIds,
       addToCart,
       setQty,
       removeFromCart,
@@ -347,6 +443,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       placeOrder,
       updateOrder,
       addLead,
+      toggleFavorite,
+      isFavorite,
       cartCount,
       cartTotal,
     }),
@@ -355,6 +453,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       user,
       orders,
       leads,
+      favoriteIds,
       addToCart,
       setQty,
       removeFromCart,
@@ -366,6 +465,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       placeOrder,
       updateOrder,
       addLead,
+      toggleFavorite,
+      isFavorite,
       cartCount,
       cartTotal,
     ]

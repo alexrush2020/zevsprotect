@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Menu, Search, ShoppingBag, User } from "lucide-react";
 import { Logo } from "@/components/logo";
+import { CatalogMenu } from "@/components/catalog-menu";
 import { InquiryDialog } from "@/components/inquiry-dialog";
 import { Messengers } from "@/components/messengers";
 import { Button } from "@/components/ui/button";
@@ -37,7 +38,6 @@ const extra = [
 export function SiteHeader() {
   const { cartCount, cartTotal, user } = useStore();
   const [q, setQ] = useState("");
-  const [mega, setMega] = useState(false);
 
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-ink text-paper">
@@ -123,44 +123,7 @@ export function SiteHeader() {
         </Link>
 
         <nav className="hidden shrink-0 items-center gap-5 text-sm text-paper/80 lg:flex">
-          <div
-            className="relative"
-            onMouseEnter={() => setMega(true)}
-            onMouseLeave={() => setMega(false)}
-          >
-            <Link href="/catalog" className="whitespace-nowrap hover:text-white">
-              Каталог
-            </Link>
-            {mega ? (
-              <div className="absolute left-0 top-full z-50 w-[min(92vw,640px)] pt-3">
-                <div className="rounded-2xl border bg-paper p-4 text-ink shadow-xl">
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {categories.map((c) => (
-                      <Link
-                        key={c.slug}
-                        href={`/catalog?category=${c.slug}`}
-                        className="rounded-xl p-2 hover:bg-muted"
-                      >
-                        <p className="font-heading text-sm">{c.short}</p>
-                        <p className="text-xs text-steel">{c.name}</p>
-                      </Link>
-                    ))}
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2 border-t pt-3 text-xs">
-                    {extra.map((item) => (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className="rounded-full border px-3 py-1 hover:bg-muted"
-                      >
-                        {item.label}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ) : null}
-          </div>
+          <CatalogMenu extra={extra} />
           {nav.map((item) => (
             <Link key={item.href} href={item.href} className="whitespace-nowrap hover:text-white">
               {item.label}

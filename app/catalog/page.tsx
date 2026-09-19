@@ -11,7 +11,7 @@ export default function CatalogPage() {
   return (
     <div>
       <div className="hidden border-b bg-card lg:block">
-        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 lg:grid-cols-[1fr_340px] lg:items-end">
+        <div className="mx-auto grid max-w-6xl gap-6 px-4 py-10 lg:grid-cols-[1fr_auto] lg:items-end">
           <div>
             <p className="text-xs uppercase tracking-[0.22em] text-orange">
               Каталог
@@ -22,7 +22,7 @@ export default function CatalogPage() {
               В карточке — фасовка, остаток из 1С и заявка, если нужна консультация.
             </p>
           </div>
-          <PurchaseGuideTeaser />
+          <PurchaseGuideTeaser compact />
         </div>
       </div>
       <Suspense fallback={<div className="p-10 text-center text-steel">Загрузка каталога…</div>}>

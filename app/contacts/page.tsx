@@ -15,7 +15,6 @@ import { useState } from "react";
 import { brand } from "@/lib/brand";
 
 const messengers = [
-  { href: brand.whatsappHref, label: "WhatsApp", className: "bg-[#25D366] text-white hover:bg-[#20bd5a]" },
   { href: brand.maxHref, label: "MAX", className: "bg-[#471AFF] text-white hover:bg-[#3a14d6]" },
 ] as const;
 
@@ -248,7 +247,7 @@ function ContactCard({
 
 function MessengerRow() {
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="grid gap-2">
       {messengers.map((item) => (
         <a
           key={item.label}

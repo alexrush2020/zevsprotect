@@ -21,7 +21,7 @@ export default function SamplesPage() {
             <li>Заявка уходит лидом в Битрикс24 (мок).</li>
           </ul>
           <p className="mt-6 text-sm text-steel">
-            {brand.phone} · WhatsApp {brand.whatsapp}
+            {brand.phone}
           </p>
         </div>
         <LeadForm

@@ -7,6 +7,7 @@ import { useStore } from "@/lib/store";
 import { getProductById } from "@/lib/data/catalog";
 import { brand } from "@/lib/brand";
 import { formatDate, formatPrice } from "@/lib/format";
+import { cartLineKey, cartLineOfferLabel, cartLineTotal, getLot } from "@/lib/lots";
 import { splitVat } from "@/lib/vat";
 
 export default function InvoicePage() {
@@ -92,17 +93,21 @@ export default function InvoicePage() {
               const p = getProductById(item.productId);
               if (!p) return null;
               return (
-                <tr key={`${item.productId}-${item.size}`} className="border-b">
+                <tr key={cartLineKey(item)} className="border-b">
                   <td className="px-2 py-2">{index + 1}</td>
                   <td className="px-2 py-2">
                     {p.name} · {item.size}
+                    {item.lotId ? ` · ${cartLineOfferLabel(p, item)}` : ""}
                   </td>
                   <td className="px-2 py-2">{p.sku}</td>
                   <td className="px-2 py-2">
                     {item.qty} {p.unit}
+                    {getLot(p, item.lotId) ? ` · ${item.packCount ?? 0} уп.` : ""}
                   </td>
-                  <td className="px-2 py-2">{formatPrice(p.price)}</td>
-                  <td className="px-2 py-2">{formatPrice(p.price * item.qty)}</td>
+                  <td className="px-2 py-2">
+                    {formatPrice(getLot(p, item.lotId)?.price ?? p.price)}
+                  </td>
+                  <td className="px-2 py-2">{formatPrice(cartLineTotal(p, item))}</td>
                 </tr>
               );
             })}

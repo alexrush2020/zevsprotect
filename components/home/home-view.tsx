@@ -273,12 +273,12 @@ export function HomeView() {
                 href={`/blog/${a.slug}`}
                 className="group flex h-full flex-col overflow-hidden rounded-2xl border bg-card"
               >
-                <div className="aspect-[16/9] overflow-hidden bg-muted">
+                <div className="aspect-[4/3] bg-muted">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={a.image}
                     alt=""
-                    className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                    className="h-full w-full object-contain object-center"
                   />
                 </div>
                 <div className="flex flex-1 flex-col p-4">

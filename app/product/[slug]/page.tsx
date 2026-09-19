@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ProductBuy } from "@/components/product-buy";
 import { ProductCard } from "@/components/product-card";
 import { ProductGallery } from "@/components/product-gallery";
+import { ProductReviewsSection } from "@/components/product-reviews/product-reviews-section";
 import { Badge } from "@/components/ui/badge";
 import {
   getCategory,
@@ -13,8 +14,10 @@ import {
   productSeo,
   relatedProducts,
 } from "@/lib/data/catalog";
+import { reviewCountLabel, reviewStats } from "@/lib/data/product-reviews";
 import { formatPrice } from "@/lib/format";
 import { brand } from "@/lib/brand";
+import { catalogPrice, formatPairs, hasLots } from "@/lib/lots";
 
 export async function generateMetadata({
   params,
@@ -46,6 +49,7 @@ export default async function ProductPage({
   const gallery = productGallery(product);
   const seo = productSeo(product);
   const inStock = product.stock > 0;
+  const stats = reviewStats(product.slug);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -57,13 +61,22 @@ export default async function ProductPage({
     brand: { "@type": "Brand", name: brand.mark },
     offers: {
       "@type": "Offer",
-      price: product.price,
+      price: catalogPrice(product),
       priceCurrency: "RUB",
       availability: inStock
         ? "https://schema.org/InStock"
         : "https://schema.org/PreOrder",
       url: `https://${brand.domain}/product/${product.slug}`,
     },
+    ...(stats.count > 0
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: stats.average,
+            reviewCount: stats.count,
+          },
+        }
+      : {}),
   };
 
   return (
@@ -84,6 +97,12 @@ export default async function ProductPage({
             {product.sku} · данные из 1С
           </p>
           <h1 className="mt-2 font-heading text-4xl">{seo.h1}</h1>
+          <Link
+            href="#reviews"
+            className="mt-2 inline-block text-sm text-steel hover:text-orange"
+          >
+            {reviewCountLabel(stats.count)}
+          </Link>
           <div className="mt-3 flex flex-wrap gap-2">
             <Badge variant="secondary">{category?.name}</Badge>
             <Badge variant="outline">{product.base}</Badge>
@@ -94,15 +113,26 @@ export default async function ProductPage({
             </Badge>
           </div>
           <p className="mt-6 text-3xl font-semibold">
-            {formatPrice(product.price)}
+            {hasLots(product) ? (
+              <span className="mr-1 text-base font-normal text-steel">от</span>
+            ) : null}
+            {formatPrice(catalogPrice(product))}
             <span className="ml-2 text-base font-normal text-steel">
               / {product.unit}
             </span>
           </p>
           <p className="mt-2 text-sm text-steel">
             {inStock
-              ? `Остаток: ${product.stock} ${product.unit} · фасовка от ${product.packQty}`
-              : `Нет на складе. Можно запросить срок партии. Фасовка от ${product.packQty} ${product.unit}.`}
+              ? `Остаток: ${product.stock} ${product.unit}${
+                  hasLots(product)
+                    ? ` · партии от ${formatPairs(Math.min(...product.lots.map((lot) => lot.pairs)))}`
+                    : ` · фасовка от ${product.packQty}`
+                }`
+              : `Нет на складе. Можно запросить срок партии.${
+                  hasLots(product)
+                    ? ` Партии от ${formatPairs(Math.min(...product.lots.map((lot) => lot.pairs)))}.`
+                    : ` Фасовка от ${product.packQty} ${product.unit}.`
+                }`}
           </p>
           <p className="mt-4 text-steel">{product.description}</p>
           <div className="mt-6">
@@ -143,6 +173,8 @@ export default async function ProductPage({
           </ul>
         </div>
       </div>
+
+      <ProductReviewsSection product={product} />
 
       <section className="mt-12 rounded-2xl border bg-card p-6">
         <h2 className="font-heading text-2xl">Для поисковых систем</h2>

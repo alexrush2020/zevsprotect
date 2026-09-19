@@ -51,15 +51,27 @@ export function InquiryDialog({
   type = "consult",
   trigger,
   productName,
+  open: openProp,
+  onOpenChange,
 }: {
   type?: InquiryType;
-  trigger: React.ReactNode;
+  trigger?: React.ReactNode;
   productName?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const { addLead, user } = useStore();
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const [sent, setSent] = useState(false);
   const copy = types[type];
+  const isControlled = openProp !== undefined;
+  const open = isControlled ? openProp : uncontrolledOpen;
+
+  function handleOpenChange(v: boolean) {
+    if (!isControlled) setUncontrolledOpen(v);
+    onOpenChange?.(v);
+    if (!v) setSent(false);
+  }
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -78,14 +90,8 @@ export function InquiryDialog({
   }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(v) => {
-        setOpen(v);
-        if (!v) setSent(false);
-      }}
-    >
-      <DialogTrigger render={trigger as React.ReactElement} />
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      {trigger ? <DialogTrigger render={trigger as React.ReactElement} /> : null}
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{copy.title}</DialogTitle>

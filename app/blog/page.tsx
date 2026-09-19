@@ -19,8 +19,10 @@ export default function BlogPage() {
             href={`/blog/${a.slug}`}
             className="flex h-full flex-col overflow-hidden rounded-2xl border bg-card"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={a.image} alt="" className="aspect-[16/9] w-full object-cover" />
+            <div className="aspect-[4/3] bg-muted">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={a.image} alt="" className="h-full w-full object-contain object-center" />
+            </div>
               <div className="p-5">
                 <p className="text-xs text-steel">
                   {a.category} · {formatDate(a.date)}

@@ -2,10 +2,16 @@
 
 import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal, X } from "lucide-react";
 import { ProductCard } from "@/components/product-card";
 import { CatalogShopCard } from "@/components/catalog-shop-card";
 import { CatalogCategoryTiles } from "@/components/catalog-category-tiles";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -24,7 +30,23 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { categories, filterOptions, products } from "@/lib/data/catalog";
+import { catalogPrice } from "@/lib/lots";
 import type { CategorySlug } from "@/lib/types";
+
+const COLOR_SWATCH: Record<string, string> = {
+  Белый: "#ffffff",
+  Серый: "#9ca3af",
+  Черный: "#171717",
+  Оранжевый: "#f97316",
+  Синий: "#2563eb",
+  Красный: "#dc2626",
+  Желтый: "#eab308",
+  Зеленый: "#16a34a",
+  Хаки: "#b59b4a",
+};
+
+const COLOR_SWATCH_CLASS =
+  "border-black/45 shadow-none focus-visible:border-black/45 focus-visible:ring-0 dark:bg-[unset] data-checked:border-black/45 data-checked:bg-[unset] dark:data-checked:bg-[unset] [&_[data-slot=checkbox-indicator]]:hidden";
 
 function CatalogFilters({
   category,
@@ -65,48 +87,96 @@ function CatalogFilters({
   return (
     <>
       <p className="text-xs uppercase tracking-[0.18em] text-steel">Категории</p>
-      <div className="mt-3 grid gap-1">
+      <div className="mt-2 flex flex-wrap gap-1">
         <button
           type="button"
-          className={`rounded-lg px-2 py-1.5 text-left text-sm ${category === "all" ? "bg-orange text-white" : "hover:bg-muted"}`}
+          className={`rounded-full px-2.5 py-1 text-xs ${category === "all" ? "bg-orange text-white" : "bg-muted/70 hover:bg-muted"}`}
           onClick={() => setCat("all")}
         >
-          Все товары
+          Все
         </button>
         {categories.map((c) => (
           <button
             key={c.slug}
             type="button"
-            className={`rounded-lg px-2 py-1.5 text-left text-sm ${category === c.slug ? "bg-orange text-white" : "hover:bg-muted"}`}
+            className={`rounded-full px-2.5 py-1 text-xs ${category === c.slug ? "bg-orange text-white" : "bg-muted/70 hover:bg-muted"}`}
             onClick={() => setCat(c.slug)}
           >
             {c.short}
           </button>
         ))}
       </div>
-      {(
-        [
-          ["Основа", filterOptions.base, base, setBase],
-          ["Покрытие", filterOptions.coating, coating, setCoating],
-          ["Цвет", filterOptions.color, color, setColor],
-          ["Размер", filterOptions.size, size, setSize],
-        ] as const
-      ).map(([title, options, selected, setter]) => (
-        <div key={title} className="mt-5">
-          <p className="text-xs uppercase tracking-[0.18em] text-steel">{title}</p>
-          <div className="mt-2 grid gap-1.5">
-            {options.map((opt) => (
-              <label key={opt} className="flex items-center gap-2 text-sm">
-                <Checkbox
-                  checked={selected.includes(opt)}
-                  onCheckedChange={() => toggle(selected, opt, setter)}
-                />
-                {opt}
-              </label>
-            ))}
-          </div>
-        </div>
-      ))}
+      <Accordion
+        multiple
+        defaultValue={["Основа", "Покрытие", "Цвет", "Размер"]}
+        className="mt-3"
+      >
+        {(
+          [
+            ["Основа", filterOptions.base, base, setBase],
+            ["Покрытие", filterOptions.coating, coating, setCoating],
+            ["Цвет", filterOptions.color, color, setColor],
+            ["Размер", filterOptions.size, size, setSize],
+          ] as const
+        ).map(([title, options, selected, setter]) => (
+          <AccordionItem key={title} value={title}>
+            <AccordionTrigger
+              className="items-center py-2 text-xs font-normal uppercase tracking-[0.18em] text-steel hover:no-underline"
+              actions={
+                <button
+                  type="button"
+                  aria-label={`Сбросить фильтры: ${title}`}
+                  disabled={!selected.length}
+                  className="shrink-0 rounded-md p-0.5 text-muted-foreground outline-none hover:text-ink focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-25"
+                  onClick={() => {
+                    setter([]);
+                    setPage(1);
+                  }}
+                >
+                  <X className="size-3.5" strokeWidth={2.25} />
+                </button>
+              }
+            >
+              <span>
+                {title}
+                {selected.length ? (
+                  <span className="ml-1.5 text-orange">{selected.length}</span>
+                ) : null}
+              </span>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className={title === "Цвет" ? "grid gap-0.5" : "grid gap-1.5"}>
+                {options.map((opt) => {
+                  const swatch = title === "Цвет" ? COLOR_SWATCH[opt] : undefined;
+                  const isOn = selected.includes(opt);
+                  return (
+                    <label
+                      key={opt}
+                      className={
+                        swatch
+                          ? `flex w-full cursor-pointer items-center gap-2 rounded-[4px] px-1.5 py-[3px] text-sm ${
+                              isOn
+                                ? "bg-[#cce8ff] ring-1 ring-inset ring-[#99d1ff]"
+                                : "hover:bg-[#e8e8e8]"
+                            }`
+                          : "flex items-center gap-2 text-sm"
+                      }
+                    >
+                      <Checkbox
+                        checked={isOn}
+                        onCheckedChange={() => toggle(selected, opt, setter)}
+                        className={swatch ? COLOR_SWATCH_CLASS : undefined}
+                        style={swatch ? { backgroundColor: swatch } : undefined}
+                      />
+                      {opt}
+                    </label>
+                  );
+                })}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
       <label className="mt-5 flex items-center gap-2 text-sm">
         <Checkbox
           checked={inStockOnly}
@@ -157,8 +227,8 @@ export function CatalogBrowser() {
       if (inStockOnly && p.stock <= 0) return false;
       return true;
     });
-    if (sort === "price-asc") list = [...list].sort((a, b) => a.price - b.price);
-    if (sort === "price-desc") list = [...list].sort((a, b) => b.price - a.price);
+    if (sort === "price-asc") list = [...list].sort((a, b) => catalogPrice(a) - catalogPrice(b));
+    if (sort === "price-desc") list = [...list].sort((a, b) => catalogPrice(b) - catalogPrice(a));
     if (sort === "name") list = [...list].sort((a, b) => a.name.localeCompare(b.name, "ru"));
     return list;
   }, [category, q, base, coating, color, size, sort, inStockOnly]);
@@ -173,7 +243,7 @@ export function CatalogBrowser() {
     const sp = new URLSearchParams(params.toString());
     if (next === "all") sp.delete("category");
     else sp.set("category", next);
-    router.replace(`/catalog${sp.toString() ? `?${sp}` : ""}`);
+    router.replace(`/catalog${sp.toString() ? `?${sp}` : ""}`, { scroll: false });
     if (typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches) {
       document.getElementById("catalog-models")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
@@ -335,11 +405,11 @@ export function CatalogBrowser() {
         </div>
       </div>
 
-      <div className="mx-auto hidden max-w-6xl gap-8 px-4 py-10 lg:grid lg:grid-cols-[260px_1fr]">
-        <aside className="h-fit rounded-2xl border bg-card p-4">
+      <div className="mx-auto hidden max-w-6xl items-start gap-8 px-4 py-10 [overflow-anchor:none] lg:grid lg:grid-cols-[260px_1fr]">
+        <aside className="sticky top-24 z-10 h-fit max-h-[calc(100vh-7rem)] self-start overflow-y-auto rounded-2xl border bg-card p-4 [scrollbar-width:thin] [scrollbar-color:var(--orange)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-orange">
           <CatalogFilters {...filterProps} />
         </aside>
-        <div>
+        <div className="min-h-[max(80rem,calc(100svh-8rem))]">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <Input
               value={q}

@@ -292,31 +292,33 @@ export function AboutView() {
       </section>
 
       <section className="mx-auto max-w-6xl px-4 py-20 sm:py-28">
-        <p className="text-xs uppercase tracking-[0.22em] text-orange">Проходная</p>
+        <p className="text-xs uppercase tracking-[0.22em] text-orange">Отзывы</p>
         <h2 className="mt-2 font-heading text-4xl sm:text-6xl">Что говорят закупщики</h2>
         <blockquote className="mt-12 max-w-5xl">
           <p className="font-heading text-3xl leading-[1.15] text-ink sm:text-5xl">
             «{reviews[0].text}»
           </p>
-          <footer className="mt-6 flex flex-wrap items-baseline gap-3">
+          <footer className="mt-6">
             <cite className="font-heading text-xl not-italic">{reviews[0].company}</cite>
-            <span className="text-xs uppercase tracking-[0.16em] text-orange">{reviews[0].fact}</span>
+            <p className="mt-1 text-xs uppercase tracking-[0.16em] text-steel">{reviews[0].city}</p>
+            <p className="mt-2 text-xs uppercase tracking-[0.16em] text-orange">{reviews[0].fact}</p>
           </footer>
         </blockquote>
         <div className="mt-16 grid gap-10 border-t pt-12 md:grid-cols-2">
           {reviews.slice(1).map((review) => (
             <blockquote key={review.company}>
               <p className="text-xl leading-snug text-ink sm:text-2xl">«{review.text}»</p>
-              <footer className="mt-4 flex flex-wrap items-baseline gap-3">
+              <footer className="mt-4">
                 <cite className="font-heading not-italic">{review.company}</cite>
-                <span className="text-xs uppercase tracking-[0.16em] text-orange">{review.fact}</span>
+                <p className="mt-1 text-xs uppercase tracking-[0.16em] text-steel">{review.city}</p>
+                <p className="mt-2 text-xs uppercase tracking-[0.16em] text-orange">{review.fact}</p>
               </footer>
             </blockquote>
           ))}
         </div>
       </section>
 
-      <section className="relative overflow-hidden bg-[#B4003C] py-16 text-white sm:py-20">
+      <section className="relative overflow-hidden bg-ink py-16 text-paper sm:py-20">
         <p
           aria-hidden
           className="about-outline about-outline-light pointer-events-none absolute -bottom-6 left-0 text-[18vw] font-heading"
@@ -325,9 +327,9 @@ export function AboutView() {
         </p>
         <div className="relative mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-8 px-4">
           <div className="max-w-xl">
-            <p className="text-xs uppercase tracking-[0.2em] text-white/70">Сестринский бренд</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-orange">Сестринский бренд</p>
             <h2 className="mt-2 font-heading text-4xl sm:text-5xl">{brand.sister}</h2>
-            <p className="mt-4 text-white/80">
+            <p className="mt-4 text-paper/75">
               Текстильная линейка той же группы. Этот сайт продаёт перчатки{" "}
               {brand.markRu}. Спецодежду и ткани {brand.sister} сюда не смешиваем.
             </p>

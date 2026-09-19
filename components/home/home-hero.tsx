@@ -6,6 +6,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { InquiryDialog } from "@/components/inquiry-dialog";
 import { brand } from "@/lib/brand";
+import { MetallicLogo } from "@/components/about/metallic-logo";
 import { CountUp, easeOutExpo } from "@/components/home/motion";
 
 const headline = ["Сила в", "ваших руках"];
@@ -114,11 +115,18 @@ export function HomeHero() {
       <div className="relative z-[2] flex min-h-[calc(100svh-6.25rem)] flex-col">
         <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center px-4 py-10 lg:w-full lg:max-w-6xl">
           <div className="lg:max-w-[54%]">
-          <motion.p
-            className="text-center text-[11px] tracking-[0.32em] text-orange uppercase"
+          <motion.div
             initial={reduce ? false : { opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: easeOutExpo }}
+          >
+            <MetallicLogo variant="ru" tone="chrome" className="h-16 sm:h-24 md:h-28" />
+          </motion.div>
+          <motion.p
+            className="mt-8 text-[11px] tracking-[0.32em] text-orange uppercase"
+            initial={reduce ? false : { opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.06, ease: easeOutExpo }}
           >
             Собственное производство
           </motion.p>
