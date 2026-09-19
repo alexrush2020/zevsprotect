@@ -124,15 +124,29 @@
     transform: translateX(0);
   }
   to {
-    transform: translateX(-50%);
+    transform: translateX(calc(-100% / var(--marquee-copies)));
   }
 }
 
 .home-marquee {
+  --marquee-copies: 4;
   animation: home-marquee 36s linear infinite;
   -webkit-text-stroke: 0.45px #111318;
   paint-order: stroke fill;
   text-shadow: 0 0 0.6px #111318;
+}
+
+@keyframes passage-stamp-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.passage-stamp-marquee {
+  animation: passage-stamp-marquee 28s linear infinite;
 }
 
 .home-grain {
@@ -259,16 +273,6 @@
   );
 }
 
-.hero-reflect {
-  position: absolute;
-  top: 82%;
-  left: 0;
-  width: 100%;
-  transform: scaleY(-1);
-  opacity: 0.22;
-  mask-image: linear-gradient(to bottom, #000 0%, transparent 58%);
-}
-
 @keyframes hero-mote {
   0% {
     transform: translate3d(0, 8vh, 0);
@@ -297,7 +301,7 @@
 
 .cat-strip {
   display: flex;
-  height: 560px;
+  height: 360px;
   overflow: hidden;
   background: #020018;
 }
@@ -313,6 +317,7 @@
     #040040;
   transition: flex 0.4s cubic-bezier(0.14, 0.69, 0.93, 1);
   border-right: 6px solid var(--orange);
+  container-type: inline-size;
 }
 
 .cat-panel:last-child {
@@ -321,7 +326,7 @@
 
 .cat-panel:hover,
 .cat-panel:focus-visible {
-  flex: 2.15 1 0;
+  flex: 3.6 1 0;
 }
 
 .cat-panel-img {
@@ -329,15 +334,15 @@
   height: 100%;
   width: 100%;
   object-fit: cover;
-  object-position: center 42%;
-  transform: scale(1.22);
+  /* кадр наведён на правую перчатку пары, иначе в узкую полосу попадает зазор между ними */
+  object-position: 62% 46%;
   filter: contrast(1.32) saturate(1.22) brightness(0.82);
   transition: transform 3s ease;
 }
 
 .cat-panel:hover .cat-panel-img,
 .cat-panel:focus-visible .cat-panel-img {
-  transform: scale(1.32);
+  transform: scale(1.06);
 }
 
 .cat-panel-shade {
@@ -354,10 +359,11 @@
   right: 0;
   bottom: 0;
   left: 0;
-  padding: 2.2rem 0.7rem 0.9rem;
+  padding: 2.2rem 0.55rem 0.9rem;
   text-align: right;
   font-family: var(--font-heading), var(--font-sans), sans-serif;
-  font-size: clamp(0.92rem, 1.05vw, 1.35rem);
+  /* кегль от ширины панели, а не окна: при раскрытии соседей «Механика» и «Рукавицы» иначе обрезаются */
+  font-size: clamp(0.72rem, 11cqw, 1.3rem);
   font-weight: 600;
   line-height: 1;
   color: #fff;
@@ -435,12 +441,152 @@
   }
 }
 
+.about-outline {
+  color: transparent;
+  -webkit-text-stroke: 2px rgb(4 0 64 / 0.14);
+  font-family: var(--font-heading), var(--font-sans), sans-serif;
+  line-height: 0.82;
+  letter-spacing: -0.05em;
+}
+
+.about-outline-light {
+  -webkit-text-stroke: 1.5px rgb(255 255 255 / 0.14);
+}
+
+.logo-metal {
+  position: relative;
+  display: inline-block;
+  isolation: isolate;
+  line-height: 0;
+  filter: drop-shadow(0 12px 28px rgb(249 115 22 / 0.18));
+}
+
+.logo-metal[data-tone="navy"] {
+  filter: none;
+}
+
+.logo-metal-base {
+  display: block;
+  height: 100%;
+  width: auto;
+}
+
+.logo-metal[data-tone="chrome"] .logo-metal-base {
+  opacity: 0;
+}
+
+.logo-metal[data-tone="chrome"]:not([data-ready]) .logo-metal-base {
+  opacity: 1;
+  filter: brightness(0) invert(1);
+}
+
+.logo-metal[data-tone="chrome"] .logo-metal-foil {
+  background:
+    linear-gradient(
+      122deg,
+      #2a3140 0%,
+      #7b8798 12%,
+      #e8eef6 22%,
+      #ffffff 30%,
+      #a8b4c4 40%,
+      #f97316 48%,
+      #ffe7cc 52%,
+      #c5d0dc 60%,
+      #6d7788 74%,
+      #f3f6fa 86%,
+      #3a4252 100%
+    );
+  background-size: 280% 160%;
+  mix-blend-mode: normal;
+  animation: logo-metal-flow 5.8s ease-in-out infinite;
+}
+
+.logo-metal-foil,
+.logo-metal-sheen {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  mask-mode: alpha;
+}
+
+.logo-metal[data-tone="navy"] .logo-metal-foil {
+  background:
+    linear-gradient(
+      118deg,
+      transparent 18%,
+      rgb(180 196 214 / 0.15) 36%,
+      rgb(255 255 255 / 0.45) 48%,
+      rgb(249 115 22 / 0.28) 52%,
+      rgb(196 210 224 / 0.2) 64%,
+      transparent 82%
+    );
+  background-size: 240% 100%;
+  mix-blend-mode: color-dodge;
+  animation: logo-metal-flow 5.4s ease-in-out infinite;
+}
+
+.logo-metal-sheen {
+  background: linear-gradient(
+    105deg,
+    transparent 28%,
+    rgb(255 255 255 / 0.08) 40%,
+    rgb(255 255 255 / 0.78) 50%,
+    rgb(249 115 22 / 0.42) 55%,
+    rgb(255 255 255 / 0.12) 64%,
+    transparent 76%
+  );
+  background-size: 220% 100%;
+  mix-blend-mode: overlay;
+  animation: logo-metal-sheen 4.6s ease-in-out infinite;
+}
+
+@keyframes logo-metal-flow {
+  0%,
+  12% {
+    background-position: 8% 42%;
+  }
+  50% {
+    background-position: 92% 58%;
+  }
+  88%,
+  100% {
+    background-position: 8% 42%;
+  }
+}
+
+@keyframes logo-metal-sheen {
+  0%,
+  18% {
+    background-position: 130% 50%;
+  }
+  72%,
+  100% {
+    background-position: -28% 50%;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
   }
-  .home-marquee {
+  .home-marquee,
+  .passage-stamp-marquee,
+  .logo-metal-foil,
+  .logo-metal-sheen {
     animation: none;
+  }
+  .logo-metal[data-tone="chrome"] .logo-metal-foil {
+    background-position: 42% 50%;
+  }
+  .logo-metal-sheen {
+    opacity: 0.35;
+    background-position: 50% 50%;
   }
   .home-shine::after {
     display: none;
@@ -471,7 +617,7 @@
   }
   .cat-panel:hover .cat-panel-img,
   .cat-panel:focus-visible .cat-panel-img {
-    transform: scale(1.22);
+    transform: none;
   }
 }
 
