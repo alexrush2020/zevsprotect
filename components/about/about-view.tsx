@@ -5,6 +5,7 @@ import { ArrowRight } from "lucide-react";
 import { motion, useScroll, useSpring } from "motion/react";
 import { WorkshopReel } from "@/components/about/workshop-reel";
 import { MetallicLogo } from "@/components/about/metallic-logo";
+import { GeoBoard } from "@/components/about/geo-board";
 import { InquiryDialog } from "@/components/inquiry-dialog";
 import { Button } from "@/components/ui/button";
 import { CategoryStrip } from "@/components/home/category-strip";
@@ -186,7 +187,7 @@ export function AboutView() {
         </div>
       </section>
 
-      <section className="bg-navy py-20 text-paper sm:py-24">
+      <section className="bg-navy pt-20 text-paper sm:pt-24">
         <div className="mx-auto max-w-6xl px-4">
           <div className="flex flex-wrap items-end justify-between gap-6">
             <div>
@@ -212,30 +213,27 @@ export function AboutView() {
         </div>
       </section>
 
-      <section className="relative overflow-hidden bg-paper">
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-20 sm:py-28 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-          <div>
+      <section className="bg-navy text-paper">
+        <div className="mx-auto grid max-w-6xl items-stretch gap-8 px-4 py-8 sm:py-10 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)] lg:gap-10 lg:py-0">
+          <div className="flex flex-col justify-center py-6 lg:py-8">
             <p className="text-xs uppercase tracking-[0.22em] text-orange">География</p>
-            <p className="font-heading text-[clamp(6rem,22vw,14rem)] leading-[0.75] text-navy">
-              <CountUp to={85} />
+            <p className="font-heading text-[clamp(4.5rem,16vw,9rem)] leading-[0.75] tabular-nums text-paper">
+              <CountUp to={85} duration={1} ease="linear" />
             </p>
-            <p className="mt-4 max-w-sm text-lg text-steel">
+            <p className="mt-4 max-w-sm text-paper/65">
               регионов отгрузки. Плюс Беларусь и Казахстан. Сроки — ориентир по
               мокам ТК, не оферта перевозчика.
             </p>
-            <Button nativeButton={false} render={<Link href="/delivery" />} variant="outline" className="mt-6">
+            <Button
+              nativeButton={false}
+              render={<Link href="/delivery" />}
+              variant="outline"
+              className="mt-6 self-start border-white/20 bg-transparent text-white hover:bg-white/10"
+            >
               Сравнить ТК
             </Button>
           </div>
-          <ol className="relative border-l-2 border-orange pl-6">
-            {geo.map(([t, d]) => (
-              <li key={t} className="relative py-3.5">
-                <span className="absolute top-5 -left-[1.6rem] size-3 rounded-full bg-orange" />
-                <p className="font-heading text-xl text-ink">{t}</p>
-                <p className="mt-0.5 text-sm text-steel">{d}</p>
-              </li>
-            ))}
-          </ol>
+          <GeoBoard rows={geo} />
         </div>
       </section>
 

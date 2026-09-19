@@ -453,6 +453,21 @@
   -webkit-text-stroke: 1.5px rgb(255 255 255 / 0.14);
 }
 
+.geo-flap-line {
+  position: relative;
+  line-height: 1.15;
+}
+
+.geo-flap-line::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset-inline: 0;
+  top: 48%;
+  height: 1px;
+  background: rgb(0 0 0 / 0.55);
+}
+
 .logo-metal {
   position: relative;
   display: inline-block;

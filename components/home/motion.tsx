@@ -100,35 +100,38 @@ export function CountUp({
   suffix = "",
   prefix = "",
   duration = 1.6,
+  ease = "out",
   className,
 }: {
   to: number;
   suffix?: string;
   prefix?: string;
   duration?: number;
+  ease?: "out" | "linear";
   className?: string;
 }) {
   const reduce = useReducedMotion();
   const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, amount: 0.6 });
+  const inView = useInView(ref, { once: true, amount: 0.35 });
   const [value, setValue] = useState(reduce ? to : 0);
 
   useEffect(() => {
-    if (!inView || reduce) {
+    if (reduce) {
       setValue(to);
       return;
     }
+    if (!inView) return;
     let frame = 0;
     const start = performance.now();
     const tick = (now: number) => {
       const t = Math.min(1, (now - start) / (duration * 1000));
-      const eased = 1 - (1 - t) ** 3;
+      const eased = ease === "linear" ? t : 1 - (1 - t) ** 3;
       setValue(Math.round(to * eased));
       if (t < 1) frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [inView, reduce, to, duration]);
+  }, [inView, reduce, to, duration, ease]);
 
   return (
     <span ref={ref} className={className}>
