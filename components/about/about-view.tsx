@@ -135,14 +135,14 @@ export function AboutView() {
         </div>
       </section>
 
-      <section className="grid lg:grid-cols-2 lg:min-h-[78vh]">
+      <section className="grid lg:grid-cols-2 lg:h-[min(38rem,calc(100svh-6.25rem))]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/about/pile-glove.png"
           alt="Рабочая перчатка зевспротект на кувалде при забивке сваи"
-          className="h-72 w-full object-cover object-[center_28%] lg:h-full"
+          className="h-72 w-full object-cover object-[center_28%] lg:h-full lg:min-h-0"
         />
-        <div className="flex flex-col justify-center bg-paper px-4 py-16 sm:px-10 lg:px-16">
+        <div className="flex flex-col justify-center bg-paper px-4 py-12 sm:px-10 lg:px-16 lg:py-10">
           {whyLead.map(([title, text]) => (
             <article key={title} className="border-t border-navy/10 py-8 first:border-t-0 first:pt-0 last:pb-0">
               <h2 className="font-heading text-3xl leading-tight text-ink sm:text-4xl">{title}</h2>
@@ -173,12 +173,12 @@ export function AboutView() {
 
       <section className="bg-background py-20 sm:py-28">
         <div className="mx-auto max-w-6xl px-4">
-          <Reveal>
+          <Reveal className="text-center">
             <p className="text-xs uppercase tracking-[0.22em] text-orange">Контроль</p>
-            <h2 className="mt-2 max-w-xl font-heading text-4xl sm:text-6xl">
+            <h2 className="mx-auto mt-2 max-w-xl font-heading text-4xl sm:text-6xl">
               Партия не уходит с браком
             </h2>
-            <p className="mt-4 max-w-2xl text-lg text-steel">
+            <p className="mx-auto mt-4 max-w-2xl text-lg text-steel">
               Следим за качеством на всех этапах. Если модель не проходит —
               останавливаем выпуск и решаем замену, не прячем брак в следующую фуру.
             </p>
@@ -187,7 +187,7 @@ export function AboutView() {
         </div>
       </section>
 
-      <section className="bg-navy pt-20 text-paper sm:pt-24">
+      <section className="bg-navy py-20 text-paper sm:py-24">
         <div className="mx-auto max-w-6xl px-4">
           <div className="flex flex-wrap items-end justify-between gap-6">
             <div>
@@ -213,14 +213,14 @@ export function AboutView() {
         </div>
       </section>
 
-      <section className="bg-navy text-paper">
+      <section className="bg-paper">
         <div className="mx-auto grid max-w-6xl items-stretch gap-8 px-4 py-8 sm:py-10 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)] lg:gap-10 lg:py-0">
           <div className="flex flex-col justify-center py-6 lg:py-8">
             <p className="text-xs uppercase tracking-[0.22em] text-orange">География</p>
-            <p className="font-heading text-[clamp(4.5rem,16vw,9rem)] leading-[0.75] tabular-nums text-paper">
+            <p className="font-heading text-[clamp(4.5rem,16vw,9rem)] leading-[0.75] tabular-nums text-navy">
               <CountUp to={85} duration={1} ease="linear" />
             </p>
-            <p className="mt-4 max-w-sm text-paper/65">
+            <p className="mt-4 max-w-sm text-steel">
               регионов отгрузки. Плюс Беларусь и Казахстан. Сроки — ориентир по
               мокам ТК, не оферта перевозчика.
             </p>
@@ -228,7 +228,7 @@ export function AboutView() {
               nativeButton={false}
               render={<Link href="/delivery" />}
               variant="outline"
-              className="mt-6 self-start border-white/20 bg-transparent text-white hover:bg-white/10"
+              className="mt-6 self-start"
             >
               Сравнить ТК
             </Button>
