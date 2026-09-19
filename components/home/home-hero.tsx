@@ -19,15 +19,14 @@ const industries = [
 ];
 
 const stats: {
-  kind: "year" | "count" | "plus";
   to: number;
   suffix?: string;
   label: string;
 }[] = [
-  { kind: "year", to: 2005, label: "год запуска завода" },
-  { kind: "count", to: 60000, label: "пар в сутки" },
-  { kind: "count", to: 7, label: "видов защиты" },
-  { kind: "plus", to: 80, suffix: "+", label: "позиций в каталоге" },
+  { to: 85, label: "регионов отгрузки · 3 страны" },
+  { to: 60000, label: "пар в сутки" },
+  { to: 7, label: "видов защиты" },
+  { to: 80, suffix: "+", label: "позиций в каталоге" },
 ];
 
 const motes = Array.from({ length: 39 }, (_, i) => {
@@ -93,7 +92,7 @@ export function HomeHero() {
             transition={{ duration: 1.15, delay: 0.2, ease: easeOutExpo }}
           >
             <motion.img
-              src="/hero/atlant.png"
+              src="/hero/fenix.png"
               alt=""
               className="relative z-[1] w-full"
               animate={
@@ -107,12 +106,6 @@ export function HomeHero() {
                 ease: "easeInOut",
               }}
             />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/hero/atlant.png"
-              alt=""
-              className="hero-reflect"
-            />
           </motion.div>
         </div>
         </div>
@@ -122,12 +115,12 @@ export function HomeHero() {
         <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center px-4 py-10 lg:w-full lg:max-w-6xl">
           <div className="lg:max-w-[54%]">
           <motion.p
-            className="text-[11px] tracking-[0.32em] text-orange uppercase"
+            className="text-center text-[11px] tracking-[0.32em] text-orange uppercase"
             initial={reduce ? false : { opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: easeOutExpo }}
           >
-            Собственное производство · Таганрог · с 2005
+            Собственное производство
           </motion.p>
           <motion.p
             className="mt-3 text-sm tracking-[0.18em] text-white/55 uppercase"
@@ -160,9 +153,8 @@ export function HomeHero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.48, ease: easeOutExpo }}
           >
-            Не витрина перекупа — свой цикл в Таганроге: вязка, облив,
-            комплектация и отгрузка. До 60 000 пар в сутки для предприятий,
-            дистрибьюторов и сетей.
+            Свой цикл в Таганроге: вязка, облив, комплектация и отгрузка.
+            До 60 000 пар в сутки для предприятий, дистрибьюторов и сетей.
           </motion.p>
           <motion.div
             className="mt-8 flex flex-wrap gap-3"
@@ -216,15 +208,7 @@ export function HomeHero() {
               }}
             >
               <p className="font-heading text-2xl text-white sm:text-3xl">
-                {s.kind === "year" ? (
-                  s.to
-                ) : s.kind === "plus" ? (
-                  <CountUp to={s.to} suffix="+" />
-                ) : s.to >= 1000 ? (
-                  <CountUp to={s.to} />
-                ) : (
-                  <CountUp to={s.to} />
-                )}
+                <CountUp to={s.to} suffix={s.suffix} />
               </p>
               <p className="mt-1 text-[11px] tracking-wide text-white/50">
                 {s.label}

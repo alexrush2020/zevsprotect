@@ -87,3 +87,17 @@ export type Order = {
   carrierName?: string;
   deliveryCost?: number;
 };
+
+export type PassagePlate = {
+  company: string;
+  city?: string;
+  line: string;
+  since: number;
+  text: string;
+  fact: string;
+};
+
+export type PassageStamp = {
+  label: string;
+  redacted: boolean;
+};

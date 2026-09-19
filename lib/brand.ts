@@ -15,7 +15,7 @@ export const brand = {
   phoneHref: "tel:+78634430985",
   whatsapp: "+7 988 585-13-93",
   whatsappHref: "https://wa.me/79885851393",
-  telegramHref: "https://t.me/zevsprotect",
+  maxHref: "https://max.ru/id6154170275_biz",
   email: "sales@zevsprotect.ru",
   domain: "zevsprotect.ru",
   bank: "ФИЛИАЛ «РОСТОВСКИЙ» АО «АЛЬФА-БАНК»",

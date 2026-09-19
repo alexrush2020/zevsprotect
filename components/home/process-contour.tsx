@@ -72,15 +72,16 @@ function makeWelderSparks(count: number, seed: number) {
   });
 }
 
-export function ProcessContour() {
+export function ProcessContour({ className }: { className?: string }) {
   const reduce = useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, amount: 0.42 });
+  const inView = useInView(ref, { once: false, amount: 0.42 });
   const [wide, setWide] = useState<boolean | null>(null);
   const [lit, setLit] = useState(0);
   const [fuse, setFuse] = useState(-1);
   const [spark, setSpark] = useState(-1);
-  const started = useRef(false);
+  const [playKey, setPlayKey] = useState(0);
+  const runId = useRef(0);
 
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 768px)");
@@ -91,15 +92,27 @@ export function ProcessContour() {
   }, []);
 
   useEffect(() => {
-    if (!inView || wide === null || started.current) return;
-    started.current = true;
+    if (wide === null) return;
+
+    if (!inView) {
+      runId.current += 1;
+      setLit(0);
+      setFuse(-1);
+      setSpark(-1);
+      return;
+    }
+
+    const id = ++runId.current;
+    setPlayKey(id);
     if (reduce) {
       setLit(4);
       return;
     }
+
     setSpark(0);
     setLit(1);
     const t = window.setTimeout(() => {
+      if (runId.current !== id) return;
       setSpark(-1);
       setFuse(0);
     }, SPARK_PAUSE + 80);
@@ -107,32 +120,34 @@ export function ProcessContour() {
   }, [inView, wide, reduce]);
 
   function onFuseDone(index: number) {
+    const id = runId.current;
     const nextNode = index + 1;
     setFuse(-1);
     setSpark(nextNode);
     setLit(nextNode + 1);
     window.setTimeout(() => {
+      if (runId.current !== id) return;
       setSpark(-1);
       if (index < steps.length - 2) setFuse(index + 1);
     }, SPARK_PAUSE);
   }
 
   return (
-    <div ref={ref} className="mt-16">
-      <p className="text-xs uppercase tracking-[0.22em] text-orange">
+    <div ref={ref} className={cn("mt-16", className)}>
+      <p className="text-center text-xs uppercase tracking-[0.22em] text-orange">
         Производственный контур
       </p>
-      <ol className="mt-8 grid gap-10 md:grid-cols-4 md:gap-6">
+      <ol key={playKey} className="mt-8 grid gap-10 md:grid-cols-4 md:gap-6">
         {steps.map(([title, text], i) => (
           <li key={title} className="relative">
-            <div className="relative flex items-center">
+            <div className="relative flex items-center md:justify-center">
               <ProcessNode index={i} lit={lit > i} sparking={spark === i} />
             </div>
             {i < steps.length - 1 && wide !== null ? (
               <Fuse
                 className={
                   wide
-                    ? "absolute left-12 top-[23px] h-[2px] w-[calc(100%-1.5rem)]"
+                    ? "absolute left-[calc(50%+1.5rem)] top-[23px] h-[2px] w-[calc(100%-1.5rem)]"
                     : "absolute left-[23px] top-12 h-10 w-px"
                 }
                 vertical={!wide}
@@ -141,8 +156,8 @@ export function ProcessContour() {
                 onDone={() => onFuseDone(i)}
               />
             ) : null}
-            <h3 className="mt-4 font-heading text-lg">{title}</h3>
-            <p className="mt-2 text-sm text-steel">{text}</p>
+            <h3 className="mt-4 font-heading text-lg md:text-center">{title}</h3>
+            <p className="mt-2 text-sm text-steel md:text-center">{text}</p>
           </li>
         ))}
       </ol>
@@ -263,7 +278,7 @@ function Fuse({
           className="absolute left-0 top-0 h-full w-full origin-top bg-gradient-to-b from-[#8A6A18] via-[#E4C56A] to-[#FFF1B8]"
           initial={{ scaleY: reduce || finished ? 1 : 0 }}
           animate={{ scaleY: play || finished || reduce ? 1 : 0 }}
-          transition={{ duration: reduce ? 0 : FUSE_S, ease: "linear" }}
+          transition={{ duration: reduce || !play ? 0 : FUSE_S, ease: "linear" }}
           onAnimationComplete={complete}
         />
       </div>
@@ -277,7 +292,7 @@ function Fuse({
         className="absolute inset-y-0 left-0 w-full origin-left bg-gradient-to-r from-[#8A6A18] via-[#E4C56A] to-[#FFF1B8]"
         initial={{ scaleX: reduce || finished ? 1 : 0 }}
         animate={{ scaleX: play || finished || reduce ? 1 : 0 }}
-        transition={{ duration: reduce ? 0 : FUSE_S, ease: "linear" }}
+        transition={{ duration: reduce || !play ? 0 : FUSE_S, ease: "linear" }}
         onAnimationComplete={complete}
       />
     </div>

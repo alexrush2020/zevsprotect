@@ -1,4 +1,4 @@
-import type { Article, CategorySlug, Product } from "@/lib/types";
+import type { Article, CategorySlug, PassagePlate, PassageStamp, Product } from "@/lib/types";
 import {
   PURCHASE_GUIDE_SLUG,
   purchaseGuideSlides,
@@ -202,8 +202,8 @@ export const products: Product[] = [
     knitClass: "10",
     description:
       "Базовая рабочая модель хлопок/полиэстер, класс вязки 10. Для комплектации складов и подрядчиков, где нужен стабильный объём.",
-    image: img("2025/12/1.png"),
-    images: [img("2025/12/1.png")],
+    image: img("2026/09/gemini_generated_image_w8pa75w8pa75w8pa.jpeg"),
+    images: [img("2026/09/gemini_generated_image_w8pa75w8pa75w8pa.jpeg")],
     featured: true,
   },
   {
@@ -226,8 +226,8 @@ export const products: Product[] = [
     knitClass: "10",
     description:
       "Универсальные ХБ-перчатки с ПВХ-рисунком. Цвета: белый, серый, чёрный — под разные участки и маркировку заказчика.",
-    image: img("2025/12/2.png"),
-    images: [img("2025/12/2.png")],
+    image: img("2026/07/gemini_generated_image_baldsfbaldsfbald.png"),
+    images: [img("2026/07/gemini_generated_image_baldsfbaldsfbald.png")],
     featured: true,
   },
   {
@@ -798,19 +798,36 @@ export const articles: Article[] = [
   },
 ];
 
-export const reviews = [
+export const reviews: PassagePlate[] = [
   {
     company: "ООО «Анод»",
+    line: "стабильность партий",
+    since: 2019,
     text: "Стабильность поставок и качество партий. Менеджеры решают расхождения по артикулам в тот же день, без «перезвоним».",
+    fact: "расхождения — в тот же день",
   },
   {
     company: "ГК «Ланмар»",
+    line: "ХБ · спилок · нитрил · КЩС",
+    since: 2021,
     text: "Берём ХБ, спилок, нитрил и КЩС. Можно нанести логотип, цена держится при регулярном объёме.",
+    fact: "логотип · цена держится",
   },
   {
-    company: "ООО «Арсеналтрейдинг», Краснодар",
+    company: "ООО «Арсеналтрейдинг»",
+    city: "Краснодар",
+    line: "отгрузка вовремя",
+    since: 2020,
     text: "Ассортимент широкий, отгрузка вовремя. Важно, что по срочным заказам сразу говорят, реально это или нет.",
+    fact: "по срочным говорят сразу",
   },
+];
+
+export const passageStamps: PassageStamp[] = [
+  { label: "Севстальснаб", redacted: false },
+  { label: "Югметалл", redacted: false },
+  { label: "Донтехмонтаж", redacted: false },
+  { label: "Прибой", redacted: false },
 ];
 
 export function getProduct(slug: string) {

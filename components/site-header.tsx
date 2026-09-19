@@ -53,7 +53,6 @@ export function SiteHeader() {
             <Link href="/track" className="hover:text-white">
               Трекинг
             </Link>
-            <Messengers />
             <a href={brand.phoneHref} className="hover:text-white">
               {brand.phone}
             </a>
@@ -114,7 +113,7 @@ export function SiteHeader() {
                   {c.short}
                 </Link>
               ))}
-              <Messengers tone="dark" className="mt-4" />
+              <Messengers className="mt-4" />
             </div>
           </SheetContent>
         </Sheet>
@@ -184,6 +183,8 @@ export function SiteHeader() {
             />
           </div>
         </form>
+
+        <Messengers className="shrink-0" />
 
         <InquiryDialog
           type="calc"

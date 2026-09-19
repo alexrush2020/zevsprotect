@@ -15,10 +15,6 @@ import { CountUp, Reveal } from "@/components/home/motion";
 import { brand } from "@/lib/brand";
 import { DEFAULT_DOCS, reviews } from "@/lib/data/catalog";
 
-const photos = [
-  "https://zevsprotect.ru/wp-content/uploads/2026/05/glovefactory-18-08-20210133.jpg",
-];
-
 const marquee = [
   "ПРОМЫШЛЕННОСТЬ",
   "ЛОГИСТИКА",
@@ -240,7 +236,7 @@ export function AboutView() {
       <section className="relative overflow-hidden bg-ink py-20 text-paper sm:py-28">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={photos[0]}
+          src="/about/packing-glove.png"
           alt=""
           className="absolute inset-0 h-full w-full object-cover opacity-20"
         />

@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { InquiryDialog } from "@/components/inquiry-dialog";
 import { ProductCard } from "@/components/product-card";
-import { articles, categories, products, reviews } from "@/lib/data/catalog";
+import { articles, categories, products } from "@/lib/data/catalog";
 import { formatDate } from "@/lib/format";
 import { brand } from "@/lib/brand";
 import { HomeHero } from "@/components/home/home-hero";
@@ -19,6 +19,7 @@ import { CategoryStrip } from "@/components/home/category-strip";
 import { Reveal, Stagger, StaggerItem } from "@/components/home/motion";
 import { ProcessContour } from "@/components/home/process-contour";
 import { BackToTopGlove } from "@/components/home/back-to-top-glove";
+import { PassageBoard } from "@/components/home/passage-board";
 
 const advantages = [
   {
@@ -71,9 +72,13 @@ export function HomeView() {
       <BackToTopGlove />
 
       <div className="relative overflow-hidden border-y border-white/10 bg-[linear-gradient(90deg,#040040_0%,#040040_28%,#f97316_72%,#f97316_100%)] py-3 text-paper">
-        <div className="home-marquee flex w-max gap-10 whitespace-nowrap">
-          {[0, 1].map((copy) => (
-            <p key={copy} className="flex gap-10 text-[11px] uppercase tracking-[0.32em] text-white">
+        <div className="home-marquee flex w-max whitespace-nowrap">
+          {[0, 1, 2, 3].map((copy) => (
+            <p
+              key={copy}
+              aria-hidden={copy > 0}
+              className="flex shrink-0 gap-10 pr-10 text-[11px] uppercase tracking-[0.32em] text-white"
+            >
               {marquee.map((item) => (
                 <span key={`${copy}-${item}`} className="flex items-center gap-10">
                   {item}
@@ -250,24 +255,7 @@ export function HomeView() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-20">
-        <Reveal>
-          <h2 className="font-heading text-3xl sm:text-4xl">Отзывы закупщиков</h2>
-        </Reveal>
-        <Stagger className="mt-8 grid gap-4 md:grid-cols-3">
-          {reviews.map((r, i) => (
-            <StaggerItem key={r.company}>
-              <blockquote className="h-full rounded-2xl border bg-card p-5 transition duration-500 hover:-translate-y-1 hover:border-orange/40 hover:shadow-[0_20px_44px_rgb(249_115_22_/_0.38)]">
-                <p className="text-sm text-steel">«{r.text}»</p>
-                <footer className="mt-4 text-sm font-medium">{r.company}</footer>
-                <span className="mt-3 block font-heading text-4xl leading-none text-navy/15">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-              </blockquote>
-            </StaggerItem>
-          ))}
-        </Stagger>
-      </section>
+      <PassageBoard />
 
       <section className="mx-auto max-w-6xl px-4 pb-20">
         <Reveal>
