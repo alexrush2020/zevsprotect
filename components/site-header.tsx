@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Menu, Search, ShoppingBag, User } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { CatalogMenu } from "@/components/catalog-menu";
@@ -38,9 +38,26 @@ const extra = [
 export function SiteHeader() {
   const { cartCount, cartTotal, user } = useStore();
   const [q, setQ] = useState("");
+  const headerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const root = document.documentElement;
+    const apply = () => {
+      root.style.setProperty("--site-header-h", `${el.getBoundingClientRect().height}px`);
+    };
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      root.style.removeProperty("--site-header-h");
+    };
+  }, []);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/10 bg-ink text-paper">
+    <header ref={headerRef} className="sticky top-0 z-40 border-b border-white/10 bg-ink text-paper">
       <div className="border-b border-white/10 bg-ink-2">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-1.5 text-[11px] uppercase tracking-[0.16em] text-paper/60">
           <p>

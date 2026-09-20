@@ -48,7 +48,7 @@ export function HomeHero() {
   const reduce = useReducedMotion();
 
   return (
-    <section className="hero-stage relative min-h-[calc(100svh-6.25rem)] overflow-hidden text-paper">
+    <section className="hero-stage relative h-[calc(100svh-var(--site-header-h,5.65625rem))] overflow-hidden text-paper">
       <div className="pointer-events-none absolute inset-0" aria-hidden>
         <div className="hero-beam" />
         <div className="hero-grid" />
@@ -111,7 +111,7 @@ export function HomeHero() {
         </div>
       </div>
 
-      <div className="relative z-[2] flex min-h-[calc(100svh-6.25rem)] flex-col">
+      <div className="relative z-[2] flex h-full min-h-0 flex-col">
         <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center px-4 py-10 lg:w-full lg:max-w-6xl">
           <div className="lg:max-w-[54%]">
           <motion.p

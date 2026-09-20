@@ -98,6 +98,7 @@
   --sidebar-accent-foreground: #111318;
   --sidebar-border: #e2e5ea;
   --sidebar-ring: #f97316;
+  --site-header-h: 5.65625rem;
 }
 
 @layer base {
