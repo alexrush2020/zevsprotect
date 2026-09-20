@@ -19,24 +19,25 @@ export default function AccountProfilePage() {
   const isLegal = user?.kind !== "person";
 
   if (!user) return null;
+  const profile = user;
 
   function save(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
-    const nextAddresses = addressesOf(user);
+    const nextAddresses = addressesOf(profile);
     const def = nextAddresses.find((a) => a.isDefault) ?? nextAddresses[0];
     updateProfile({
-      ...user,
+      ...profile,
       email: String(data.get("email") || ""),
       name: String(data.get("name") || ""),
       phone: String(data.get("phone") || ""),
       company: String(data.get("company") || ""),
       inn: String(data.get("inn") || ""),
       kpp: String(data.get("kpp") || ""),
-      bankName: String(data.get("bankName") || user.bankName || ""),
-      bankAccount: String(data.get("bankAccount") || user.bankAccount || ""),
-      bik: String(data.get("bik") || user.bik || ""),
-      address: def ? formatAddressLine(def) : String(data.get("address") || user.address),
+      bankName: String(data.get("bankName") || profile.bankName || ""),
+      bankAccount: String(data.get("bankAccount") || profile.bankAccount || ""),
+      bik: String(data.get("bik") || profile.bik || ""),
+      address: def ? formatAddressLine(def) : String(data.get("address") || profile.address),
       addresses: nextAddresses,
     });
     toast.success("Профиль обновлён");
@@ -45,7 +46,7 @@ export default function AccountProfilePage() {
   function writeAddresses(next: DeliveryAddress[]) {
     const def = next.find((a) => a.isDefault) ?? next[0];
     updateProfile({
-      ...user,
+      ...profile,
       addresses: next,
       address: def ? formatAddressLine(def) : "",
     });
@@ -62,7 +63,7 @@ export default function AccountProfilePage() {
       label: draft.label.trim() || "Адрес",
       city: draft.city.trim(),
       line: draft.line.trim(),
-      phone: formatRuPhone(draft.phone) || user.phone,
+      phone: formatRuPhone(draft.phone) || profile.phone,
       isDefault: addresses.length === 0,
     };
     writeAddresses([...addresses, next]);
