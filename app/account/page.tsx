@@ -1,162 +1,165 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { StatusTimeline } from "@/components/status-timeline";
+import { AccountOrderCard, ordersForUser } from "@/components/account/account-order-card";
 import { useStore } from "@/lib/store";
 import { getProductById } from "@/lib/data/catalog";
-import { formatDate, formatPrice, PAYMENT_LABEL, STATUS_LABEL } from "@/lib/format";
-import { cartLineKey, cartLineOfferLabel } from "@/lib/lots";
+import { formatDate, formatPrice, STATUS_LABEL } from "@/lib/format";
+import { NOTICE_KIND_LABEL, readNotices, type AccountNotice } from "@/lib/account-notices";
 
-export default function AccountPage() {
-  const { user, logout, orders, updateProfile, addToCart, clearCart } = useStore();
-  const router = useRouter();
+export default function AccountHomePage() {
+  const { user, orders, favoriteIds } = useStore();
+  const [notices, setNotices] = useState<AccountNotice[]>([]);
 
-  if (!user) {
-    return (
-      <div className="mx-auto max-w-xl px-4 py-20 text-center">
-        <h1 className="font-heading text-3xl">Нужен вход</h1>
-        <p className="mt-2 text-steel">История заказов и повтор покупки — в кабинете.</p>
-        <Button nativeButton={false} render={<Link href="/login" />} className="mt-6">
-          Войти
-        </Button>
-      </div>
-    );
-  }
+  useEffect(() => {
+    setNotices(readNotices().slice(0, 3));
+  }, []);
 
-  function repeat(orderId: string) {
-    const order = orders.find((o) => o.id === orderId);
-    if (!order) return;
-    clearCart();
-    order.items.forEach((item) =>
-      addToCart(
-        item.productId,
-        item.size,
-        item.qty,
-        item.lotId
-          ? { lotId: item.lotId, packCount: item.packCount ?? 1 }
-          : undefined,
-      ),
-    );
-    toast.success("Состав заказа в корзине. Цены пересчитаны по текущему прайсу 1С.");
-    router.push("/cart");
-  }
+  if (!user) return null;
 
-  function save(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const data = new FormData(e.currentTarget);
-    updateProfile({
-      email: String(data.get("email") || ""),
-      name: String(data.get("name") || ""),
-      phone: String(data.get("phone") || ""),
-      company: String(data.get("company") || ""),
-      inn: String(data.get("inn") || ""),
-      kpp: String(data.get("kpp") || ""),
-      address: String(data.get("address") || ""),
-    });
-    toast.success("Профиль обновлён");
-  }
+  const mine = ordersForUser(orders, user.email);
+  const inFlight = mine.filter(
+    (o) => o.status !== "delivered" && o.status !== "cancelled",
+  );
+  const delivered = mine.filter((o) => o.status === "delivered");
+  const spent = mine.reduce((sum, o) => sum + o.total, 0);
+  const favs = favoriteIds
+    .map((id) => getProductById(id))
+    .filter((p): p is NonNullable<typeof p> => Boolean(p))
+    .slice(0, 3);
+
+  const stats = [
+    { label: "Заказов", value: String(mine.length) },
+    { label: "В работе", value: String(inFlight.length) },
+    { label: "Доставлено", value: String(delivered.length) },
+    { label: "На сумму", value: formatPrice(spent) },
+  ];
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-heading text-4xl">Личный кабинет</h1>
-          <p className="mt-2 text-steel">{user.company} · {user.email}</p>
-        </div>
-        <Button variant="outline" onClick={logout}>
-          Выйти
+    <div className="space-y-6">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {stats.map((s) => (
+          <div key={s.label} className="rounded-2xl border bg-card p-4">
+            <p className="text-xs uppercase tracking-[0.16em] text-steel">{s.label}</p>
+            <p className="mt-2 font-heading text-2xl text-ink">{s.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <Button nativeButton={false} render={<Link href="/catalog" />} variant="outline">
+          В каталог
+        </Button>
+        <Button nativeButton={false} render={<Link href="/price" />} variant="outline">
+          Прайс-лист
+        </Button>
+        <Button nativeButton={false} render={<Link href="/samples" />} variant="outline">
+          Заказать образцы
+        </Button>
+        <Button nativeButton={false} render={<Link href="/calculation" />}>
+          Рассчитать поставку
         </Button>
       </div>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_1.2fr]">
-        <form className="grid gap-3 rounded-2xl border bg-card p-5" onSubmit={save}>
-          <h2 className="font-heading text-xl">Данные</h2>
-          {[
-            ["name", "Контакт"],
-            ["company", "Организация"],
-            ["inn", "ИНН"],
-            ["kpp", "КПП"],
-            ["phone", "Телефон"],
-            ["email", "Email"],
-            ["address", "Адрес доставки"],
-          ].map(([id, label]) => (
-            <div key={id} className="grid gap-1.5">
-              <Label htmlFor={id}>{label}</Label>
-              <Input
-                id={id}
-                name={id}
-                defaultValue={user[id as keyof typeof user] ?? ""}
-              />
-            </div>
-          ))}
-          <Button type="submit">Сохранить</Button>
-        </form>
-
-        <div>
-          <h2 className="font-heading text-xl">Заказы</h2>
-          <p className="mt-1 text-sm text-steel">
-            Статусы в прототипе заданы вручную. По ТЗ источник статуса — Битрикс24.
-          </p>
-          <div className="mt-4 space-y-3">
-            {orders.filter((o) => !o.guest || o.profile.email === user.email).length === 0 ? (
-              <p className="text-steel">Заказов пока нет.</p>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section>
+          <div className="flex items-end justify-between gap-3">
+            <h2 className="font-heading text-xl">Последние заказы</h2>
+            <Link href="/account/orders" className="text-sm text-steel underline-offset-4 hover:text-ink hover:underline">
+              Все заказы
+            </Link>
+          </div>
+          <div className="mt-3 space-y-3">
+            {mine.length === 0 ? (
+              <p className="rounded-2xl border bg-card p-5 text-sm text-steel">
+                Заказов пока нет. Оформите поставку из каталога.
+              </p>
             ) : (
-              orders
-                .filter((o) => !o.guest || o.profile.email === user.email)
-                .map((order) => (
-                <div key={order.id} className="rounded-2xl border bg-card p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <Link href={`/order/${order.id}`} className="font-heading">
-                      {order.id}
-                    </Link>
-                    <span className="text-sm text-steel">{formatDate(order.createdAt)}</span>
-                  </div>
-                  <p className="mt-1 text-sm">
-                    {STATUS_LABEL[order.status]} · {PAYMENT_LABEL[order.paymentStatus]} ·{" "}
-                    {formatPrice(order.total)}
-                  </p>
-                  <p className="text-xs text-steel">
-                    {order.carrierName} · {order.city}
-                  </p>
-                  <div className="mt-3">
-                    <StatusTimeline status={order.status} />
-                  </div>
-                  <ul className="mt-2 text-sm text-steel">
-                    {order.items.map((item) => {
-                      const p = getProductById(item.productId);
-                      return (
-                        <li key={cartLineKey(item)}>
-                          {p?.name} {p ? cartLineOfferLabel(p, item) : `× ${item.qty}`}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => repeat(order.id)}
-                    >
-                      Повторить заказ
-                    </Button>
-                    <Button nativeButton={false} render={<Link href={`/invoice/${order.id}`} />} variant="outline" size="sm">
-                      Счёт
-                    </Button>
-                    {order.payment === "online" && order.paymentStatus !== "paid" ? (
-                      <Button nativeButton={false} render={<Link href={`/pay/${order.id}`} />} variant="outline" size="sm">
-                        Оплатить
-                      </Button>
-                    ) : null}
-                  </div>
-                </div>
+              mine.slice(0, 2).map((order) => (
+                <AccountOrderCard key={order.id} order={order} />
               ))
             )}
           </div>
+        </section>
+
+        <div className="space-y-6">
+          <section>
+            <div className="flex items-end justify-between gap-3">
+              <h2 className="font-heading text-xl">Уведомления</h2>
+              <Link
+                href="/account/notifications"
+                className="text-sm text-steel underline-offset-4 hover:text-ink hover:underline"
+              >
+                Все
+              </Link>
+            </div>
+            <div className="mt-3 space-y-3">
+              {notices.map((n) => (
+                <div key={n.id} className="rounded-2xl border bg-card p-4">
+                  <p className="text-xs uppercase tracking-[0.16em] text-steel">
+                    {NOTICE_KIND_LABEL[n.kind]} · {formatDate(n.date)}
+                    {n.read ? "" : " · новое"}
+                  </p>
+                  <p className="mt-1 font-medium text-ink">{n.title}</p>
+                  <p className="mt-1 text-sm text-steel">{n.text}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-2xl border bg-card p-5">
+            <h2 className="font-heading text-xl">Избранное</h2>
+            {favs.length === 0 ? (
+              <p className="mt-2 text-sm text-steel">
+                Пока пусто. В каталоге наведите на карточку и отметьте сердце.
+              </p>
+            ) : (
+              <ul className="mt-3 space-y-2 text-sm">
+                {favs.map((p) => (
+                  <li key={p.id}>
+                    <Link href={`/product/${p.slug}`} className="hover:text-orange">
+                      {p.name}
+                    </Link>
+                    <span className="text-steel"> · {p.sku}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <Button
+              nativeButton={false}
+              render={<Link href="/account/favorites" />}
+              variant="outline"
+              className="mt-4"
+            >
+              Открыть избранное
+            </Button>
+          </section>
+
+          <section className="rounded-2xl border bg-card p-5">
+            <h2 className="font-heading text-xl">Документы</h2>
+            <p className="mt-2 text-sm text-steel">
+              Счёт печатается из заказа в один клик. Декларация лежит в карточке модели.
+            </p>
+            <p className="mt-2 text-sm text-ink">
+              {inFlight[0]
+                ? `Сейчас в работе: ${inFlight[0].id} · ${STATUS_LABEL[inFlight[0].status]}`
+                : delivered[0]
+                  ? `Последняя поставка: ${delivered[0].id}`
+                  : "Когда появится заказ — здесь будет статус отгрузки."}
+            </p>
+            {mine[0] ? (
+              <Button
+                nativeButton={false}
+                render={<Link href={`/invoice/${mine[0].id}`} />}
+                variant="outline"
+                className="mt-4"
+              >
+                Счёт {mine[0].id}
+              </Button>
+            ) : null}
+          </section>
         </div>
       </div>
     </div>

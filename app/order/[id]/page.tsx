@@ -8,7 +8,7 @@ import { IntegrationLog } from "@/components/integration-log";
 import { useStore } from "@/lib/store";
 import { getProductById } from "@/lib/data/catalog";
 import { formatDate, formatPrice, PAYMENT_LABEL, STATUS_LABEL } from "@/lib/format";
-import { cartLineKey, cartLineOfferLabel, cartLineTotal } from "@/lib/lots";
+import { cartLineKey, cartLineOfferLabel, cartLineTotal, cartProductQty } from "@/lib/lots";
 import { splitVat } from "@/lib/vat";
 
 export default function OrderPage() {
@@ -61,7 +61,7 @@ export default function OrderPage() {
               <span>
                 {p.name} · {item.size} · {cartLineOfferLabel(p, item)}
               </span>
-              <span>{formatPrice(cartLineTotal(p, item))}</span>
+              <span>{formatPrice(cartLineTotal(p, item, cartProductQty(order.items, item.productId)))}</span>
             </div>
           );
         })}

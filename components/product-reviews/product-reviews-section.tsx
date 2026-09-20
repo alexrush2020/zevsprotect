@@ -21,6 +21,7 @@ export function ProductReviewsSection({ product }: { product: Product }) {
   const [reviews, setReviews] = useState(() => reviewsForProduct(product.slug));
   const [allOpen, setAllOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
+  const [anchorId, setAnchorId] = useState<string | null>(null);
   const stats = reviewStats(product.slug);
   const otherReviews = reviewsForOtherProducts(product.slug);
   const author = user?.company || user?.name || "Закупщик";
@@ -37,6 +38,34 @@ export function ProductReviewsSection({ product }: { product: Product }) {
     window.addEventListener(REVIEWS_UPDATED_EVENT, refresh);
     return () => window.removeEventListener(REVIEWS_UPDATED_EVENT, refresh);
   }, [product.slug]);
+
+  useEffect(() => {
+    function readHash() {
+      const hash = decodeURIComponent(window.location.hash.replace(/^#/, ""));
+      setAnchorId(hash && hash !== "reviews" ? hash : null);
+    }
+    readHash();
+    window.addEventListener("hashchange", readHash);
+    return () => window.removeEventListener("hashchange", readHash);
+  }, [product.slug]);
+
+  useEffect(() => {
+    if (!anchorId) return;
+    const match = reviews.find((review) => review.id === anchorId);
+    if (!match) return;
+    const inPreview = reviews.slice(0, 4).some((review) => review.id === anchorId);
+    if (!inPreview) {
+      setAllOpen(true);
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      document.getElementById(anchorId)?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 50);
+    return () => window.clearTimeout(timer);
+  }, [anchorId, reviews]);
 
   return (
     <>
@@ -55,7 +84,7 @@ export function ProductReviewsSection({ product }: { product: Product }) {
             </div>
             {leave}
           </div>
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
+          <div className="mt-6 grid auto-rows-fr items-stretch gap-4 md:grid-cols-2 xl:grid-cols-3">
             {otherReviews.map((review) => (
               <ReviewCard key={review.id} review={review} />
             ))}
@@ -100,6 +129,7 @@ export function ProductReviewsSection({ product }: { product: Product }) {
         productTitle={product.name}
         open={allOpen}
         onOpenChange={setAllOpen}
+        anchorReviewId={anchorId}
       />
     </>
   );

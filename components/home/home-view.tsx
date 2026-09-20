@@ -18,7 +18,6 @@ import { HomeHero } from "@/components/home/home-hero";
 import { CategoryStrip } from "@/components/home/category-strip";
 import { Reveal, Stagger, StaggerItem } from "@/components/home/motion";
 import { ProcessContour } from "@/components/home/process-contour";
-import { BackToTopGlove } from "@/components/home/back-to-top-glove";
 import { PassageBoard } from "@/components/home/passage-board";
 
 const advantages = [
@@ -56,7 +55,7 @@ const marquee = [
 ];
 
 export function HomeView() {
-  const featured = products.filter((p) => p.featured);
+  const featured = products.filter((p) => p.featured).slice(0, 8);
   const reduce = useReducedMotion();
   const { scrollYProgress } = useScroll();
   const progress = useSpring(scrollYProgress, { stiffness: 80, damping: 24, mass: 0.3 });
@@ -69,7 +68,6 @@ export function HomeView() {
         aria-hidden
       />
       <HomeHero />
-      <BackToTopGlove />
 
       <div className="relative overflow-hidden border-y border-white/10 bg-[linear-gradient(90deg,#040040_0%,#040040_28%,#f97316_72%,#f97316_100%)] py-3 text-paper">
         <div className="home-marquee flex w-max whitespace-nowrap">
@@ -185,7 +183,7 @@ export function HomeView() {
             из 1С.
           </p>
         </Reveal>
-        <Stagger className="mt-8 grid auto-rows-fr items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Stagger className="mt-8 grid auto-rows-fr items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {featured.map((p) => (
             <StaggerItem key={p.id} className="h-full min-w-0">
               <ProductCard product={p} />
@@ -266,7 +264,7 @@ export function HomeView() {
             </Link>
           </div>
         </Reveal>
-        <Stagger className="mt-8 grid auto-rows-fr items-stretch gap-4 md:grid-cols-3">
+        <Stagger className="mt-8 grid auto-rows-fr items-stretch gap-4 md:grid-cols-2 xl:grid-cols-3">
           {articles.filter((a) => a.home !== false).slice(0, 3).map((a) => (
             <StaggerItem key={a.slug} className="h-full min-w-0">
               <Link

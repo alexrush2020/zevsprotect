@@ -5,112 +5,63 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { AskManagerButton } from "@/components/manager-chat/AskManagerButton";
-import {
-  ProductLotsPicker,
-  emptyLotCounts,
-  lotPicksFromCounts,
-} from "@/components/product-lots-picker";
+import { ProductVariantChips } from "@/components/product-card-add-to-cart";
+import { ProductVolumePrice } from "@/components/product-volume-price";
+import { QtyStepper } from "@/components/qty-stepper";
 import { toManagerChatProduct } from "@/lib/manager-chat";
+import { productMinQty, snapOrderQty } from "@/lib/order-qty";
+import { productCoatingOptions } from "@/lib/product-options";
 import { useStore } from "@/lib/store";
-import { snapPackQty } from "@/lib/qty";
-import { hasLots } from "@/lib/lots";
+import { defaultVolumeQty, formatVolumeQty } from "@/lib/volume-quote";
 import type { Product } from "@/lib/types";
 
 export function ProductBuy({ product }: { product: Product }) {
   const { addToCart } = useStore();
   const router = useRouter();
+  const coatings = productCoatingOptions(product);
   const [size, setSize] = useState(product.sizes[0]);
-  const [qty, setQty] = useState(product.packQty);
-  const [lotCounts, setLotCounts] = useState(() => emptyLotCounts(product));
+  const [coating, setCoating] = useState(coatings[0] ?? product.coating);
+  const [qty, setQty] = useState(() => defaultVolumeQty(product));
   const inStock = product.stock > 0;
-  const lotsMode = hasLots(product);
-
-  function setLotCount(lotId: string, count: number) {
-    const value = Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0;
-    setLotCounts((prev) => ({ ...prev, [lotId]: value }));
-  }
+  const min = productMinQty(product);
 
   function add() {
     if (!inStock) return false;
-    if (lotsMode) {
-      const picks = lotPicksFromCounts(product, lotCounts);
-      if (!picks.length) {
-        toast.error("Укажите число упаковок хотя бы у одной партии");
-        return false;
-      }
-      for (const { lot, packCount } of picks) {
-        addToCart(product.id, size, lot.pairs * packCount, {
-          lotId: lot.id,
-          packCount,
-        });
-      }
-      toast.success(
-        picks.length > 1 ? "Партии добавлены в корзину" : "Добавлено в корзину",
-      );
-      return true;
-    }
-    addToCart(
-      product.id,
-      size,
-      snapPackQty(qty, product.packQty) || product.packQty,
-    );
+    addToCart(product.id, size, snapOrderQty(qty, product), coating);
     toast.success("Добавлено в корзину");
     return true;
   }
 
   return (
     <div className="space-y-4">
+      <ProductVolumePrice product={product} qty={qty} onQtyChange={setQty} />
       <div>
-        <p className="text-xs uppercase tracking-[0.16em] text-steel">Размер</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {product.sizes.map((s) => (
-            <button
-              key={s}
-              onClick={() => setSize(s)}
-              className={`rounded-lg border px-3 py-1.5 text-sm ${size === s ? "border-ink bg-ink text-paper" : "hover:border-orange"}`}
-            >
-              {s}
-            </button>
-          ))}
+        <p className="text-xs uppercase tracking-[0.16em] text-steel">
+          Размер и покрытие
+        </p>
+        <div className="mt-2">
+          <ProductVariantChips
+            product={product}
+            size={size}
+            coating={coating}
+            onSizeChange={setSize}
+            onCoatingChange={setCoating}
+          />
         </div>
       </div>
       {inStock ? (
         <>
-          {lotsMode ? (
-            <ProductLotsPicker
-              product={product}
-              counts={lotCounts}
-              onCountChange={setLotCount}
-            />
-          ) : (
-            <div>
-              <p className="text-xs uppercase tracking-[0.16em] text-steel">
-                Количество, {product.unit} (кратность {product.packQty})
-              </p>
-              <div className="mt-2 flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setQty(Math.max(product.packQty, qty - product.packQty))}
-                >
-                  −
-                </Button>
-                <input
-                  className="h-8 w-20 rounded-lg border bg-background text-center"
-                  type="number"
-                  min={product.packQty}
-                  step={product.packQty}
-                  value={qty}
-                  onChange={(e) => setQty(Number(e.target.value) || product.packQty)}
-                  onBlur={(e) =>
-                    setQty(snapPackQty(Number(e.target.value), product.packQty) || product.packQty)
-                  }
-                />
-                <Button variant="outline" onClick={() => setQty(qty + product.packQty)}>
-                  +
-                </Button>
-              </div>
+          <div>
+            <p className="text-xs uppercase tracking-[0.16em] text-steel">
+              Количество, {product.unit}
+            </p>
+            <p className="mt-1 text-xs text-steel">
+              Минимум {formatVolumeQty(min, product.unit)}
+            </p>
+            <div className="mt-2">
+              <QtyStepper product={product} qty={qty} onQtyChange={setQty} />
             </div>
-          )}
+          </div>
           <div className="flex flex-col gap-2 sm:flex-row">
             <Button className="h-11 flex-1" onClick={add}>
               В корзину

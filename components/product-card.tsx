@@ -1,20 +1,39 @@
 "use client";
 
 import Link from "next/link";
+import { useRef, useState } from "react";
 import { AskManagerButton } from "@/components/manager-chat/AskManagerButton";
+import { ProductCardAddToCart } from "@/components/product-card-add-to-cart";
 import { ProductCardBadges } from "@/components/product-card-badges";
+import { ProductVolumePrice } from "@/components/product-volume-price";
 import { toManagerChatProduct } from "@/lib/manager-chat";
+import { defaultVolumeQty } from "@/lib/volume-quote";
 import type { Product } from "@/lib/types";
-import {
-  ProductFromPrice,
-  ProductLotTeaser,
-} from "@/components/product-lot-teaser";
+import { cn } from "@/lib/utils";
 import {
   ProductCardHoverActions,
   ProductHoverDetails,
 } from "@/components/product-card-hover-actions";
 
-export function ProductCard({ product }: { product: Product }) {
+function updateHoverSide(el: HTMLElement | null) {
+  if (!el) return;
+  const rect = el.getBoundingClientRect();
+  el.style.setProperty("--product-card-width", `${rect.width}px`);
+  el.classList.toggle(
+    "product-card--flip",
+    window.innerWidth - rect.right < rect.width * 0.7 + 12,
+  );
+}
+
+export function ProductCard({
+  product,
+  showShift = true,
+}: {
+  product: Product;
+  showShift?: boolean;
+}) {
+  const rootRef = useRef<HTMLElement>(null);
+  const [qty, setQty] = useState(() => defaultVolumeQty(product));
   const material =
     product.coating !== "Без покрытия"
       ? `${product.base} · ${product.coating}`
@@ -22,9 +41,14 @@ export function ProductCard({ product }: { product: Product }) {
   const href = `/product/${product.slug}`;
 
   return (
-    <article className="product-card group/card relative z-0 flex w-full flex-col self-start hover:z-20">
-      <div className="flex min-h-0 flex-col overflow-visible rounded-2xl border border-border bg-card shadow-sm transition-[border-radius,border-color,box-shadow] duration-300 group-hover/card:rounded-b-none group-hover/card:border-orange/50 group-hover/card:border-b-orange/20 group-hover/card:shadow-[0_8px_24px_rgba(4,0,64,0.12)] group-focus-within/card:rounded-b-none group-focus-within/card:border-orange/50">
-        <div className="relative aspect-square w-full shrink-0 overflow-hidden rounded-t-2xl bg-muted">
+    <article
+      ref={rootRef}
+      className="product-card group/card relative flex w-full flex-col self-start"
+      onMouseEnter={() => updateHoverSide(rootRef.current)}
+      onFocusCapture={() => updateHoverSide(rootRef.current)}
+    >
+      <div className="product-card__body flex min-h-0 flex-col overflow-visible rounded-2xl border border-border bg-card shadow-sm transition-[border-radius,border-color,box-shadow] duration-300">
+        <div className="product-card__media relative aspect-square w-full shrink-0 overflow-hidden rounded-t-2xl bg-muted">
           <Link href={href} className="block h-full w-full">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -36,11 +60,16 @@ export function ProductCard({ product }: { product: Product }) {
           <div className="pointer-events-none absolute inset-0">
             <ProductCardBadges product={product} />
             <div className="pointer-events-auto absolute right-2.5 top-2.5 z-10">
-              <ProductCardHoverActions product={product} />
+              <ProductCardHoverActions product={product} volumeQty={qty} />
             </div>
           </div>
         </div>
-        <div className="flex min-h-[10.5rem] flex-1 flex-col p-4 pb-2">
+        <div
+          className={cn(
+            "flex flex-col p-4 pb-2",
+            showShift ? "min-h-[13.5rem]" : "min-h-[12.25rem]",
+          )}
+        >
           <p className="h-4 truncate text-[11px] uppercase tracking-[0.16em] text-steel">
             {product.sku}
           </p>
@@ -50,24 +79,21 @@ export function ProductCard({ product }: { product: Product }) {
             </Link>
           </h3>
           <p className="mt-1 line-clamp-1 min-h-5 text-sm text-steel">{material}</p>
-          <div className="mt-auto grid items-end gap-1 pt-2">
-            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2">
-              <ProductFromPrice
-                product={product}
-                className="truncate text-lg font-semibold leading-none tabular-nums"
-                unitClassName="ml-1 text-xs font-normal text-steel"
-              />
-              <p className="shrink-0 text-right text-xs leading-none text-steel">
-                {product.stock > 0
-                  ? `в наличии · ${product.stock.toLocaleString("ru-RU")}`
-                  : "под заказ"}
-              </p>
-            </div>
-            <ProductLotTeaser product={product} />
+          <div className="mt-auto pt-2">
+            <ProductVolumePrice
+              product={product}
+              qty={qty}
+              onQtyChange={setQty}
+              showShift={showShift}
+            />
           </div>
         </div>
-        <div className="px-4 pb-4">
-          <AskManagerButton product={toManagerChatProduct(product)} />
+        <div className="grid min-h-[7.75rem] content-start gap-2 px-4 pb-4">
+          <ProductCardAddToCart product={product} qty={qty} />
+          <AskManagerButton
+            product={toManagerChatProduct(product)}
+            className="h-5 items-center"
+          />
         </div>
       </div>
       <ProductHoverDetails product={product} />

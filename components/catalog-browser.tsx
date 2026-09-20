@@ -29,7 +29,13 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { categories, filterOptions, products } from "@/lib/data/catalog";
+import {
+  categories,
+  filterOptions,
+  productMatchesWeightFilters,
+  products,
+  specFilters,
+} from "@/lib/data/catalog";
 import { catalogPrice } from "@/lib/lots";
 import type { CategorySlug } from "@/lib/types";
 
@@ -43,10 +49,102 @@ const COLOR_SWATCH: Record<string, string> = {
   Желтый: "#eab308",
   Зеленый: "#16a34a",
   Хаки: "#b59b4a",
+  Узор: "#db2777",
 };
 
 const COLOR_SWATCH_CLASS =
   "border-black/45 shadow-none focus-visible:border-black/45 focus-visible:ring-0 dark:bg-[unset] data-checked:border-black/45 data-checked:bg-[unset] dark:data-checked:bg-[unset] [&_[data-slot=checkbox-indicator]]:hidden";
+
+const SORT_OPTIONS = [
+  { value: "popular", label: "Сначала рекомендуемые" },
+  { value: "price-asc", label: "Цена: по возрастанию" },
+  { value: "price-desc", label: "Цена: по убыванию" },
+  { value: "name", label: "По названию" },
+] as const;
+
+function sortLabel(value: string) {
+  return SORT_OPTIONS.find((option) => option.value === value)?.label ?? "Сортировка";
+}
+
+const PAGE_SIZES = [25, 50] as const;
+type PageSize = (typeof PAGE_SIZES)[number];
+
+function PageSizeSwitcher({
+  value,
+  onChange,
+  dark = false,
+}: {
+  value: PageSize;
+  onChange: (size: PageSize) => void;
+  dark?: boolean;
+}) {
+  return (
+    <div className={`flex items-center gap-1.5 text-xs ${dark ? "text-white/50" : "text-steel"}`}>
+      <span className="uppercase tracking-[0.14em]">Показывать</span>
+      {PAGE_SIZES.map((size) => {
+        const active = value === size;
+        return (
+          <button
+            key={size}
+            type="button"
+            aria-label={`Показывать по ${size}`}
+            aria-pressed={active}
+            className={`rounded-full px-2.5 py-1 ${
+              active
+                ? "bg-orange text-white"
+                : dark
+                  ? "bg-white/10 text-white hover:bg-white/15"
+                  : "bg-muted/70 hover:bg-muted"
+            }`}
+            onClick={() => onChange(size)}
+          >
+            {size}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function CatalogPager({
+  page,
+  pages,
+  pageSize,
+  onPage,
+  onPageSize,
+  dark = false,
+}: {
+  page: number;
+  pages: number;
+  pageSize: PageSize;
+  onPage: (next: number) => void;
+  onPageSize: (next: PageSize) => void;
+  dark?: boolean;
+}) {
+  if (pages <= 1) return null;
+
+  return (
+    <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+      <div className="flex justify-center gap-2">
+        {Array.from({ length: pages }, (_, i) => (
+          <Button
+            key={i}
+            variant={page === i + 1 ? "default" : "outline"}
+            className={
+              page === i + 1 || !dark
+                ? undefined
+                : "border-white/15 bg-transparent text-white hover:bg-white/10 hover:text-white"
+            }
+            onClick={() => onPage(i + 1)}
+          >
+            {i + 1}
+          </Button>
+        ))}
+      </div>
+      <PageSizeSwitcher value={pageSize} onChange={onPageSize} dark={dark} />
+    </div>
+  );
+}
 
 function CatalogFilters({
   category,
@@ -59,6 +157,14 @@ function CatalogFilters({
   setColor,
   size,
   setSize,
+  length,
+  setLength,
+  weight,
+  setWeight,
+  tex,
+  setTex,
+  knitClass,
+  setKnitClass,
   inStockOnly,
   setInStockOnly,
   setPage,
@@ -74,6 +180,14 @@ function CatalogFilters({
   setColor: Dispatch<SetStateAction<string[]>>;
   size: string[];
   setSize: Dispatch<SetStateAction<string[]>>;
+  length: string[];
+  setLength: Dispatch<SetStateAction<string[]>>;
+  weight: string[];
+  setWeight: Dispatch<SetStateAction<string[]>>;
+  tex: string[];
+  setTex: Dispatch<SetStateAction<string[]>>;
+  knitClass: string[];
+  setKnitClass: Dispatch<SetStateAction<string[]>>;
   inStockOnly: boolean;
   setInStockOnly: Dispatch<SetStateAction<boolean>>;
   setPage: Dispatch<SetStateAction<number>>;
@@ -108,7 +222,16 @@ function CatalogFilters({
       </div>
       <Accordion
         multiple
-        defaultValue={["Основа", "Покрытие", "Цвет", "Размер"]}
+        defaultValue={[
+          "Основа",
+          "Покрытие",
+          "Цвет",
+          "Размер",
+          "Длина модели",
+          "Вес пары",
+          "Текс",
+          "Класс вязки",
+        ]}
         className="mt-3"
       >
         {(
@@ -117,6 +240,10 @@ function CatalogFilters({
             ["Покрытие", filterOptions.coating, coating, setCoating],
             ["Цвет", filterOptions.color, color, setColor],
             ["Размер", filterOptions.size, size, setSize],
+            ["Длина модели", specFilters.length, length, setLength],
+            ["Вес пары", specFilters.weight, weight, setWeight],
+            ["Текс", specFilters.tex, tex, setTex],
+            ["Класс вязки", specFilters.knitClass, knitClass, setKnitClass],
           ] as const
         ).map(([title, options, selected, setter]) => (
           <AccordionItem key={title} value={title}>
@@ -168,7 +295,7 @@ function CatalogFilters({
                         className={swatch ? COLOR_SWATCH_CLASS : undefined}
                         style={swatch ? { backgroundColor: swatch } : undefined}
                       />
-                      {opt}
+                      {title === "Класс вязки" ? opt.replace(".", ",") : opt}
                     </label>
                   );
                 })}
@@ -210,10 +337,14 @@ export function CatalogBrowser() {
   const [coating, setCoating] = useState<string[]>([]);
   const [color, setColor] = useState<string[]>([]);
   const [size, setSize] = useState<string[]>([]);
+  const [length, setLength] = useState<string[]>([]);
+  const [weight, setWeight] = useState<string[]>([]);
+  const [tex, setTex] = useState<string[]>([]);
+  const [knitClass, setKnitClass] = useState<string[]>([]);
   const [sort, setSort] = useState("popular");
   const [inStockOnly, setInStockOnly] = useState(false);
   const [page, setPage] = useState(1);
-  const pageSize = 8;
+  const [pageSize, setPageSize] = useState<PageSize>(25);
 
   const filtered = useMemo(() => {
     let list = products.filter((p) => {
@@ -224,6 +355,10 @@ export function CatalogBrowser() {
       if (coating.length && !coating.includes(p.coating)) return false;
       if (color.length && !color.includes(p.color)) return false;
       if (size.length && !p.sizes.some((s) => size.includes(s))) return false;
+      if (length.length && (!p.length || !length.includes(p.length))) return false;
+      if (!productMatchesWeightFilters(p.weight, weight)) return false;
+      if (tex.length && (!p.tex || !tex.includes(p.tex))) return false;
+      if (knitClass.length && (!p.knitClass || !knitClass.includes(p.knitClass))) return false;
       if (inStockOnly && p.stock <= 0) return false;
       return true;
     });
@@ -231,11 +366,17 @@ export function CatalogBrowser() {
     if (sort === "price-desc") list = [...list].sort((a, b) => catalogPrice(b) - catalogPrice(a));
     if (sort === "name") list = [...list].sort((a, b) => a.name.localeCompare(b.name, "ru"));
     return list;
-  }, [category, q, base, coating, color, size, sort, inStockOnly]);
+  }, [category, q, base, coating, color, size, length, weight, tex, knitClass, sort, inStockOnly]);
 
   const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const slice = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const currentPage = Math.min(page, pages);
+  const slice = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   const activeCategory = categories.find((c) => c.slug === category);
+
+  function changePageSize(next: PageSize) {
+    setPageSize(next);
+    setPage(1);
+  }
 
   function setCat(next: string) {
     setCategory(next);
@@ -254,6 +395,10 @@ export function CatalogBrowser() {
     setCoating([]);
     setColor([]);
     setSize([]);
+    setLength([]);
+    setWeight([]);
+    setTex([]);
+    setKnitClass([]);
     setInStockOnly(false);
     setQ("");
     setCat("all");
@@ -270,6 +415,14 @@ export function CatalogBrowser() {
     setColor,
     size,
     setSize,
+    length,
+    setLength,
+    weight,
+    setWeight,
+    tex,
+    setTex,
+    knitClass,
+    setKnitClass,
     inStockOnly,
     setInStockOnly,
     setPage,
@@ -285,25 +438,18 @@ export function CatalogBrowser() {
           setPage(1);
         }}
         placeholder="Поиск: артикул, название, покрытие"
-        className="border-white/15 bg-white/5 text-white placeholder:text-white/40 lg:border-input lg:bg-background lg:text-foreground lg:placeholder:text-muted-foreground"
+        className="border-white/15 bg-white/5 text-white placeholder:text-white/40"
       />
       <Select value={sort} onValueChange={(v) => v && setSort(v)}>
-        <SelectTrigger className="w-full border-white/15 bg-white/5 text-white sm:w-56 lg:border-input lg:bg-background lg:text-foreground">
-          <SelectValue placeholder="Сортировка">
-            {sort === "popular"
-              ? "Сначала рекомендуемые"
-              : sort === "price-asc"
-                ? "Цена: по возрастанию"
-                : sort === "price-desc"
-                  ? "Цена: по убыванию"
-                  : "По названию"}
-          </SelectValue>
+        <SelectTrigger className="w-full border-white/15 bg-white/5 text-white sm:w-56">
+          <SelectValue placeholder="Сортировка">{sortLabel(sort)}</SelectValue>
         </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="popular">Сначала рекомендуемые</SelectItem>
-          <SelectItem value="price-asc">Цена: по возрастанию</SelectItem>
-          <SelectItem value="price-desc">Цена: по убыванию</SelectItem>
-          <SelectItem value="name">По названию</SelectItem>
+        <SelectContent alignItemWithTrigger={false}>
+          {SORT_OPTIONS.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
     </>
@@ -311,7 +457,7 @@ export function CatalogBrowser() {
 
   return (
     <>
-      <div className="bg-ink text-paper lg:hidden">
+      <div className="bg-ink text-paper xl:hidden">
         <div className="px-4 pb-6 pt-8">
           <p className="text-center text-xs uppercase tracking-[0.22em] text-orange">
             Каталог по видам защиты
@@ -370,11 +516,14 @@ export function CatalogBrowser() {
               </SheetContent>
             </Sheet>
           </div>
-          <p className="mt-4 text-sm text-white/50">
-            Найдено {filtered.length} моделей. Цены и остатки — из 1С.
-          </p>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-white/50">
+              Найдено {filtered.length} моделей. Цены и остатки — из 1С.
+            </p>
+            <PageSizeSwitcher value={pageSize} onChange={changePageSize} dark />
+          </div>
           {slice.length ? (
-            <div className="mt-5 grid auto-rows-fr grid-cols-2 items-stretch gap-3">
+            <div className="mt-5 grid auto-rows-fr grid-cols-2 items-stretch gap-3 lg:grid-cols-3">
               {slice.map((p) => (
                 <CatalogShopCard key={p.id} product={p} />
               ))}
@@ -384,28 +533,18 @@ export function CatalogBrowser() {
               Нет товаров по фильтрам. Сбросьте условия или запросите подбор.
             </div>
           )}
-          {pages > 1 ? (
-            <div className="mt-8 flex justify-center gap-2">
-              {Array.from({ length: pages }, (_, i) => (
-                <Button
-                  key={i}
-                  variant={page === i + 1 ? "default" : "outline"}
-                  className={
-                    page === i + 1
-                      ? ""
-                      : "border-white/15 bg-transparent text-white hover:bg-white/10 hover:text-white"
-                  }
-                  onClick={() => setPage(i + 1)}
-                >
-                  {i + 1}
-                </Button>
-              ))}
-            </div>
-          ) : null}
+          <CatalogPager
+            page={currentPage}
+            pages={pages}
+            pageSize={pageSize}
+            onPage={setPage}
+            onPageSize={changePageSize}
+            dark
+          />
         </div>
       </div>
 
-      <div className="mx-auto hidden max-w-6xl items-start gap-8 px-4 py-10 [overflow-anchor:none] lg:grid lg:grid-cols-[260px_1fr]">
+      <div className="mx-auto hidden max-w-6xl items-start gap-8 px-4 py-10 [overflow-anchor:none] xl:grid xl:grid-cols-[260px_1fr]">
         <aside className="sticky top-24 z-10 h-fit max-h-[calc(100vh-7rem)] self-start overflow-y-auto rounded-2xl border bg-card p-4 [scrollbar-width:thin] [scrollbar-color:var(--orange)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-orange">
           <CatalogFilters {...filterProps} />
         </aside>
@@ -421,23 +560,27 @@ export function CatalogBrowser() {
             />
             <Select value={sort} onValueChange={(v) => v && setSort(v)}>
               <SelectTrigger className="w-full sm:w-56">
-                <SelectValue />
+                <SelectValue placeholder="Сортировка">{sortLabel(sort)}</SelectValue>
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="popular">Сначала рекомендуемые</SelectItem>
-                <SelectItem value="price-asc">Цена: по возрастанию</SelectItem>
-                <SelectItem value="price-desc">Цена: по убыванию</SelectItem>
-                <SelectItem value="name">По названию</SelectItem>
+              <SelectContent alignItemWithTrigger={false}>
+                {SORT_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
-          <p className="mt-3 text-sm text-steel">
-            Найдено {filtered.length} моделей. Цены и остатки — из 1С.
-          </p>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-steel">
+              Найдено {filtered.length} моделей. Цены и остатки — из 1С.
+            </p>
+            <PageSizeSwitcher value={pageSize} onChange={changePageSize} />
+          </div>
           {slice.length ? (
             <div className="mt-6 grid auto-rows-fr items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {slice.map((p) => (
-                <ProductCard key={p.id} product={p} />
+                <ProductCard key={p.id} product={p} showShift={false} />
               ))}
             </div>
           ) : (
@@ -445,19 +588,13 @@ export function CatalogBrowser() {
               Нет товаров по фильтрам. Сбросьте условия или запросите подбор.
             </div>
           )}
-          {pages > 1 ? (
-            <div className="mt-8 flex justify-center gap-2">
-              {Array.from({ length: pages }, (_, i) => (
-                <Button
-                  key={i}
-                  variant={page === i + 1 ? "default" : "outline"}
-                  onClick={() => setPage(i + 1)}
-                >
-                  {i + 1}
-                </Button>
-              ))}
-            </div>
-          ) : null}
+          <CatalogPager
+            page={currentPage}
+            pages={pages}
+            pageSize={pageSize}
+            onPage={setPage}
+            onPageSize={changePageSize}
+          />
         </div>
       </div>
     </>

@@ -79,7 +79,7 @@ export function StaggerItem({
 }) {
   return (
     <motion.div
-      className={cn("h-full", className)}
+      className={cn("relative z-[1] h-full hover:z-30", className)}
       variants={{
         hidden: { opacity: 0, y: 28, filter: "blur(6px)" },
         visible: {

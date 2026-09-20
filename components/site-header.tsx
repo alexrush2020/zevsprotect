@@ -47,29 +47,29 @@ export function SiteHeader() {
             {brand.markRu} · {brand.tagline}
           </p>
           <div className="hidden items-center gap-4 sm:flex">
-            <Link href="/price" className="hover:text-white">
+            <Link href="/price" className="hidden hover:text-white lg:inline">
               Прайс
             </Link>
-            <Link href="/track" className="hover:text-white">
+            <Link href="/track" className="hidden hover:text-white lg:inline">
               Трекинг
             </Link>
             <a href={brand.phoneHref} className="hover:text-white">
               {brand.phone}
             </a>
-            <a href={`mailto:${brand.email}`} className="hover:text-white">
+            <a href={`mailto:${brand.email}`} className="hidden hover:text-white xl:inline">
               {brand.email}
             </a>
           </div>
         </div>
       </div>
-      <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
+      <div className="mx-auto flex max-w-6xl min-w-0 items-center gap-3 px-4 py-3 xl:gap-4">
         <Sheet>
           <SheetTrigger
             render={
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-paper hover:bg-white/10 lg:hidden"
+                className="text-paper hover:bg-white/10 xl:hidden"
               />
             }
           >
@@ -82,6 +82,12 @@ export function SiteHeader() {
             <div className="grid gap-1 px-4">
               <Link href="/catalog" className="rounded-lg px-2 py-2 text-sm hover:bg-muted">
                 Каталог
+              </Link>
+              <Link
+                href={user ? "/account" : "/login"}
+                className="rounded-lg px-2 py-2 text-sm hover:bg-muted"
+              >
+                {user ? "Кабинет" : "Войти"}
               </Link>
               {nav.map((item) => (
                 <Link
@@ -122,7 +128,7 @@ export function SiteHeader() {
           <Logo light />
         </Link>
 
-        <nav className="hidden shrink-0 items-center gap-5 text-sm text-paper/80 lg:flex">
+        <nav className="hidden shrink-0 items-center gap-5 text-sm text-paper/80 xl:flex">
           <CatalogMenu extra={extra} />
           {nav.map((item) => (
             <Link key={item.href} href={item.href} className="whitespace-nowrap hover:text-white">
@@ -133,7 +139,7 @@ export function SiteHeader() {
 
         <form
           action="/catalog"
-          className="ml-auto hidden min-w-[200px] flex-1 max-w-sm md:block"
+          className="ml-auto hidden min-w-[180px] flex-1 max-w-sm 2xl:block"
         >
           <div className="relative">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-paper/40" />
@@ -147,12 +153,12 @@ export function SiteHeader() {
           </div>
         </form>
 
-        <Messengers className="shrink-0" />
+        <Messengers className="ml-auto shrink-0 2xl:ml-0" />
 
         <InquiryDialog
           type="calc"
           trigger={
-            <Button className="hidden h-9 bg-orange text-white hover:bg-orange-dk sm:inline-flex">
+            <Button className="hidden h-9 bg-orange text-white hover:bg-orange-dk xl:inline-flex">
               Рассчитать поставку
             </Button>
           }
@@ -160,7 +166,7 @@ export function SiteHeader() {
 
         <Link
           href={user ? "/account" : "/login"}
-          className="hidden items-center gap-1.5 text-xs text-paper/80 hover:text-white sm:flex"
+          className="hidden items-center gap-1.5 text-xs text-paper/80 hover:text-white xl:flex"
         >
           <User className="size-4" />
           {user ? "Кабинет" : "Войти"}
@@ -168,7 +174,7 @@ export function SiteHeader() {
 
         <Link href="/cart" className="relative flex items-center gap-2 text-paper">
           <ShoppingBag className="size-5" />
-          <span className="hidden text-xs sm:block">
+          <span className="hidden text-xs xl:block">
             {cartCount ? formatPrice(cartTotal) : "Корзина"}
           </span>
           {cartCount > 0 ? (

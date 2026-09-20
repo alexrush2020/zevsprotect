@@ -1,22 +1,23 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { AskManagerButton } from "@/components/manager-chat/AskManagerButton";
 import {
   ProductCardHoverActions,
-  ProductHoverDetails,
 } from "@/components/product-card-hover-actions";
+import { ProductCardAddToCart } from "@/components/product-card-add-to-cart";
 import { ProductCardBadges } from "@/components/product-card-badges";
-import {
-  ProductFromPrice,
-  ProductLotTeaser,
-} from "@/components/product-lot-teaser";
+import { ProductSpecList } from "@/components/product-spec-list";
+import { ProductVolumePrice } from "@/components/product-volume-price";
 import { toManagerChatProduct } from "@/lib/manager-chat";
 import { categories } from "@/lib/data/catalog";
+import { defaultVolumeQty } from "@/lib/volume-quote";
 import type { Product } from "@/lib/types";
 
 export function CatalogShopCard({ product }: { product: Product }) {
+  const [qty, setQty] = useState(() => defaultVolumeQty(product));
   const category = categories.find((c) => c.slug === product.category);
 
   return (
@@ -35,7 +36,7 @@ export function CatalogShopCard({ product }: { product: Product }) {
           className="left-2 top-2 max-w-[calc(100%-3.25rem)]"
         />
         <div className="absolute right-1.5 top-1.5 z-10">
-          <ProductCardHoverActions product={product} variant="shop" />
+          <ProductCardHoverActions product={product} variant="shop" volumeQty={qty} />
         </div>
       </div>
       <div className="flex flex-1 flex-col px-1 pb-1 pt-3">
@@ -46,14 +47,18 @@ export function CatalogShopCard({ product }: { product: Product }) {
           <Link href={`/product/${product.slug}`}>{product.name}</Link>
         </h3>
         <p className="mt-1 text-xs text-white/45">Арт. {product.sku}</p>
-        <ProductFromPrice
-          product={product}
-          className="mt-2 text-sm tabular-nums text-white/80"
-          unitClassName="ml-1 text-xs text-white/40"
-        />
-        <ProductLotTeaser product={product} variant="shop" />
-        <ProductHoverDetails product={product} compact />
+        <div className="mt-2">
+          <ProductVolumePrice
+            product={product}
+            qty={qty}
+            onQtyChange={setQty}
+            variant="shop"
+            showShift={false}
+          />
+        </div>
+        <ProductSpecList product={product} variant="shop" />
         <div className="mt-auto grid gap-2 pt-3">
+          <ProductCardAddToCart product={product} qty={qty} shop />
           <Button
             nativeButton={false}
             render={<Link href={`/product/${product.slug}`} />}

@@ -54,3 +54,7 @@ export function submitUserReview(input: SubmitReviewInput): ProductReview {
   window.dispatchEvent(new CustomEvent(REVIEWS_UPDATED_EVENT));
   return review;
 }
+
+export function listUserReviews(): ProductReview[] {
+  return readRaw();
+}

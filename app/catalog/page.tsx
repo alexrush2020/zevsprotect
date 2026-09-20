@@ -10,7 +10,7 @@ export const metadata = {
 export default function CatalogPage() {
   return (
     <div>
-      <div className="hidden border-b bg-card lg:block">
+      <div className="hidden border-b bg-card xl:block">
         <div className="mx-auto grid max-w-6xl gap-6 px-4 py-10 lg:grid-cols-[1fr_auto] lg:items-end">
           <div>
             <p className="text-xs uppercase tracking-[0.22em] text-orange">

@@ -59,7 +59,7 @@ export default function ContactsPage() {
   }
 
   return (
-    <div className="relative isolate overflow-hidden">
+    <div className="relative isolate overflow-x-clip">
       <div aria-hidden className="pointer-events-none absolute inset-0 bg-paper" />
       <div
         aria-hidden

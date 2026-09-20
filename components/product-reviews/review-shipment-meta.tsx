@@ -19,7 +19,7 @@ export function ReviewShipmentMeta({
 
   if (compact) {
     return (
-      <p className="text-xs text-steel">
+      <p className="text-xs leading-4 text-steel">
         Партия от {formatReviewDate(orderDate)} · {shipText}
       </p>
     );

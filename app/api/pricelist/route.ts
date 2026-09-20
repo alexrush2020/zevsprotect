@@ -5,7 +5,7 @@ export async function GET() {
   const lines = [
     header.join(";"),
     ...products.map((p) =>
-      [p.sku, p.name, p.category, p.base, p.coating, p.price, p.unit, p.packQty, p.stock]
+      [p.sku, p.name, p.category, p.base, p.coating, p.price, p.unit, p.minQty, p.stock]
         .map((v) => `"${String(v).replaceAll('"', '""')}"`)
         .join(";")
     ),

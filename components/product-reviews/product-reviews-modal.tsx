@@ -35,11 +35,13 @@ export function ProductReviewsModal({
   productTitle,
   open,
   onOpenChange,
+  anchorReviewId,
 }: {
   slug: string;
   productTitle: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  anchorReviewId?: string | null;
 }) {
   const [sort, setSort] = useState<ReviewSort>("recommended");
   const [topic, setTopic] = useState<ReviewTopic | null>(null);
@@ -63,6 +65,18 @@ export function ProductReviewsModal({
     window.addEventListener(REVIEWS_UPDATED_EVENT, onUpdate);
     return () => window.removeEventListener(REVIEWS_UPDATED_EVENT, onUpdate);
   }, []);
+
+  useEffect(() => {
+    if (!open || !anchorReviewId) return;
+    const id = anchorReviewId;
+    const timer = window.setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [open, anchorReviewId, filtered]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

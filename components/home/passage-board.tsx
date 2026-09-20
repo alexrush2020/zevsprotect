@@ -70,7 +70,7 @@ export function PassageBoard() {
             aria-hidden
             className="absolute inset-x-0 top-7 h-1 bg-white/15 shadow-[0_1px_0_rgb(0_0_0_/_0.4)]"
           />
-          <ul className="relative grid gap-4 md:grid-cols-3">
+          <ul className="relative grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {reviews.map((plate, index) => {
               const expanded = open === index;
               const slotId = `passage-slot-${index}`;

@@ -83,7 +83,7 @@ export function HomeHero() {
       >
         <div className="mx-auto grid h-full w-full max-w-6xl items-center px-4 lg:grid-cols-2">
           <div className="hidden lg:block" />
-          <div className="relative mx-auto w-[min(72vw,380px)] opacity-40 sm:w-[min(48vw,460px)] sm:opacity-100 lg:w-[min(88%,480px)]">
+          <div className="relative mx-auto w-[min(72vw,380px)] opacity-40 sm:w-[min(42vw,420px)] lg:w-[min(88%,480px)] lg:opacity-100">
           <div className="hero-floor" />
           <div className="hero-glove-glow" />
           <motion.div
@@ -191,7 +191,7 @@ export function HomeHero() {
             />
           </motion.div>
           <motion.p
-            className="mt-8 hidden text-[11px] tracking-[0.18em] text-white/40 uppercase sm:block sm:whitespace-nowrap"
+            className="mt-8 hidden text-[11px] tracking-[0.18em] text-white/40 uppercase sm:block xl:whitespace-nowrap"
             initial={reduce ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.85 }}
@@ -202,7 +202,7 @@ export function HomeHero() {
         </div>
 
         <div className="border-t border-white/10 bg-black/45">
-        <div className="mx-auto grid max-w-6xl grid-cols-2 px-4 sm:grid-cols-4">
+        <div className="mx-auto grid max-w-6xl grid-cols-2 px-4 lg:grid-cols-4">
           {stats.map((s, i) => (
             <motion.div
               key={s.label}

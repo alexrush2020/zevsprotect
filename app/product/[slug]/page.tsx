@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ProductBuy } from "@/components/product-buy";
+import { ProductShiftCompare } from "@/components/product-shift-compare";
 import { ProductCard } from "@/components/product-card";
 import { ProductGallery } from "@/components/product-gallery";
 import { ProductReviewsSection } from "@/components/product-reviews/product-reviews-section";
@@ -17,7 +18,9 @@ import {
 import { reviewCountLabel, reviewStats } from "@/lib/data/product-reviews";
 import { formatPrice } from "@/lib/format";
 import { brand } from "@/lib/brand";
-import { catalogPrice, formatPairs, hasLots } from "@/lib/lots";
+import { catalogPrice } from "@/lib/lots";
+import { productMinQty } from "@/lib/order-qty";
+import { formatVolumeQty } from "@/lib/volume-quote";
 
 export async function generateMetadata({
   params,
@@ -113,9 +116,6 @@ export default async function ProductPage({
             </Badge>
           </div>
           <p className="mt-6 text-3xl font-semibold">
-            {hasLots(product) ? (
-              <span className="mr-1 text-base font-normal text-steel">от</span>
-            ) : null}
             {formatPrice(catalogPrice(product))}
             <span className="ml-2 text-base font-normal text-steel">
               / {product.unit}
@@ -123,17 +123,10 @@ export default async function ProductPage({
           </p>
           <p className="mt-2 text-sm text-steel">
             {inStock
-              ? `Остаток: ${product.stock} ${product.unit}${
-                  hasLots(product)
-                    ? ` · партии от ${formatPairs(Math.min(...product.lots.map((lot) => lot.pairs)))}`
-                    : ` · фасовка от ${product.packQty}`
-                }`
-              : `Нет на складе. Можно запросить срок партии.${
-                  hasLots(product)
-                    ? ` Партии от ${formatPairs(Math.min(...product.lots.map((lot) => lot.pairs)))}.`
-                    : ` Фасовка от ${product.packQty} ${product.unit}.`
-                }`}
+              ? `Остаток: ${product.stock} ${product.unit} · мин. заказ ${formatVolumeQty(productMinQty(product), product.unit)}`
+              : `Нет на складе. Можно запросить срок партии. Мин. заказ ${formatVolumeQty(productMinQty(product), product.unit)}.`}
           </p>
+          <ProductShiftCompare product={product} />
           <p className="mt-4 text-steel">{product.description}</p>
           <div className="mt-6">
             <ProductBuy product={product} />
@@ -189,7 +182,7 @@ export default async function ProductPage({
       {related.length ? (
         <div className="mt-12">
           <h2 className="font-heading text-2xl">Похожие модели</h2>
-          <div className="mt-6 grid auto-rows-fr items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-6 grid auto-rows-fr items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {related.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}

@@ -10,10 +10,12 @@ import {
   type ReactNode,
 } from "react";
 import { products } from "@/lib/data/catalog";
-import { cartLineKey, cartLineTotal, getLot } from "@/lib/lots";
-import { snapPackQty } from "@/lib/qty";
+import { cartGoodsTotal, cartLineKey } from "@/lib/lots";
+import { snapOrderQty } from "@/lib/order-qty";
+import { demoAccount, yandexStubAccount } from "@/lib/demo-account";
 import type {
   CartItem,
+  Lead,
   Order,
   PaymentMethod,
   UserProfile,
@@ -21,22 +23,42 @@ import type {
 
 const CART_KEY = "zp-cart";
 const USER_KEY = "zp-user";
+const LAST_USER_KEY = "zp-last-user";
 const ORDERS_KEY = "zp-orders";
 const LEADS_KEY = "zp-leads";
 const FAVORITES_KEY = "zp-favorites";
 
-const demoProfile: UserProfile = {
-  email: "zakup@roststroy.ru",
-  name: "Ирина Ковалёва",
-  phone: "+7 (863) 200-00-15",
-  company: "ООО «РостСтрой»",
-  inn: "6165123456",
-  kpp: "616501001",
-  address: "г. Ростов-на-Дону, ул. Серафимовича, 53",
-};
-
 function uid(prefix: string) {
   return `${prefix}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+}
+
+function normalizeCart(raw: unknown): CartItem[] {
+  if (!Array.isArray(raw)) return [];
+  const merged = new Map<string, CartItem>();
+  for (const row of raw) {
+    if (!row || typeof row !== "object") continue;
+    const item = row as CartItem & { lotId?: string };
+    if (!item.productId || !item.size) continue;
+    const qty = Number(item.qty);
+    if (!Number.isFinite(qty) || qty <= 0) continue;
+    const key = cartLineKey(item);
+    const prev = merged.get(key);
+    merged.set(key, {
+      productId: item.productId,
+      size: item.size,
+      coating: item.coating,
+      qty: (prev?.qty ?? 0) + qty,
+    });
+  }
+  return [...merged.values()]
+    .map((item) => {
+      const product = products.find((x) => x.id === item.productId);
+      if (!product) return item;
+      const qty = snapOrderQty(item.qty, product, { allowZero: true });
+      if (!qty) return null;
+      return { ...item, qty };
+    })
+    .filter((item): item is CartItem => Boolean(item));
 }
 
 function readJson<T>(key: string, fallback: T): T {
@@ -49,30 +71,24 @@ function readJson<T>(key: string, fallback: T): T {
   }
 }
 
-type Lead = {
-  id: string;
-  createdAt: string;
-  type: string;
-  payload: Record<string, string>;
-};
-
 type Store = {
   cart: CartItem[];
   user: UserProfile | null;
+  lastUser: UserProfile | null;
+  ready: boolean;
   orders: Order[];
   leads: Lead[];
   favoriteIds: string[];
-  addToCart: (
-    productId: string,
-    size: string,
-    qty: number,
-    lot?: { lotId: string; packCount: number },
-  ) => void;
-  setQty: (productId: string, size: string, qty: number, lotId?: string) => void;
-  removeFromCart: (productId: string, size: string, lotId?: string) => void;
+  addToCart: (productId: string, size: string, qty: number, coating?: string) => void;
+  setQty: (productId: string, size: string, qty: number, coating?: string) => void;
+  removeFromCart: (productId: string, size: string, coating?: string) => void;
+  removeProductFromCart: (productId: string) => void;
   clearCart: () => void;
   login: (email: string, password: string) => boolean;
-  register: (profile: UserProfile, password: string) => boolean;
+  register: (profile: UserProfile, password?: string) => boolean;
+  loginYandex: () => boolean;
+  loginDemo: () => boolean;
+  resumeSession: () => boolean;
   logout: () => void;
   updateProfile: (profile: UserProfile) => void;
   placeOrder: (input: {
@@ -124,8 +140,123 @@ function seedGuestOrders(): Order[] {
   ];
 }
 
+function sortOrders(orders: Order[]) {
+  return [...orders].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+}
+
+function mergeSeedOrders(existing: Order[]) {
+  const ids = new Set(existing.map((o) => o.id));
+  const extra = seedOrders().filter((o) => !ids.has(o.id));
+  if (!existing.length) return seedOrders();
+  return extra.length ? sortOrders([...existing, ...extra]) : sortOrders(existing);
+}
+
 function seedOrders(): Order[] {
-  return [
+  return sortOrders([
+    {
+      id: "ZP-10588",
+      createdAt: "2026-09-17T09:10:00.000Z",
+      items: [
+        { productId: "p-cut", size: "XL", qty: 80 },
+        { productId: "p-hvat", size: "L", qty: 200 },
+      ],
+      profile: demoAccount,
+      comment: "На склад Ростов, XL для резки арматуры.",
+      payment: "invoice_manager",
+      paymentStatus: "invoiced",
+      status: "accepted",
+      total: 96 * 80 + 39 * 200 + 1280,
+      guest: false,
+      city: "Ростов-на-Дону",
+      carrier: "cdek",
+      carrierName: "СДЭК",
+      deliveryCost: 1280,
+    },
+    {
+      id: "ZP-10562",
+      createdAt: "2026-09-15T14:05:00.000Z",
+      items: [{ productId: "p-fenix", size: "XL", qty: 40 }],
+      profile: demoAccount,
+      comment: "Жар на объекте Таганрог, самовывоз.",
+      payment: "invoice_auto",
+      paymentStatus: "invoiced",
+      status: "accepted",
+      total: 710 * 40,
+      guest: false,
+      city: "Таганрог",
+      carrier: "pickup",
+      carrierName: "Самовывоз, Таганрог",
+      deliveryCost: 0,
+    },
+    {
+      id: "ZP-10540",
+      createdAt: "2026-09-11T07:50:00.000Z",
+      items: [{ productId: "p-kragi-lux", size: "L", qty: 60 }],
+      profile: demoAccount,
+      comment: "Сварка, Волгоград. Декларацию вложить в короб.",
+      payment: "invoice_auto",
+      paymentStatus: "paid",
+      status: "shipped",
+      total: 310 * 60 + 2180,
+      guest: false,
+      city: "Волгоград",
+      carrier: "dl",
+      carrierName: "Деловые линии",
+      deliveryCost: 2180,
+    },
+    {
+      id: "ZP-10501",
+      createdAt: "2026-09-08T08:40:00.000Z",
+      items: [{ productId: "p-shield", size: "L", qty: 100 }],
+      profile: demoAccount,
+      comment: "",
+      payment: "invoice_manager",
+      paymentStatus: "invoiced",
+      status: "picking",
+      total: 64 * 100,
+      guest: false,
+      city: "Таганрог",
+      carrier: "pickup",
+      carrierName: "Самовывоз, Таганрог",
+      deliveryCost: 0,
+    },
+    {
+      id: "ZP-10520",
+      createdAt: "2026-09-05T11:25:00.000Z",
+      items: [
+        { productId: "p-frost-lux", size: "L", qty: 80 },
+        { productId: "p-fleece", size: "XL", qty: 40 },
+      ],
+      profile: demoAccount,
+      comment: "Холод, ночная смена. Нужны XL отдельно подписать.",
+      payment: "invoice_auto",
+      paymentStatus: "paid",
+      status: "delivery",
+      total: 104 * 80 + 115 * 40 + 1460,
+      guest: false,
+      city: "Краснодар",
+      carrier: "energy",
+      carrierName: "Энергия",
+      deliveryCost: 1460,
+    },
+    {
+      id: "ZP-10480",
+      createdAt: "2026-08-28T13:00:00.000Z",
+      items: [{ productId: "p-oilmax", size: "L", qty: 150 }],
+      profile: demoAccount,
+      comment: "МБС на площадку Воронеж.",
+      payment: "invoice_manager",
+      paymentStatus: "paid",
+      status: "delivered",
+      total: 78 * 150 + 980,
+      guest: false,
+      city: "Воронеж",
+      carrier: "pek",
+      carrierName: "ПЭК",
+      deliveryCost: 980,
+    },
     {
       id: "ZP-10428",
       createdAt: "2026-08-21T10:15:00.000Z",
@@ -133,7 +264,7 @@ function seedOrders(): Order[] {
         { productId: "p-atlant", size: "L", qty: 200 },
         { productId: "p-frost", size: "L", qty: 40 },
       ],
-      profile: demoProfile,
+      profile: demoAccount,
       comment: "Отгрузка на склад Ростов, нужны сертификаты в комплекте.",
       payment: "invoice_auto",
       paymentStatus: "paid",
@@ -146,46 +277,128 @@ function seedOrders(): Order[] {
       deliveryCost: 890,
     },
     {
-      id: "ZP-10501",
-      createdAt: "2026-09-08T08:40:00.000Z",
-      items: [{ productId: "p-shield", size: "L", qty: 100 }],
-      profile: demoProfile,
+      id: "ZP-10450",
+      createdAt: "2026-08-14T09:40:00.000Z",
+      items: [
+        { productId: "p-malahit", size: "L", qty: 250 },
+        { productId: "p-profi-vl", size: "L", qty: 100 },
+      ],
+      profile: demoAccount,
       comment: "",
+      payment: "invoice_auto",
+      paymentStatus: "paid",
+      status: "delivered",
+      total: 42 * 250 + 48 * 100 + 1100,
+      guest: false,
+      city: "Ростов-на-Дону",
+      carrier: "cdek",
+      carrierName: "СДЭК",
+      deliveryCost: 1100,
+    },
+    {
+      id: "ZP-10402",
+      createdAt: "2026-08-04T16:20:00.000Z",
+      items: [{ productId: "p-universal", size: "L", qty: 500 }],
+      profile: demoAccount,
+      comment: "Отменили: позиция ушла в другую заявку.",
+      payment: "online",
+      paymentStatus: "failed",
+      status: "cancelled",
+      total: 19.2 * 500,
+      guest: false,
+      city: "Ростов-на-Дону",
+      carrier: "cdek",
+      carrierName: "СДЭК",
+      deliveryCost: 0,
+    },
+    {
+      id: "ZP-10390",
+      createdAt: "2026-07-22T08:15:00.000Z",
+      items: [
+        { productId: "p-optima", size: "L", qty: 1000 },
+        { productId: "p-standart", size: "L", qty: 400 },
+      ],
+      profile: demoAccount,
+      comment: "Расходники на сезон, склад Ростов.",
+      payment: "invoice_auto",
+      paymentStatus: "paid",
+      status: "delivered",
+      total: 18.4 * 1000 + 21.5 * 400 + 1680,
+      guest: false,
+      city: "Ростов-на-Дону",
+      carrier: "cdek",
+      carrierName: "СДЭК",
+      deliveryCost: 1680,
+    },
+    {
+      id: "ZP-10355",
+      createdAt: "2026-06-18T10:00:00.000Z",
+      items: [
+        { productId: "p-kragi-kevlar", size: "L", qty: 40 },
+        { productId: "p-driver", size: "L", qty: 30 },
+      ],
+      profile: demoAccount,
+      comment: "Сварочный участок, самовывоз.",
       payment: "invoice_manager",
-      paymentStatus: "invoiced",
-      status: "picking",
-      total: 64 * 100 + 0,
+      paymentStatus: "paid",
+      status: "delivered",
+      total: 420 * 40 + 265 * 30,
       guest: false,
       city: "Таганрог",
       carrier: "pickup",
       carrierName: "Самовывоз, Таганрог",
       deliveryCost: 0,
     },
-  ];
+    {
+      id: "ZP-10012",
+      createdAt: "2025-12-11T12:30:00.000Z",
+      items: [
+        { productId: "p-atlant", size: "L", qty: 300 },
+        { productId: "p-ruk-brez", size: "L", qty: 80 },
+      ],
+      profile: demoAccount,
+      comment: "Первая партия на склад Ростов.",
+      payment: "invoice_auto",
+      paymentStatus: "paid",
+      status: "delivered",
+      total: 28.9 * 300 + 72 * 80 + 820,
+      guest: false,
+      city: "Ростов-на-Дону",
+      carrier: "cdek",
+      carrierName: "СДЭК",
+      deliveryCost: 820,
+    },
+  ]);
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [lastUser, setLastUser] = useState<UserProfile | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const nextCart = readJson<CartItem[]>(CART_KEY, []);
+    const nextCart = normalizeCart(readJson<unknown>(CART_KEY, []));
     const nextUser = readJson<UserProfile | null>(USER_KEY, null);
+    const nextLastUser =
+      readJson<UserProfile | null>(LAST_USER_KEY, null) ?? demoAccount;
     const nextOrders = readJson<Order[]>(ORDERS_KEY, []);
     const nextLeads = readJson<Lead[]>(LEADS_KEY, []);
     const nextFavorites = readJson<string[]>(FAVORITES_KEY, []);
     setCart(nextCart);
     setUser(nextUser);
+    setLastUser(nextLastUser);
     setOrders(
       nextOrders.length
-        ? nextOrders
+        ? nextUser?.email === demoAccount.email
+          ? mergeSeedOrders(nextOrders)
+          : nextOrders
         : nextUser
           ? seedOrders()
-          : seedGuestOrders()
+          : seedGuestOrders(),
     );
     setLeads(nextLeads);
     setFavoriteIds(Array.isArray(nextFavorites) ? nextFavorites : []);
@@ -199,9 +412,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!ready) return;
-    if (user) localStorage.setItem(USER_KEY, JSON.stringify(user));
-    else localStorage.removeItem(USER_KEY);
+    if (user) {
+      localStorage.setItem(USER_KEY, JSON.stringify(user));
+      localStorage.setItem(LAST_USER_KEY, JSON.stringify(user));
+      setLastUser(user);
+    } else {
+      localStorage.removeItem(USER_KEY);
+    }
   }, [user, ready]);
+
+  useEffect(() => {
+    if (!ready) return;
+    if (lastUser) localStorage.setItem(LAST_USER_KEY, JSON.stringify(lastUser));
+  }, [lastUser, ready]);
 
   useEffect(() => {
     if (!ready) return;
@@ -218,131 +441,124 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(FAVORITES_KEY, JSON.stringify(favoriteIds));
   }, [favoriteIds, ready]);
 
-  const addToCart = useCallback(
-    (
-      productId: string,
-      size: string,
-      qty: number,
-      lot?: { lotId: string; packCount: number },
-    ) => {
-      const product = products.find((x) => x.id === productId);
-      if (lot) {
-        const offer = getLot(product, lot.lotId);
-        const packCount = Math.max(0, Math.floor(lot.packCount));
-        if (!offer || !packCount) return;
-        const pairs = offer.pairs * packCount;
-        setCart((prev) => {
-          const i = prev.findIndex(
-            (x) => cartLineKey(x) === cartLineKey({ productId, size, lotId: lot.lotId }),
-          );
-          if (i === -1) {
-            return [
-              ...prev,
-              { productId, size, qty: pairs, lotId: lot.lotId, packCount },
-            ];
-          }
-          const copy = [...prev];
-          const nextCount = (copy[i].packCount ?? 0) + packCount;
-          copy[i] = {
-            ...copy[i],
-            packCount: nextCount,
-            qty: offer.pairs * nextCount,
-          };
-          return copy;
-        });
-        return;
-      }
-      const snapped = snapPackQty(qty, product?.packQty ?? 1);
-      if (!snapped) return;
-      setCart((prev) => {
-        const i = prev.findIndex(
-          (x) => x.productId === productId && x.size === size && !x.lotId,
-        );
-        if (i === -1) return [...prev, { productId, size, qty: snapped }];
-        const copy = [...prev];
-        copy[i] = {
-          ...copy[i],
-          qty: snapPackQty(copy[i].qty + snapped, product?.packQty ?? 1),
-        };
-        return copy;
-      });
-    },
-    [],
-  );
+  const addToCart = useCallback((productId: string, size: string, qty: number, coating?: string) => {
+    const product = products.find((x) => x.id === productId);
+    if (!product) return;
+    const snapped = snapOrderQty(qty, product);
+    setCart((prev) => {
+      const i = prev.findIndex((x) => cartLineKey(x) === cartLineKey({ productId, size, coating }));
+      if (i === -1) return [...prev, { productId, size, coating, qty: snapped }];
+      const copy = [...prev];
+      copy[i] = {
+        ...copy[i],
+        qty: snapOrderQty(copy[i].qty + snapped, product),
+      };
+      return copy;
+    });
+  }, []);
 
-  const setQty = useCallback(
-    (productId: string, size: string, qty: number, lotId?: string) => {
-      const product = products.find((x) => x.id === productId);
-      const offer = getLot(product, lotId);
-      if (lotId && offer) {
-        const packCount = Math.max(0, Math.floor(qty));
-        setCart((prev) =>
-          prev
-            .map((x) =>
-              cartLineKey(x) === cartLineKey({ productId, size, lotId })
-                ? { ...x, packCount, qty: offer.pairs * packCount }
-                : x,
-            )
-            .filter((x) => x.qty > 0),
-        );
-        return;
+  const setQty = useCallback((productId: string, size: string, qty: number, coating?: string) => {
+    const product = products.find((x) => x.id === productId);
+    if (!product) return;
+    const snapped = snapOrderQty(qty, product, { allowZero: true });
+    setCart((prev) => {
+      const i = prev.findIndex((x) => cartLineKey(x) === cartLineKey({ productId, size, coating }));
+      if (!snapped) {
+        return i === -1 ? prev : prev.filter((_, idx) => idx !== i);
       }
-      const snapped = snapPackQty(qty, product?.packQty ?? 1);
-      setCart((prev) =>
-        prev
-          .map((x) =>
-            x.productId === productId && x.size === size && !x.lotId
-              ? { ...x, qty: snapped }
-              : x,
-          )
-          .filter((x) => x.qty > 0),
-      );
-    },
-    [],
-  );
+      const next: CartItem = { productId, size, coating, qty: snapped };
+      if (i === -1) return [...prev, next];
+      const copy = [...prev];
+      copy[i] = next;
+      return copy;
+    });
+  }, []);
 
-  const removeFromCart = useCallback(
-    (productId: string, size: string, lotId?: string) => {
-      setCart((prev) =>
-        prev.filter(
-          (x) => cartLineKey(x) !== cartLineKey({ productId, size, lotId }),
-        ),
-      );
-    },
-    [],
-  );
+  const removeFromCart = useCallback((productId: string, size: string, coating?: string) => {
+    setCart((prev) =>
+      prev.filter((x) => cartLineKey(x) !== cartLineKey({ productId, size, coating })),
+    );
+  }, []);
+
+  const removeProductFromCart = useCallback((productId: string) => {
+    setCart((prev) => prev.filter((x) => x.productId !== productId));
+  }, []);
 
   const clearCart = useCallback(() => setCart([]), []);
 
-  const login = useCallback((email: string, password: string) => {
-    if (!password.trim()) return false;
-    const existing = readJson<UserProfile | null>(USER_KEY, null);
-    const profile =
-      existing && existing.email === email
-        ? existing
-        : { ...demoProfile, email };
-    setUser(profile);
-    setOrders((prev) => {
-      const ids = new Set(prev.map((o) => o.id));
-      const extra = seedOrders().filter((o) => !ids.has(o.id));
-      if (extra.length) return [...extra, ...prev];
-      return prev.length ? prev : seedOrders();
-    });
-    return true;
+  const attachDemoOrders = useCallback(() => {
+    setOrders((prev) => mergeSeedOrders(prev));
   }, []);
 
-  const register = useCallback((profile: UserProfile, password: string) => {
-    if (!password.trim() || !profile.email) return false;
-    setUser(profile);
+  const enterAccount = useCallback(
+    (profile: UserProfile, withDemoOrders = false) => {
+      setUser(profile);
+      setLastUser(profile);
+      if (withDemoOrders || profile.email === demoAccount.email) {
+        attachDemoOrders();
+        setFavoriteIds((prev) =>
+          prev.length ? prev : ["p-atlant", "p-fenix", "p-shield"],
+        );
+      }
+    },
+    [attachDemoOrders],
+  );
+
+  const login = useCallback(
+    (email: string, password: string) => {
+      if (!password.trim()) return false;
+      const existing = readJson<UserProfile | null>(USER_KEY, null);
+      const remembered = readJson<UserProfile | null>(LAST_USER_KEY, null);
+      const profile =
+        existing && existing.email === email
+          ? existing
+          : remembered && remembered.email === email
+            ? remembered
+            : email === demoAccount.email
+              ? demoAccount
+              : { ...demoAccount, email };
+      enterAccount(profile, profile.email === demoAccount.email);
+      return true;
+    },
+    [enterAccount],
+  );
+
+  const register = useCallback(
+    (profile: UserProfile, password?: string) => {
+      if (password !== undefined && !password.trim()) return false;
+      if (!profile.email && !profile.phone) return false;
+      enterAccount(profile, false);
+      return true;
+    },
+    [enterAccount],
+  );
+
+  const loginYandex = useCallback(() => {
+    const remembered = lastUser?.authProvider === "yandex" ? lastUser : null;
+    enterAccount(remembered ?? yandexStubAccount, false);
     return true;
-  }, []);
+  }, [enterAccount, lastUser]);
+
+  const loginDemo = useCallback(() => {
+    enterAccount(demoAccount, true);
+    return true;
+  }, [enterAccount]);
+
+  const resumeSession = useCallback(() => {
+    const remembered = lastUser ?? demoAccount;
+    enterAccount(remembered, remembered.email === demoAccount.email);
+    return true;
+  }, [enterAccount, lastUser]);
 
   const logout = useCallback(() => {
-    setUser(null);
+    setUser((current) => {
+      if (current) setLastUser(current);
+      return null;
+    });
   }, []);
 
   const updateProfile = useCallback((profile: UserProfile) => {
-    setUser(profile);
+    setUser((prev) => (prev ? { ...prev, ...profile } : profile));
   }, []);
 
   const placeOrder = useCallback(
@@ -356,10 +572,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       carrierName?: string;
       deliveryCost?: number;
     }) => {
-      const goods = cart.reduce((sum, item) => {
-        const p = products.find((x) => x.id === item.productId);
-        return sum + (p ? cartLineTotal(p, item) : 0);
-      }, 0);
+      const goods = cartGoodsTotal(cart, products);
       const deliveryCost = input.deliveryCost ?? 0;
       const order: Order = {
         id: uid("ZP"),
@@ -419,25 +632,28 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [favoriteIds]
   );
 
-  const cartCount = cart.reduce((s, i) => s + i.qty, 0);
-  const cartTotal = cart.reduce((sum, item) => {
-    const p = products.find((x) => x.id === item.productId);
-    return sum + (p ? cartLineTotal(p, item) : 0);
-  }, 0);
+  const cartCount = cart.length;
+  const cartTotal = cartGoodsTotal(cart, products);
 
   const value = useMemo(
     () => ({
       cart,
       user,
+      lastUser,
+      ready,
       orders,
       leads,
       favoriteIds,
       addToCart,
       setQty,
       removeFromCart,
+      removeProductFromCart,
       clearCart,
       login,
       register,
+      loginYandex,
+      loginDemo,
+      resumeSession,
       logout,
       updateProfile,
       placeOrder,
@@ -451,15 +667,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [
       cart,
       user,
+      lastUser,
+      ready,
       orders,
       leads,
       favoriteIds,
       addToCart,
       setQty,
       removeFromCart,
+      removeProductFromCart,
       clearCart,
       login,
       register,
+      loginYandex,
+      loginDemo,
+      resumeSession,
       logout,
       updateProfile,
       placeOrder,

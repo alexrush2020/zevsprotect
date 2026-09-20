@@ -10,7 +10,6 @@ import { InquiryDialog } from "@/components/inquiry-dialog";
 import { Button } from "@/components/ui/button";
 import { CategoryStrip } from "@/components/home/category-strip";
 import { ProcessContour } from "@/components/home/process-contour";
-import { BackToTopGlove } from "@/components/home/back-to-top-glove";
 import { CountUp, Reveal } from "@/components/home/motion";
 import { brand } from "@/lib/brand";
 import { DEFAULT_DOCS, reviews } from "@/lib/data/catalog";
@@ -76,8 +75,6 @@ export function AboutView() {
         style={{ scaleX: progress }}
         aria-hidden
       />
-      <BackToTopGlove />
-
       <section className="relative isolate overflow-hidden bg-navy text-paper">
         <div className="home-grain pointer-events-none absolute inset-0 opacity-30" />
         <p className="pointer-events-none absolute top-[46%] left-3 z-[1] hidden origin-center -translate-y-1/2 -rotate-90 text-[10px] tracking-[0.52em] text-white/30 uppercase xl:block">
@@ -87,7 +84,7 @@ export function AboutView() {
         <div className="relative grid min-h-[calc(100svh-6.25rem)] lg:grid-cols-[minmax(22rem,0.92fr)_minmax(0,1.18fr)]">
           <div className="flex flex-col justify-end px-4 pb-12 pt-28 sm:px-8 sm:pb-16 lg:py-20 xl:pl-[max(1rem,calc((100vw-72rem)/2+1rem))]">
             <MetallicLogo variant="ru" tone="chrome" className="h-20 sm:h-28 md:h-32" />
-            <p className="mt-8 text-xs uppercase tracking-[0.22em] text-orange">
+            <p className="mt-8 text-xs uppercase tracking-[0.22em] text-orange sm:whitespace-nowrap">
               Полный цикл · Таганрог · Пн–Пт 8:00–17:00
             </p>
             <h1 className="mt-3 max-w-xl font-heading text-4xl leading-[0.95] sm:text-6xl">

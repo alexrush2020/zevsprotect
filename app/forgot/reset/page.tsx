@@ -7,63 +7,105 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Reveal } from "@/components/home/motion";
+
+const fieldClass = "h-11 rounded-xl bg-white";
 
 function ResetForm() {
   const params = useSearchParams();
   const token = params.get("token") || "demo";
+  const [password, setPassword] = useState("");
+  const [repeat, setRepeat] = useState("");
   const [done, setDone] = useState(false);
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const data = new FormData(e.currentTarget);
-    const a = String(data.get("password") || "");
-    const b = String(data.get("repeat") || "");
-    if (a.length < 4 || a !== b) {
+    if (password.length < 4 || password !== repeat) {
       toast.error("Пароли должны совпадать и быть не короче 4 символов");
       return;
     }
     setDone(true);
-    toast.success("Пароль обновлён (мок). Войдите с любым паролем.");
+    toast.success("Пароль обновлён. Можно войти с новым паролем.");
   }
 
   return (
-    <div className="mx-auto max-w-md px-4 py-16">
-      <h1 className="font-heading text-4xl">Новый пароль</h1>
-      <p className="mt-2 text-sm text-steel">
-        Ссылка из письма. Токен <code>{token}</code> в прототипе не проверяется
-        на сервере.
-      </p>
-      {done ? (
-        <p className="mt-6 rounded-2xl border bg-navy/10 p-4 text-sm">
-          Пароль записан локально как обновлённый. В бою это POST в кабинет.
-        </p>
-      ) : (
-        <form className="mt-8 grid gap-3" onSubmit={onSubmit}>
-          <div className="grid gap-1.5">
-            <Label htmlFor="password">Новый пароль</Label>
-            <Input id="password" name="password" type="password" required />
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="repeat">Повтор</Label>
-            <Input id="repeat" name="repeat" type="password" required />
-          </div>
-          <Button type="submit" className="h-11">
-            Сохранить
-          </Button>
-        </form>
-      )}
-      <p className="mt-4 text-sm text-steel">
-        <Link href="/login" className="underline">
-          Войти
-        </Link>
-      </p>
+    <div className="relative isolate overflow-hidden">
+      <div aria-hidden className="pointer-events-none absolute inset-0 bg-paper" />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-24 top-8 h-72 w-72 rounded-full bg-orange/15 blur-3xl"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -left-20 bottom-0 h-64 w-64 rounded-full bg-navy/10 blur-3xl"
+      />
+
+      <div className="relative mx-auto max-w-md px-4 py-12">
+        <Reveal>
+          <p className="text-xs uppercase tracking-[0.22em] text-steel">Личный кабинет</p>
+          <h1 className="mt-2 font-heading text-3xl text-ink sm:text-4xl">Кабинет клиента</h1>
+          <p className="mt-2 max-w-2xl text-sm text-steel">
+            Ссылка из письма. Задайте новый пароль и вернитесь ко входу.
+          </p>
+        </Reveal>
+
+        <section className="mt-8 rounded-2xl border bg-card p-5 shadow-[0_18px_50px_rgb(4_0_64_/_0.06)] sm:p-6">
+          <h2 className="font-heading text-2xl text-ink">Новый пароль</h2>
+          <p className="mt-1 text-sm text-steel">Токен {token} в прототипе не проверяется на сервере.</p>
+          {done ? (
+            <div className="mt-5 rounded-xl border bg-paper/80 p-4 text-sm text-ink">
+              Пароль обновлён. В бою это уйдёт в кабинет. Сейчас можно войти с любым паролем.
+            </div>
+          ) : (
+            <form className="mt-5 grid gap-3" onSubmit={onSubmit}>
+              <div className="grid gap-1.5">
+                <Label htmlFor="password" className="text-xs text-steel">
+                  Новый пароль *
+                </Label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={fieldClass}
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="repeat" className="text-xs text-steel">
+                  Повтор *
+                </Label>
+                <Input
+                  id="repeat"
+                  name="repeat"
+                  type="password"
+                  required
+                  value={repeat}
+                  onChange={(e) => setRepeat(e.target.value)}
+                  className={fieldClass}
+                />
+              </div>
+              <Button type="submit" className="btn-press-in mt-1 h-12 w-full text-base">
+                Сохранить
+              </Button>
+            </form>
+          )}
+          <Link
+            href="/login"
+            className="mt-4 inline-block text-sm text-steel underline underline-offset-2 hover:text-ink"
+          >
+            Вернуться ко входу
+          </Link>
+        </section>
+      </div>
     </div>
   );
 }
 
 export default function ForgotResetPage() {
   return (
-    <Suspense fallback={<p className="p-16 text-center text-steel">Загрузка…</p>}>
+    <Suspense fallback={<div className="min-h-[40vh] bg-paper" />}>
       <ResetForm />
     </Suspense>
   );

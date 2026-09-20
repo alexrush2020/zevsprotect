@@ -7,15 +7,6 @@ export type CategorySlug =
   | "kragi"
   | "rukavitsy";
 
-export type PackType = "komplekt" | "meshok" | "press";
-
-export type ProductLot = {
-  id: string;
-  type: PackType;
-  pairs: number;
-  price: number;
-};
-
 export type Product = {
   id: string;
   slug: string;
@@ -27,8 +18,8 @@ export type Product = {
   color: string;
   sizes: string[];
   price: number;
-  packQty: number;
-  lots?: ProductLot[];
+  minQty: number;
+  packSizes?: number[];
   stock: number;
   unit: string;
   weight?: string;
@@ -68,9 +59,28 @@ export type PaymentMethod = "invoice_auto" | "invoice_manager" | "online";
 export type CartItem = {
   productId: string;
   size: string;
+  coating?: string;
   qty: number;
-  lotId?: string;
-  packCount?: number;
+};
+
+export type AccountKind = "person" | "legal";
+
+export type DeliveryAddress = {
+  id: string;
+  label: string;
+  city: string;
+  line: string;
+  phone?: string;
+  isDefault?: boolean;
+};
+
+export type RequestDelivery = "cdek" | "terminal" | "pickup";
+
+export type Lead = {
+  id: string;
+  createdAt: string;
+  type: string;
+  payload: Record<string, string>;
 };
 
 export type UserProfile = {
@@ -81,6 +91,12 @@ export type UserProfile = {
   inn: string;
   kpp?: string;
   address: string;
+  addresses?: DeliveryAddress[];
+  kind?: AccountKind;
+  bankName?: string;
+  bankAccount?: string;
+  bik?: string;
+  authProvider?: "phone" | "yandex" | "demo";
 };
 
 export type Order = {

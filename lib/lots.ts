@@ -1,95 +1,61 @@
-import { formatPrice } from "@/lib/format";
-import type { CartItem, PackType, Product, ProductLot } from "@/lib/types";
+import { formatPairs } from "@/lib/order-qty";
+import { formatVolumeQty, volumeUnitPrice } from "@/lib/volume-quote";
+import type { CartItem, Product } from "@/lib/types";
 
-export const PACK_TYPE_LABEL: Record<PackType, string> = {
-  komplekt: "Комплект",
-  meshok: "Мешок",
-  press: "Пресс",
-};
+export { formatPairs };
 
-const SMALL_TYPES: PackType[] = ["komplekt"];
-const LARGE_TYPES: PackType[] = ["meshok", "press"];
-
-export function hasLots<T extends Pick<Product, "lots">>(
-  product: T,
-): product is T & { lots: ProductLot[] } {
-  return Boolean(product.lots?.length);
+export function catalogPrice(product: Pick<Product, "price">) {
+  return product.price;
 }
 
-export function catalogPrice(product: Pick<Product, "price" | "lots">) {
-  if (!product.lots?.length) return product.price;
-  return Math.min(...product.lots.map((lot) => lot.price));
+export function cartLineKey(item: Pick<CartItem, "productId" | "size" | "coating">) {
+  return `${item.productId}-${item.size}-${item.coating ?? ""}`;
 }
 
-export function formatPairs(qty: number) {
-  const n = Math.abs(qty) % 100;
-  const n1 = n % 10;
-  if (n > 10 && n < 20) return `${qty} пар`;
-  if (n1 === 1) return `${qty} пара`;
-  if (n1 >= 2 && n1 <= 4) return `${qty} пары`;
-  return `${qty} пар`;
+export function cartProductQty(items: CartItem[], productId: string) {
+  return items
+    .filter((item) => item.productId === productId)
+    .reduce((sum, item) => sum + item.qty, 0);
 }
 
-export function lotVolumePrice(lot: ProductLot) {
-  return lot.pairs * lot.price;
-}
-
-export function formatLotVolume(lot: ProductLot) {
-  return `${PACK_TYPE_LABEL[lot.type]} · ${formatPairs(lot.pairs)}`;
-}
-
-export function formatLotPrices(lot: ProductLot) {
-  return `${formatPrice(lotVolumePrice(lot))} · ${formatPrice(lot.price)}/пара`;
-}
-
-export function getLot(product: Pick<Product, "lots"> | undefined, lotId?: string) {
-  if (!product || !lotId) return undefined;
-  return product.lots?.find((lot) => lot.id === lotId);
-}
-
-export function teaserLots(lots: ProductLot[]): ProductLot[] {
-  if (lots.length <= 2) {
-    return [...lots].sort((a, b) => a.pairs - b.pairs);
-  }
-
-  const small =
-    lots
-      .filter((lot) => SMALL_TYPES.includes(lot.type))
-      .sort((a, b) => a.pairs - b.pairs)[0] ??
-    [...lots].sort((a, b) => a.pairs - b.pairs)[0];
-
-  const largeCandidates = lots.filter((lot) => lot.id !== small.id);
-  const largeTyped = largeCandidates
-    .filter((lot) => LARGE_TYPES.includes(lot.type))
-    .sort((a, b) => b.pairs - a.pairs)[0];
-  const large =
-    largeTyped ??
-    [...largeCandidates].sort((a, b) => b.pairs - a.pairs)[0];
-
-  return [small, large].filter((lot, index, list) => {
-    return Boolean(lot) && list.findIndex((item) => item.id === lot.id) === index;
-  });
-}
-
-export function cartLineKey(item: Pick<CartItem, "productId" | "size" | "lotId">) {
-  return `${item.productId}-${item.size}-${item.lotId ?? "unit"}`;
-}
-
-export function cartLineTotal(product: Product, item: CartItem) {
-  const lot = getLot(product, item.lotId);
-  if (lot) return lot.price * item.qty;
-  return product.price * item.qty;
+export function cartLineTotal(
+  product: Product,
+  item: CartItem,
+  productQty = item.qty,
+) {
+  return Math.round(volumeUnitPrice(product, productQty) * item.qty * 100) / 100;
 }
 
 export function cartLineCaption(product: Product, item: CartItem) {
-  const lot = getLot(product, item.lotId);
-  if (!lot) return `${product.sku} · размер ${item.size}`;
-  const packs = item.packCount ?? 0;
-  return `${product.sku} · размер ${item.size} · ${formatLotVolume(lot)} × ${packs} уп.`;
+  const coating = item.coating ? ` · ${item.coating}` : "";
+  return `${product.sku} · размер ${item.size}${coating} · ${formatVolumeQty(item.qty, product.unit)}`;
 }
 
 export function cartLineOfferLabel(product: Product, item: CartItem) {
-  const lot = getLot(product, item.lotId);
-  if (!lot) return `× ${item.qty}`;
-  return `${formatLotVolume(lot)} × ${item.packCount ?? 0} уп.`;
+  return `× ${formatVolumeQty(item.qty, product.unit)}`;
+}
+
+export function groupCartByProduct(cart: CartItem[]) {
+  const ids: string[] = [];
+  const groups = new Map<string, CartItem[]>();
+  for (const item of cart) {
+    if (!groups.has(item.productId)) {
+      ids.push(item.productId);
+      groups.set(item.productId, []);
+    }
+    groups.get(item.productId)!.push(item);
+  }
+  return ids.map((productId) => ({
+    productId,
+    items: groups.get(productId)!,
+  }));
+}
+
+export function cartGoodsTotal(cart: CartItem[], catalog: Product[]) {
+  return groupCartByProduct(cart).reduce((sum, { productId, items }) => {
+    const product = catalog.find((item) => item.id === productId);
+    if (!product) return sum;
+    const qty = items.reduce((acc, item) => acc + item.qty, 0);
+    return sum + cartLineTotal(product, { productId, size: "", qty }, qty);
+  }, 0);
 }

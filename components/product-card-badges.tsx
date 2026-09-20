@@ -10,7 +10,7 @@ export function ProductCardBadges({
   product: Product;
   className?: string;
 }) {
-  const { label, wholesaleFrom } = productPromoStub(product);
+  const { label } = productPromoStub(product);
 
   return (
     <div
@@ -20,9 +20,6 @@ export function ProductCardBadges({
       )}
     >
       <Badge className="bg-ink/85 text-paper">{label}</Badge>
-      <Badge className="bg-ink/85 font-normal text-paper">
-        опт от {wholesaleFrom.toLocaleString("ru-RU")} пар
-      </Badge>
     </div>
   );
 }

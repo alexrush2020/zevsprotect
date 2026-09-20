@@ -18,7 +18,7 @@ type MenuItem = {
 };
 
 function productMenuLabel(name: string) {
-  return name.replace(/^(Перчатки|Краги|Рукавицы)\s+/u, "");
+  return (name ?? "").replace(/^(Перчатки|Краги|Рукавицы)\s+/u, "");
 }
 
 export function CatalogMenu({ extra }: { extra: ExtraLink[] }) {

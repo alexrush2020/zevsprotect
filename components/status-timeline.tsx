@@ -14,10 +14,17 @@ export function StatusTimeline({ status }: { status: OrderStatus }) {
     <ol className="grid gap-2 sm:grid-cols-5">
       {STATUS_FLOW.map((step, i) => {
         const done = i <= current;
+        const delivered = step === "delivered" && done;
         return (
           <li
             key={step}
-            className={`rounded-xl border px-3 py-2 text-xs ${done ? "border-navy bg-navy text-paper" : "text-steel"}`}
+            className={`rounded-xl border px-3 py-2 text-xs ${
+              delivered
+                ? "border-emerald-800 bg-emerald-800 text-paper"
+                : done
+                  ? "border-navy bg-navy text-paper"
+                  : "text-steel"
+            }`}
           >
             <span className="block font-medium">{i + 1}</span>
             {STATUS_LABEL[step]}
