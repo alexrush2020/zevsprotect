@@ -29,11 +29,14 @@ const stats: {
   { to: 80, suffix: "+", label: "позиций в каталоге" },
 ];
 
+// Округление до 3 знаков: Math.sin больших аргументов в Node и браузере расходится
+// в младших разрядах, без него — ошибка гидрации.
+const round3 = (x: number) => Math.round(x * 1000) / 1000;
 const motes = Array.from({ length: 39 }, (_, i) => {
   const n = Math.sin(i * 12.9898) * 43758.5453;
-  const r = n - Math.floor(n);
+  const r = round3(n - Math.floor(n));
   const n2 = Math.sin(i * 78.233) * 24634.841;
-  const r2 = n2 - Math.floor(n2);
+  const r2 = round3(n2 - Math.floor(n2));
   return {
     left: `${6 + r * 88}%`,
     size: r2 > 0.78 ? 3 : r2 > 0.4 ? 2 : 1,

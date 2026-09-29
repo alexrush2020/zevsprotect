@@ -1,0 +1,16 @@
+# Локальная БД. Приложение запускается на хосте: pnpm dev
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: zevs
+      POSTGRES_PASSWORD: zevs
+      POSTGRES_DB: zevs
+    ports:
+      - '127.0.0.1:5442:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
