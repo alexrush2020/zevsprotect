@@ -35,6 +35,7 @@ export default buildConfig({
     },
     components: {
       Nav: '/payload/components/AdminNav#AdminNav',
+      actions: ['/payload/components/ThemeToggle#ThemeToggle'],
       views: { dashboard: { Component: '/payload/components/Dashboard#Dashboard' } },
     },
     meta: { titleSuffix: ' · зевспротект®' },

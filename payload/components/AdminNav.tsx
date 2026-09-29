@@ -1,6 +1,7 @@
 import type { ServerProps } from 'payload'
 import type { Role } from '../access'
 import { NavLink } from './NavLink'
+import { ThemeToggle } from './ThemeToggle'
 import { visibleGroups } from './nav-config'
 
 // Пути иконок из макета (AdminNav.dc.html), ключ — slug коллекции/глобала.
@@ -68,10 +69,13 @@ export function AdminNav({ user }: ServerProps) {
         ))}
       </div>
       <div className="zp-nav__footer">
-        <a href="/" target="_blank" rel="noreferrer" className="zp-nav__item">
-          <Icon d="M14 4h6v6M20 4l-9 9M18 14v5H5V6h5" />
-          <span>Открыть сайт</span>
-        </a>
+        <div className="zp-nav__row">
+          <a href="/" target="_blank" rel="noreferrer" className="zp-nav__item">
+            <Icon d="M14 4h6v6M20 4l-9 9M18 14v5H5V6h5" />
+            <span>Открыть сайт</span>
+          </a>
+          <ThemeToggle />
+        </div>
         {user && (
           <div className="zp-nav__user">
             <span className="zp-nav__avatar" aria-hidden="true">{name.charAt(0).toUpperCase()}</span>
