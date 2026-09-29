@@ -116,11 +116,7 @@ export function CountUp({
   const [value, setValue] = useState(reduce ? to : 0);
 
   useEffect(() => {
-    if (reduce) {
-      setValue(to);
-      return;
-    }
-    if (!inView) return;
+    if (reduce || !inView) return;
     let frame = 0;
     const start = performance.now();
     const tick = (now: number) => {
@@ -136,7 +132,7 @@ export function CountUp({
   return (
     <span ref={ref} className={className}>
       {prefix}
-      {value.toLocaleString("ru-RU")}
+      {(reduce ? to : value).toLocaleString("ru-RU")}
       {suffix}
     </span>
   );

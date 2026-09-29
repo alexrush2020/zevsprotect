@@ -16,11 +16,7 @@ function useFlapLine(target: string, active: boolean, delayMs: number) {
   const [text, setText] = useState(() => (reduce ? target : target.replace(/[^\s]/g, "·")));
 
   useEffect(() => {
-    if (reduce) {
-      setText(target);
-      return;
-    }
-    if (!active) return;
+    if (reduce || !active) return;
 
     const chars = [...target];
     const settleAt = chars.map((ch, i) =>
@@ -43,7 +39,7 @@ function useFlapLine(target: string, active: boolean, delayMs: number) {
     return () => window.clearInterval(id);
   }, [active, delayMs, reduce, target]);
 
-  return text;
+  return reduce ? target : text;
 }
 
 function FlapRow({

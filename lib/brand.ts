@@ -13,8 +13,6 @@ export const brand = {
   address: "Таганрог, Поляковское шоссе, 17",
   phone: "+7 863 443-09-85",
   phoneHref: "tel:+78634430985",
-  whatsapp: "+7 988 585-13-93",
-  whatsappHref: "https://wa.me/79885851393",
   maxHref: "https://max.ru/id6154170275_biz",
   email: "sales@zevsprotect.ru",
   domain: "zevsprotect.ru",

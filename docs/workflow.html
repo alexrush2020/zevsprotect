@@ -383,7 +383,7 @@ const TRACKS = [
     deps:['C-CAT'],
     acc:'Unit-тест маппинга документа Payload → Product; страница-потребитель рендерится без изменений.' },
 
-  { id:'S-8', t:'Lint-долг прототипа: react-hooks/set-state-in-effect', d:'18 ошибок eslint в коде прототипа (setState в useEffect: store, формы, ЛК, отзывы, qty-stepper). Чинить по мере перевода компонентов на Payload, не отдельным рефакторингом.', pr:'P3', st:'todo', own:'agent', deps:['S-1'],
+  { id:'S-8', t:'Lint-долг прототипа: react-hooks/set-state-in-effect', d:'18 ошибок eslint в коде прототипа (setState в useEffect: store, формы, ЛК, отзывы, qty-stepper). Чинить по мере перевода компонентов на Payload, не отдельным рефакторингом.', pr:'P3', st:'done', anchors:['lib/store.tsx','components/account-auth-form.tsx'], res:'<b>Коммиты 177b2f8 + правка checkout.</b> set-state-in-effect: 15 → 0 (6 файлов render-time prev, 9 точечных eslint-disable с причиной: localStorage после гидратации и др.). test 66/66, typecheck, ревью opus. Не проверено в браузере/next build.', own:'agent', deps:['S-1'],
     req:['npx eslint . — на 2026-09-29: lib/store.tsx, components/account-auth-form.tsx, cart-*-form, product-reviews/*, qty-stepper и др.',
          'Поведение UI не менять.'],
     acc:'npm run lint без ошибок.' },
@@ -434,11 +434,11 @@ const TRACKS = [
   id:'meet', name:'Хвосты встречи 19.09',
   desc:'Правки по итогам показа прототипа, ещё не внесённые в код (сверено 2026-09-29).',
   items:[
-  { id:'M-1', t:'Карточка товара: «Сертификаты и документы» → документы без сертификата', d:'Клиент: есть декларация соответствия, сертификата нет — не выдумывать.', pr:'P2', st:'todo', own:'agent',
+  { id:'M-1', t:'Карточка товара: «Сертификаты и документы» → документы без сертификата', d:'Клиент: есть декларация соответствия, сертификата нет — не выдумывать.', pr:'P2', st:'done', anchors:['app/(frontend)/product/[slug]/page.tsx'], res:'<b>Коммит 6c869e6.</b> Заголовок «Документы», список без сертификата (product/[slug]/page.tsx). test 66/66, typecheck, ревью opus. В браузере не смотрели.', own:'agent',
     req:['app/(frontend)/product/[slug]/page.tsx:156 — заголовок «Сертификаты и документы».'],
     links:[['meetings/2026-09-19-prototype-demo-followup.md', 'Встреча 19.09']],
     acc:'На карточке нет упоминания несуществующего сертификата.' },
-  { id:'M-2', t:'Убрать WhatsApp из lib/brand.ts', d:'Константы whatsapp/whatsappHref остались; на витрине только MAX (CONTRA-6).', pr:'P3', st:'todo', own:'agent',
+  { id:'M-2', t:'Убрать WhatsApp из lib/brand.ts', d:'Константы whatsapp/whatsappHref остались; на витрине только MAX (CONTRA-6).', pr:'P3', st:'done', anchors:['lib/brand.ts'], res:'<b>Коммит 6c869e6.</b> whatsapp/whatsappHref удалены из lib/brand.ts, rg по app/components/lib пуст, typecheck ок.', own:'agent',
     req:['lib/brand.ts:16-17.'],
     links:[['CONTRADICTIONS.md', 'Противоречия']],
     acc:'rg whatsapp по app/components/lib пусто, сборка зелёная.' },

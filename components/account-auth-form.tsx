@@ -58,12 +58,14 @@ export function AccountAuthForm() {
     if (user && pathname !== "/account") router.replace("/account");
   }, [user, pathname, router]);
 
-  useEffect(() => {
+  const [prevPath, setPrevPath] = useState<string | null>(null);
+  if (pathname !== prevPath) {
+    setPrevPath(pathname);
     if (pathname === "/login" || pathname === "/register" || pathname === "/forgot") {
       setMode(modeFromPath(pathname));
       if (pathname !== "/forgot") setResetSent(false);
     }
-  }, [pathname]);
+  }
 
   function goToCabinet() {
     if (pathname !== "/account") router.push("/account");

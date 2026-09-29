@@ -390,6 +390,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const nextOrders = readJson<Order[]>(ORDERS_KEY, []);
     const nextLeads = readJson<Lead[]>(LEADS_KEY, []);
     const nextFavorites = readJson<string[]>(FAVORITES_KEY, []);
+    /* eslint-disable react-hooks/set-state-in-effect -- гидратация из localStorage только на клиенте (SSR-безопасно) */
     setCart(nextCart);
     setUser(nextUser);
     setLastUser(nextLastUser);
@@ -405,12 +406,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setLeads(nextLeads);
     setFavoriteIds(Array.isArray(nextFavorites) ? nextFavorites : []);
     setReady(true);
+    /* eslint-enable react-hooks/set-state-in-effect */
     // серверная сессия Payload — источник истины для реальных аккаунтов
     void meRequest().then((me) => {
       if (me) setUser(me);
       else setUser((cur) => (cur?.authProvider === "password" ? null : cur));
     });
   }, []);
+
+  const [prevUser, setPrevUser] = useState(user);
+  if (user !== prevUser) {
+    setPrevUser(user);
+    if (user && user.authProvider !== "password") setLastUser(user);
+  }
 
   useEffect(() => {
     if (!ready) return;
@@ -423,7 +431,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       localStorage.setItem(USER_KEY, JSON.stringify(user));
       if (user.authProvider !== "password") {
         localStorage.setItem(LAST_USER_KEY, JSON.stringify(user));
-        setLastUser(user);
       }
     } else {
       localStorage.removeItem(USER_KEY);

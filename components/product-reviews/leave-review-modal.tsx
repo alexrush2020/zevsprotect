@@ -45,6 +45,7 @@ export function LeaveReviewModal({
 
   useEffect(() => {
     if (!open) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- сброс формы при открытии модалки
     setRating(5);
     setCompany(author);
     setText("");
