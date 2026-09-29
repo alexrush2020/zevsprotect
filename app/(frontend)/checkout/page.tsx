@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -41,7 +41,7 @@ export default function CheckoutPage() {
   const [manualAddress, setManualAddress] = useState(addresses.length === 0);
   const [manualValue, setManualValue] = useState(user?.address ?? "");
 
-  const [prevUser, setPrevUser] = useState(user);
+  const [prevUser, setPrevUser] = useState<typeof user>(null);
   if (user !== prevUser) {
     setPrevUser(user);
     setGuest(!user);
