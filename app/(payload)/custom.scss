@@ -91,19 +91,11 @@ html {
 }
 
 // Основные кнопки — акцент вместо инверсного цвета Payload (единственная привязка к классу Payload).
-// Текст кнопки: полужирный и крупнее — на оранжевом тонкий шрифт в тёмной теме читался вяло.
+// Текст кнопки — штатный вес и размер, как у остальных кнопок; читаемость даёт белый на глубоком оранжевом.
 .btn--style-primary {
   --bg-color: var(--btn-bg);
   --color: var(--btn-fg);
   --hover-bg: var(--btn-hover);
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  &,
-  .btn__content,
-  .btn__label {
-    font-size: 15px;
-    font-weight: 600;
-  }
 }
 
 a:focus-visible,
@@ -716,16 +708,6 @@ html {
     &:last-child {
       margin-bottom: 0;
     }
-  }
-}
-
-// На узких экранах панель действий документа прокручивается по горизонтали (так задумано в Payload) —
-// чуть уменьшаем кнопки, чтобы «Опубликовать изменения» помещалась.
-@media (max-width: 700px) {
-  .btn--style-primary,
-  .btn--style-primary .btn__content,
-  .btn--style-primary .btn__label {
-    font-size: 14px;
   }
 }
 
