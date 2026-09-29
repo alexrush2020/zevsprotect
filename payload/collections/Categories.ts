@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 import { docTitle, slugField } from '../admin-ui'
 import { hasRole } from '../access'
+import { revalidateAfterChange, revalidateAfterDelete } from '../hooks/revalidate'
 
 export const Categories: CollectionConfig = {
   slug: 'categories',
@@ -13,6 +14,7 @@ export const Categories: CollectionConfig = {
     update: hasRole('admin', 'content'),
     delete: hasRole('admin'),
   },
+  hooks: { afterChange: [revalidateAfterChange('catalog')], afterDelete: [revalidateAfterDelete('catalog')] },
   fields: [
     { name: 'title', type: 'text', label: 'Название', required: true },
     slugField(),

@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 import { docTitle, slugField } from '../admin-ui'
 import { hasRole, isAdmin, isStaff, publishedOrStaff } from '../access'
 import { isPriceLockedFor, protectFromImport } from '../hooks/products'
+import { revalidateAfterChange, revalidateAfterDelete } from '../hooks/revalidate'
 import { validateKnitClass } from '../validators'
 
 const editablePrice = ({ doc, data }: { doc?: object; data?: object }) =>
@@ -26,6 +27,8 @@ export const Products: CollectionConfig = {
     delete: hasRole('admin'),
   },
   hooks: {
+    afterChange: [revalidateAfterChange('catalog')],
+    afterDelete: [revalidateAfterDelete('catalog')],
     beforeChange: [({ data, originalDoc, context }) => protectFromImport(data, originalDoc, context) as typeof data],
   },
   fields: [

@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 import { docTitle } from '../admin-ui'
 import { hasRole } from '../access'
+import { revalidateAfterChange, revalidateAfterDelete } from '../hooks/revalidate'
 
 const moderators = hasRole('admin', 'manager')
 
@@ -15,6 +16,8 @@ export const Reviews: CollectionConfig = {
     delete: moderators,
   },
   hooks: {
+    afterChange: [revalidateAfterChange('catalog')],
+    afterDelete: [revalidateAfterDelete('catalog')],
     beforeChange: [
       ({ data, operation, req }) => {
         if (operation === 'create' && req.user?.collection === 'customers') data.customer = req.user.id
