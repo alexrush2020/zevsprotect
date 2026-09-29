@@ -1,11 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { hasRole, isAdmin, ownOrRoles, publishedOrStaff, selfOrAdmin } from './access'
+import { hasRole, isAdmin, isStaff, ownOrRoles, publishedOrStaff, selfOrAdmin } from './access'
 
 const as = (user: unknown) => ({ req: { user } }) as never
 const staff = (role: string, id = 1) => ({ collection: 'users', role, id })
 const customer = (id = 7) => ({ collection: 'customers', id })
 
 describe('access', () => {
+  it('isStaff: сотрудник true, клиент/аноним false', () => {
+    expect(isStaff(as(staff('admin')))).toBe(true)
+    expect(isStaff(as(staff('manager')))).toBe(true)
+    expect(isStaff(as(customer()))).toBe(false)
+    expect(isStaff(as(null))).toBe(false)
+  })
+
   it('isAdmin: только admin', () => {
     expect(isAdmin(as(staff('admin')))).toBe(true)
     expect(isAdmin(as(staff('manager')))).toBe(false)
