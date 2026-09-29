@@ -1,0 +1,1202 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="dark light">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ЗевсПротект — доска задач</title>
+<style>
+/* ── Cursor-style dark (default) ───────────────────────────── */
+:root, :root[data-theme="dark"]{
+  color-scheme:dark;       /* нативные select/range/scrollbar — тёмные */
+  --bg:#0e0e11;            /* канва */
+  --panel:#151519;         /* карточки */
+  --panel-2:#1a1a1f;       /* вложенный фон */
+  --panel-3:#101013;       /* code / inputs */
+  --text:#e6e6e9;
+  --muted:#8b8b95;
+  --line:#26262c;
+  --line-2:#1e1e24;
+  --accent:#4f8cff;  --accent-soft:#14213c;
+  --ok:#3fb950;      --ok-soft:#0f2417;
+  --warn:#d6a039;    --warn-soft:#2a2010;
+  --stop:#f0645b;    --stop-soft:#2c1614;
+  --info:#a371f7;    --info-soft:#221a33;
+  --shadow:0 0 0 1px rgba(255,255,255,.015);
+  --radius:10px;
+}
+:root[data-theme="light"]{
+  color-scheme:light;
+  --bg:#f7f8fa; --panel:#fff; --panel-2:#fbfcfd; --panel-3:#f4f5f7;
+  --text:#16191d; --muted:#697280;
+  --line:#e3e6ea; --line-2:#eef0f3;
+  --accent:#2f6fed; --accent-soft:#eaf1fe;
+  --ok:#1a7f4b; --ok-soft:#e6f4ec;
+  --warn:#a86400; --warn-soft:#fdf1de;
+  --stop:#b3261e; --stop-soft:#fdeceb;
+  --info:#5b3fb5; --info-soft:#f0ebfd;
+  --shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06);
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font:14.5px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+}
+::selection{background:var(--accent-soft); color:var(--text)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:1px; border-radius:6px}
+/* тонкие скроллбары как в редакторе */
+*::-webkit-scrollbar{width:10px; height:10px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{background:#33333b; border-radius:99px; border:2px solid var(--bg)}
+*::-webkit-scrollbar-thumb:hover{background:#43434d}
+:root[data-theme="light"] *::-webkit-scrollbar-thumb{background:#c9ced6}
+.wrap{max-width:1080px; margin:0 auto; padding:28px 20px 80px}
+header.top{margin-bottom:20px}
+h1{font-size:24px; margin:0 0 4px; letter-spacing:-.01em}
+.sub{color:var(--muted); font-size:13.5px; margin:0}
+.sub code{background:var(--panel-2); border:1px solid var(--line); padding:1px 5px; border-radius:5px; font-size:12px}
+
+/* summary */
+.summary{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:16px 18px; margin:18px 0; box-shadow:var(--shadow)}
+.sumhead{display:flex; justify-content:space-between; align-items:baseline; gap:12px; flex-wrap:wrap; margin-bottom:10px}
+.sumhead b{font-size:15px}
+.pct{font-variant-numeric:tabular-nums; font-weight:600; color:var(--accent)}
+.stats{display:flex; gap:18px; flex-wrap:wrap; margin-top:12px; font-size:13px; color:var(--muted)}
+.stats span b{color:var(--text); font-variant-numeric:tabular-nums}
+
+/* сводка блоками: Готово + Оставшиеся = Всего */
+.statgrid{display:flex; align-items:stretch; gap:10px; margin-top:14px; flex-wrap:wrap}
+.sg{flex:1; min-width:170px; background:var(--panel-2); border:1px solid var(--line);
+    border-radius:9px; padding:10px 13px}
+.sgh{font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:600}
+.sgn{font-size:26px; font-weight:650; line-height:1.15; margin:3px 0 2px; font-variant-numeric:tabular-nums}
+.sgd{font-size:12px; color:var(--muted)}
+.sgd b{color:var(--text); font-variant-numeric:tabular-nums; font-weight:600}
+.sgop{display:flex; align-items:center; font-size:18px; font-weight:600; color:var(--muted)}
+.sg-done{border-color:var(--ok); background:var(--ok-soft)}
+.sg-done .sgn, .sg-done .sgh{color:var(--ok)}
+.sg-rem{border-color:var(--warn); background:var(--warn-soft)}
+.sg-rem .sgn, .sg-rem .sgh{color:var(--warn)}
+.sg-total .sgn{color:var(--text)}
+.statfoot{display:flex; gap:18px; flex-wrap:wrap; justify-content:space-between;
+  margin-top:10px; padding-top:9px; border-top:1px dashed var(--line);
+  font-size:12.5px; color:var(--muted)}
+.statfoot b{color:var(--text); font-variant-numeric:tabular-nums}
+@media (max-width:640px){ .sgop{display:none} }
+
+.bar{height:8px; background:var(--line-2); border-radius:99px; overflow:hidden}
+.bar > i{display:block; height:100%; background:var(--accent); border-radius:99px; transition:width .25s ease}
+.bar.slim{height:5px}
+.bar.ok > i{background:var(--ok)}
+
+/* toolbar */
+.toolbar{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:16px 0 8px}
+input[type=search],select,button{
+  font:inherit; font-size:13.5px; color:var(--text); background:var(--panel-3); border:1px solid var(--line);
+  border-radius:7px; padding:7px 10px; transition:border-color .12s ease, background .12s ease;
+}
+input[type=search]{flex:1; min-width:200px}
+input[type=search]::placeholder{color:var(--muted)}
+button{cursor:pointer}
+button:hover{border-color:#3a3a44; background:var(--panel-2)}
+:root[data-theme="light"] button:hover{border-color:var(--accent); background:var(--panel)}
+button.ghost{background:transparent}
+.spacer{flex:1}
+
+/* track */
+.track{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); margin:14px 0; overflow:hidden; box-shadow:var(--shadow)}
+.track > summary{list-style:none; cursor:pointer; padding:14px 16px; display:flex; align-items:center; gap:12px}
+.track > summary::-webkit-details-marker{display:none}
+.track > summary:hover{background:var(--panel-2)}
+.chev{flex:none; width:16px; color:var(--muted); transition:transform .15s ease}
+details[open] > summary .chev{transform:rotate(90deg)}
+.tname{font-weight:600; flex:1; min-width:0}
+.tname small{display:block; font-weight:400; color:var(--muted); font-size:12.5px; margin-top:2px}
+.tprog{flex:none; width:150px}
+.tprog .bar{margin-top:4px}
+.tprog .lbl{font-size:11.5px; color:var(--muted); text-align:right; font-variant-numeric:tabular-nums}
+
+/* item */
+.items{border-top:1px solid var(--line-2)}
+.item{border-bottom:1px solid var(--line-2)}
+.item:last-child{border-bottom:none}
+.item > summary{list-style:none; cursor:pointer; padding:11px 16px 11px 14px; display:flex; align-items:center; gap:10px}
+.item > summary::-webkit-details-marker{display:none}
+.item > summary:hover{background:var(--panel-2)}
+.id{flex:none; font:600 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace; letter-spacing:.02em;
+    background:var(--panel-3); border:1px solid var(--line); border-radius:5px; padding:5px 6px; color:var(--muted)}
+.title{flex:1; min-width:0}
+.title span{display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.pill{flex:none; font-size:11px; font-weight:600; padding:3px 7px; border-radius:99px; border:1px solid transparent; white-space:nowrap}
+.p-P0{background:var(--stop-soft); color:var(--stop)}
+.p-P1{background:var(--warn-soft); color:var(--warn)}
+.p-P2{background:var(--accent-soft); color:var(--accent)}
+.p-P3{background:var(--panel-2); color:var(--muted); border-color:var(--line)}
+.st{flex:none; font-size:11px; font-weight:600; padding:3px 8px; border-radius:99px}
+.st-todo{background:var(--panel-2); color:var(--muted); border:1px solid var(--line)}
+.st-doing{background:var(--accent-soft); color:var(--accent)}
+.st-done{background:var(--ok-soft); color:var(--ok)}
+.st-blocked{background:var(--warn-soft); color:var(--warn)}
+.st-wont{background:var(--stop-soft); color:var(--stop)}
+.st-superseded{background:var(--info-soft); color:var(--info)}
+.hrs{flex:none; font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; min-width:38px; text-align:right}
+.ipro{flex:none; width:92px}
+
+/* copy */
+.copy{flex:none; display:inline-flex; align-items:center; justify-content:center; width:27px; height:27px;
+  padding:0; border-radius:6px; border:1px solid transparent; background:transparent; color:var(--muted);
+  cursor:pointer; opacity:.4; transition:opacity .12s ease, color .12s ease, border-color .12s ease, background .12s ease}
+summary:hover .copy{opacity:1}
+.copy:hover{color:var(--text); border-color:var(--line); background:var(--panel-3)}
+.copy:focus-visible{opacity:1}
+.copy.ok{opacity:1; color:var(--ok); border-color:transparent; background:transparent}
+.copy.err{opacity:1; color:var(--stop); border-color:transparent; background:transparent}
+.copy svg{width:15px; height:15px; pointer-events:none}
+@media (hover:none){ .copy{opacity:.8} }
+
+/* body */
+.body{padding:6px 16px 18px 44px; background:var(--panel-2); border-top:1px dashed var(--line)}
+.body h4{margin:14px 0 6px; font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:600}
+.body p{margin:6px 0}
+.body p.desc{margin:2px 0 4px; color:var(--text); font-size:14px}
+.body ul{margin:6px 0; padding-left:18px}
+.body li{margin:3px 0}
+.note{background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--warn); border-radius:8px; padding:9px 12px; margin:8px 0; font-size:13.5px}
+.note.stop{border-left-color:var(--stop)}
+.note.ok{border-left-color:var(--ok)}
+/* «Осталось» — что ещё не сделано по пункту. Не блокер (тот красный) и не
+   результат (тот зелёный): это открытый хвост работы. */
+.note.left{border-left-color:var(--acc, #4b7bec)}
+.note.info{border-left-color:var(--info)}
+code{background:var(--panel-3); border:1px solid var(--line); padding:1px 5px; border-radius:5px;
+     font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace; color:#c9d1e5}
+:root[data-theme="light"] code{color:inherit}
+/* учёт времени */
+.times{display:flex; gap:6px 16px; flex-wrap:wrap; align-items:baseline; margin:10px 0 2px;
+  padding:8px 11px; background:var(--panel-3); border:1px solid var(--line); border-radius:8px;
+  font-size:12.5px; color:var(--muted)}
+.times b{color:var(--text); font-variant-numeric:tabular-nums; font-weight:600}
+.times .sp{color:var(--ok); font-weight:600}
+.times .tnote{flex-basis:100%; color:var(--muted)}
+.approx{color:var(--warn); cursor:help; font-weight:600}
+
+/* ячейки внешней таблицы заказчика (xlsx) */
+.bt{display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin:9px 0 2px}
+.bt .btlbl{font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:600; margin-right:2px}
+.btchip{font:11.5px/1 ui-monospace,SFMono-Regular,Menlo,monospace; color:var(--info);
+  background:var(--info-soft); border:1px solid transparent; padding:5px 7px; border-radius:6px; white-space:nowrap}
+.btchip.miss{color:var(--muted); background:var(--panel-3); border-color:var(--line)}
+
+.links{display:flex; gap:8px; flex-wrap:wrap; margin:8px 0}
+.links a{font-size:12.5px; text-decoration:none; color:var(--accent); background:var(--accent-soft);
+         border:1px solid transparent; padding:5px 9px; border-radius:7px}
+.links a:hover{border-color:var(--accent)}
+textarea{width:100%; min-height:78px; resize:vertical; font:inherit; font-size:13.5px;
+  background:var(--panel-3); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:9px 11px}
+textarea::placeholder{color:var(--muted)}
+textarea:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft)}
+.ctrl{display:flex; align-items:center; gap:12px; margin:10px 0 4px; flex-wrap:wrap}
+.ctrl label{font-size:12px; color:var(--muted)}
+input[type=range]{flex:1; min-width:160px; accent-color:var(--accent)}
+.saved{font-size:11.5px; color:var(--ok); opacity:0; transition:opacity .2s}
+.saved.on{opacity:1}
+
+/* ── Тестирование: шаги проверки + визуальный контроль ── */
+.tsteps{margin:6px 0; padding-left:20px}
+.tsteps li{margin:3px 0}
+.shots{display:flex; gap:10px; flex-wrap:wrap; margin:8px 0 4px}
+.shot{margin:0; width:170px; cursor:zoom-in; background:var(--panel-3); border:1px solid var(--line);
+  border-radius:8px; padding:5px; transition:border-color .15s}
+.shot:hover{border-color:var(--accent)}
+.shot img{display:block; width:100%; height:102px; object-fit:cover; object-position:top; border-radius:5px; background:var(--panel-2)}
+.shot figcaption{display:flex; gap:6px; align-items:center; margin-top:5px}
+.shot .scap{flex:1; font:11px/1.35 ui-monospace,SFMono-Regular,Menlo,monospace; color:var(--muted);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.shot figcaption a{flex:none; color:var(--accent); text-decoration:none; font-size:13px; padding:0 4px; border-radius:4px}
+.shot figcaption a:hover{background:var(--accent-soft)}
+.shot .smiss{display:none; font-size:11px; color:var(--muted); padding:4px 2px}
+.shot.miss{cursor:default}
+.shot.miss:hover{border-color:var(--line)}
+.shot.miss img{display:none}
+.shot.miss .smiss{display:block}
+
+/* лайтбокс скриншотов: тёмный оверлей в обеих темах */
+.lb{position:fixed; inset:0; z-index:99; display:flex; flex-direction:column; background:rgba(10,10,14,.93)}
+.lb-bar{display:flex; align-items:center; gap:8px; padding:10px 14px; flex:none; color:#c9c9d2}
+.lb-bar .lb-cap{font:12.5px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace; overflow:hidden;
+  text-overflow:ellipsis; white-space:nowrap; margin-right:auto}
+.lb-bar button,.lb-bar a{flex:none; display:inline-flex; align-items:center; justify-content:center;
+  min-width:30px; height:30px; padding:0 9px; border-radius:7px; border:1px solid #3a3a44;
+  background:#1d1d24; color:#e6e6e9; font:13px/1 inherit; cursor:pointer; text-decoration:none}
+.lb-bar button:hover,.lb-bar a:hover{border-color:var(--accent)}
+.lb-bar .lb-pct{min-width:52px; text-align:center; font-variant-numeric:tabular-nums; font-size:12.5px}
+.lb-view{flex:1; overflow:hidden; position:relative; cursor:grab; touch-action:none}
+.lb-view.drag{cursor:grabbing}
+.lb-view img{position:absolute; left:0; top:0; transform-origin:0 0; max-width:none;
+  user-select:none; -webkit-user-drag:none}
+.tbl-scroll{overflow-x:auto}
+footer{margin-top:34px; color:var(--muted); font-size:12.5px; text-align:center}
+.hidden{display:none !important}
+@media (max-width:720px){
+  .tprog{width:84px}
+  .ipro{display:none}
+  .hrs{display:none}
+  .body{padding-left:16px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <h1>ЗевсПротект — сайт zevsprotect.ru</h1>
+  <p class="sub">Новый сайт производителя перчаток на основе <a href="https://zevsprotect-prototype.vercel.app">прототипа</a> (тег <code>prototype-final</code>), каталог, магазин, ЛК, блог, Payload CMS, интеграции 1С КА 2 и Битрикс24. Треки = этапы КП (537 000 ₽, 3 мес.). Источник карточек — <code>docs/TZ.md</code>, <code>docs/meetings/</code> и <code>docs/ARCHITECTURE.md</code>; статусы сверены с кодом на 2026-09-29. Прогресс и заметки в браузере — <code>localStorage</code>.</p>
+</header>
+
+<div class="summary">
+  <div class="sumhead">
+    <b>Общий прогресс</b>
+    <span class="pct" id="ovPct">0%</span>
+  </div>
+  <div class="bar"><i id="ovBar" style="width:0%"></i></div>
+
+  <!-- Арифметика на виду: Готово + Оставшиеся = Всего. Всё, что в счёт не идёт
+       («не делать», материалы), вынесено под черту — чтобы сумма всегда сходилась. -->
+  <div class="statgrid">
+    <div class="sg sg-done">
+      <div class="sgh">Готово</div>
+      <div class="sgn" id="stDone">0</div>
+      <div class="sgd">закрыто и проверено</div>
+    </div>
+    <div class="sgop">+</div>
+    <div class="sg sg-rem">
+      <div class="sgh">Оставшиеся</div>
+      <div class="sgn" id="stRemaining">0</div>
+      <div class="sgd">
+        в работе <b id="stDoing">0</b> · не начато <b id="stTodo">0</b> · заблокировано <b id="stBlocked">0</b>
+      </div>
+    </div>
+    <div class="sgop">=</div>
+    <div class="sg sg-total">
+      <div class="sgh">Всего задач</div>
+      <div class="sgn" id="stTotal">0</div>
+      <div class="sgd">осталось <b id="stHours">0</b> ч агентами</div>
+    </div>
+  </div>
+
+  <div class="statfoot">
+    <span>Вне счёта: <b id="stWont">0</b> «не делать» (отклонённые) · <b id="stSuperseded">0</b> неактуальных (снято/поглощено) · <b id="stMat">0</b> материалов (не задачи)</span>
+    <span class="sp2">Факт по закрытым: <b id="stFact">—</b></span>
+  </div>
+</div>
+
+<!-- Блок покрытия внешней таблицы заказчика (xlsx / Google Sheets). Живёт только если
+     у карточек есть поле bt:['Лист!A12'] — иначе btStats() прячет его целиком.
+     Подпись и ссылку на карту ячеек при init берём из документации проекта. -->
+<div class="summary hidden" id="btBlock">
+  <div class="sumhead">
+    <b id="btTitle">Покрытие таблицы заказчика</b>
+    <span class="pct" id="btPct">0%</span>
+  </div>
+  <div class="bar"><i id="btBar" style="width:0%"></i></div>
+  <div class="stats">
+    <span>Ячеек в работе: <b id="btTotal">0</b></span>
+    <span>Закрыто: <b id="btDone">0</b></span>
+    <span>Осталось: <b id="btLeft">0</b></span>
+  </div>
+  <p class="sub" style="margin-top:10px" id="btNote">
+    Пункты помечены адресом ячейки — <code>Лист!A12</code>, ровно как в таблице заказчика:
+    ищите по адресу в поиске выше.
+  </p>
+</div>
+
+<div class="toolbar">
+  <input type="search" id="q" placeholder="Поиск по названию, ID, тексту…" autocomplete="off">
+  <select id="fStatus">
+    <option value="">Все статусы</option>
+    <option value="remaining">Оставшиеся</option>
+    <option value="ready">⚡ Фронт работ</option>
+    <option value="todo">Не начато</option>
+    <option value="doing">В работе</option>
+    <option value="done">Готово</option>
+    <option value="blocked">Заблокировано</option>
+    <option value="wont">Не делать</option>
+    <option value="superseded">Неактуально (снято/поглощено)</option>
+  </select>
+  <select id="fPrio">
+    <option value="">Все приоритеты</option>
+    <option>P0</option><option>P1</option><option>P2</option><option>P3</option>
+  </select>
+  <span class="spacer"></span>
+  <button class="ghost" id="expandAll">Развернуть</button>
+  <button class="ghost" id="collapseAll">Свернуть</button>
+  <button class="ghost" id="btnExport">Экспорт</button>
+  <button class="ghost" id="btnImport">Импорт</button>
+  <button class="ghost" id="btnTheme">Тема</button>
+  <button class="ghost" id="btnReset">Сброс</button>
+</div>
+
+<main id="root"></main>
+
+<footer>
+  Источники: <a href="TZ.md">ТЗ (сводка)</a> · <a href="ARCHITECTURE.md">архитектура</a> · <a href="CONTRADICTIONS.md">противоречия</a> · <a href="AGENT-REFERENCE.md">справочник</a> · <a href="../AGENTS.md">регламент</a>
+</footer>
+</div>
+
+<input type="file" id="fileIn" accept="application/json" class="hidden">
+
+<script>
+// ────────────────────────────────────────────────────────────
+// ДАННЫЕ. hours = часы с агентами. status — стартовое значение.
+// ────────────────────────────────────────────────────────────
+
+const TRACKS = [
+{
+  id:'setup', name:'Этап 0 — Основа: прототип + Payload, процесс, слой данных',
+  desc:'Витрина уже есть (исходники прототипа). Задача этапа — встроить Payload, завести процесс и серверный слой данных, не меняя UI.',
+  items:[
+  { id:'S-1', t:'Payload 3 + PostgreSQL встроены в репозиторий прототипа', d:'Витрина → app/(frontend), Payload → app/(payload) + payload.config.ts, docker-compose Postgres, макет /admin удалён.', pr:'P0', st:'done', anchors:['payload.config.ts','app/(payload)/layout.tsx','docker-compose.yml'], res:'<b>Коммит f2c1da7</b> (ветка feat/payload-cms). Проверено: npm run dev → /, /catalog, /product/atlant, /about, /cart, /checkout, /account, /login, /blog, /contacts, /price, /api/pricelist, /admin — 200; главная совпадает со скриншотом прототипа 1440; консоль на 7 страницах без ошибок (устранена гидрация hero-mote); /admin на русском → create-first-user; npm run typecheck и npm run build зелёные.', own:'agent',
+    req:['Репозиторий git@github.com:alexrush2020/zevsprotect.git, ветка feat/payload-cms, состояние прототипа — тег prototype-final.', 'Витрина не должна измениться визуально.'],
+    links:[['ARCHITECTURE.md', 'Архитектура']],
+    acc:'npm run dev: витрина открывается как раньше, /admin — Payload; npm run typecheck и npm run build зелёные.' },
+  { id:'S-2', t:'Регламент агентов и доска по схеме komek', d:'AGENTS.md (процесс + Learned-решения прототипа), CLAUDE.md, агенты dev/qa, навыки payload/blocker-triage/parallel-task, docs: TZ, ARCHITECTURE, AGENT-REFERENCE, CONTRADICTIONS, доска.', pr:'P0', st:'done', anchors:['AGENTS.md','docs/ARCHITECTURE.md','docs/CONTRADICTIONS.md','.claude/agents/agent-dev.md'], res:'<b>Коммит 4f610c8</b> + коммит доски. AGENTS.md (процесс komek + Learned прототипа), CLAUDE.md, .claude/agents, навыки payload/blocker-triage/parallel-task, docs TZ/ARCHITECTURE/AGENT-REFERENCE/CONTRADICTIONS; wf lint зелёный.', own:'agent',
+    req:['Схема как в /home/alexrush/web/vizor/komek.', 'Learned-раздел прототипа сохранён дословно.'],
+    links:[['ARCHITECTURE.md', 'Архитектура'], ['TZ.md', 'ТЗ: сводка'], ['CONTRADICTIONS.md', 'Противоречия'], ['AGENT-REFERENCE.md', 'Справочник']],
+    acc:'Документы на месте, wf lint зелёный.' },
+  { id:'S-3', t:'Vitest и адресные проверки', d:'Подключить Vitest (node + jsdom) для unit-тестов логики: пересчёт цен, упаковка/минимум (lib/order-qty, lib/qty), парсер 1С, access.', pr:'P1', st:'todo', own:'agent',
+    req:['В прототипе нет тестов; первые тесты — на существующую денежную логику (lib/vat.ts, lib/volume-quote.ts, lib/order-qty.ts).'],
+    deps:['S-1'],
+    acc:'npm run test зелёный, есть тесты на НДС, объёмную цену и кратность упаковки.' },
+  { id:'S-5', t:'Payload: русский интерфейс, роли, access-хелперы', d:'i18n ru, users.role (admin/manager/content), payload/access.ts, группы коллекций в админке.', pr:'P1', st:'todo', own:'agent',
+    req:['Роли и права — ARCHITECTURE «Доступы».', 'Разделы бывшего макета /admin: заказы, лиды, каталог, статьи (CONTRA-3).'],
+    deps:['S-1'],
+    links:[['ARCHITECTURE.md', 'Архитектура'], ['CONTRADICTIONS.md', 'Противоречия']],
+    acc:'Админка на русском; manager не правит каталог; content не видит заказы (тест access).' },
+  { id:'S-6', t:'Сид Payload из мок-данных прототипа', d:'Скрипт: categories, products (все поля Product, фильтры, лоты/упаковка), articles → posts, reviews (доска), картинки → Media (с zevsprotect.ru и public/).', pr:'P1', st:'todo', own:'agent',
+    req:['Источник — lib/data/catalog.ts, lib/data/product-reviews.ts, lib/data/purchase-guide.ts.', 'Идемпотентно (upsert по slug); картинки не хотлинкать — WordPress выключат.'],
+    deps:['C-CAT', 'C-BLOG', 'C-CONTENT'],
+    links:[['ARCHITECTURE.md', 'Архитектура']],
+    acc:'После сида витрина на Payload показывает те же товары и тексты, что прототип; повтор не плодит дубли.' },
+  { id:'S-7', t:'Серверный слой данных lib/server: Payload → типы lib/types.ts', d:'Функции getProducts/getProduct/getCategories/getArticles… через Local API с маппингом в Product/Article; компоненты не меняются.', pr:'P0', st:'todo', own:'agent',
+    req:['Контракт — lib/types.ts (ARCHITECTURE «Переход с прототипа на Payload»).', 'Только опубликованное; кэш/revalidate по afterChange.'],
+    deps:['C-CAT'],
+    acc:'Unit-тест маппинга документа Payload → Product; страница-потребитель рендерится без изменений.' },
+
+  { id:'S-8', t:'Lint-долг прототипа: react-hooks/set-state-in-effect', d:'18 ошибок eslint в коде прототипа (setState в useEffect: store, формы, ЛК, отзывы, qty-stepper). Чинить по мере перевода компонентов на Payload, не отдельным рефакторингом.', pr:'P3', st:'todo', own:'agent', deps:['S-1'],
+    req:['npx eslint . — на 2026-09-29: lib/store.tsx, components/account-auth-form.tsx, cart-*-form, product-reviews/*, qty-stepper и др.',
+         'Поведение UI не менять.'],
+    acc:'npm run lint без ошибок.' },
+  ]
+},
+{
+  id:'front', name:'Этап 3 — Витрина: перевод страниц с моков на Payload',
+  desc:'UI уже готов в прототипе. Карточка = страница переводится на реальные данные без визуальных изменений (сравнение с prototype-final).',
+  items:[
+  { id:'F-HOME', t:'Главная на данных Payload', d:'Хиты, категории, доска отзывов, статьи, тексты блоков — из Payload; форма заявки → leads.', pr:'P1', st:'todo', own:'agent',
+    req:['T-HOME; Learned: доска отзывов (без «Проходная», без Арсеналтрейдинга, годы ≥ 2025).'],
+    deps:['S-7', 'C-CONTENT', 'SH-FORMS'],
+    links:[['TZ.md', 'ТЗ: сводка'], ['meetings/2026-09-19-prototype-demo-followup.md', 'Встреча 19.09']],
+    acc:'Главная выглядит как prototype-final; правка в админке видна на главной.' },
+  { id:'F-ABOUT', t:'О компании: тексты и документы из админки', d:'Global about: цифры, география, документы партии, тексты. Ролик цеха и фото — как есть.', pr:'P2', st:'todo', own:'agent',
+    req:['T-ABOUT; встреча 19.09: лучшая страница, менять только по текстам клиента.'],
+    deps:['C-CONTENT'],
+    links:[['TZ.md', 'ТЗ: сводка'], ['meetings/2026-09-19-prototype-demo-followup.md', 'Встреча 19.09']],
+    acc:'Тексты меняются из админки, вёрстка не изменилась.' },
+  { id:'F-CAT', t:'Каталог на Payload', d:'catalog-browser: категории, фильтры (основа, покрытие, цвет, размер, длина, вес пары, tex, класс вязки), поиск, сортировка — по данным Payload.', pr:'P0', st:'todo', own:'agent',
+    req:['T-CAT; Learned: трекер объёма на карточке, чипы размеров, покрытие dropdown, hover-спеки.'],
+    deps:['S-7'],
+    links:[['TZ.md', 'ТЗ: сводка']],
+    acc:'Тот же набор товаров и фильтров, что в прототипе; URL-состояние фильтров.' },
+  { id:'F-PDP', t:'Карточка товара на Payload + отзывы', d:'/product/[slug]: данные, документы (декларация), лоты, сравнение моделей, похожие, отзывы из коллекции reviews.', pr:'P0', st:'todo', own:'agent',
+    req:['T-PDP; встреча: документы — декларация, сертификат не выдумывать.'],
+    deps:['S-7', 'C-REV'],
+    links:[['TZ.md', 'ТЗ: сводка'], ['meetings/2026-09-19-prototype-demo-followup.md', 'Встреча 19.09']],
+    acc:'Карточка как в прототипе на данных Payload; SEO-мета и JSON-LD Product.' },
+  { id:'F-BLOG', t:'Блог на Payload', d:'/blog и /blog/[slug] из posts; превью contain (Learned).', pr:'P1', st:'todo', own:'agent',
+    req:['T-BLOG.'],
+    deps:['C-BLOG', 'S-7'],
+    links:[['TZ.md', 'ТЗ: сводка']],
+    acc:'Статья из админки появляется в ленте; черновик не виден.' },
+  { id:'F-INFO', t:'Доставка, контакты, политика ПДн — контент из админки', d:'Тексты и контакты (settings), карта на контактах остаётся.', pr:'P2', st:'todo', own:'agent',
+    req:['CONTRA-5, CONTRA-6.'],
+    deps:['C-CONTENT'],
+    links:[['CONTRADICTIONS.md', 'Противоречия']],
+    acc:'Тексты и контакты правятся в админке.' },
+  { id:'F-B2B', t:'Расчёт поставки, образцы, прайс на реальных данных', d:'/calculation, /samples → leads; /price и /api/pricelist — из products.', pr:'P1', st:'todo', own:'agent',
+    req:['CONTRA-1.'],
+    deps:['SH-FORMS', 'S-7'],
+    links:[['CONTRADICTIONS.md', 'Противоречия']],
+    acc:'Формы создают лиды нужного типа; прайс CSV с актуальными ценами.' },
+  ]
+},
+{
+  id:'meet', name:'Хвосты встречи 19.09',
+  desc:'Правки по итогам показа прототипа, ещё не внесённые в код (сверено 2026-09-29).',
+  items:[
+  { id:'M-1', t:'Карточка товара: «Сертификаты и документы» → документы без сертификата', d:'Клиент: есть декларация соответствия, сертификата нет — не выдумывать.', pr:'P2', st:'todo', own:'agent',
+    req:['app/(frontend)/product/[slug]/page.tsx:156 — заголовок «Сертификаты и документы».'],
+    links:[['meetings/2026-09-19-prototype-demo-followup.md', 'Встреча 19.09']],
+    acc:'На карточке нет упоминания несуществующего сертификата.' },
+  { id:'M-2', t:'Убрать WhatsApp из lib/brand.ts', d:'Константы whatsapp/whatsappHref остались; на витрине только MAX (CONTRA-6).', pr:'P3', st:'todo', own:'agent',
+    req:['lib/brand.ts:16-17.'],
+    links:[['CONTRADICTIONS.md', 'Противоречия']],
+    acc:'rg whatsapp по app/components/lib пусто, сборка зелёная.' },
+  { id:'M-3', t:'Новый вид личного кабинета', d:'На встрече: кабинет «будет перерабатываться»; сценарий (заказы, повтор, счёт, статус) — сохранить.', pr:'P2', st:'todo', own:'agent',
+    req:['Нужен макет/направление от заказчика.'],
+    deps:['BIZ-11'],
+    links:[['meetings/2026-09-19-prototype-demo-followup.md', 'Встреча 19.09']],
+    acc:'Согласованный вид ЛК.' },
+  ]
+},
+{
+  id:'cms', name:'Этап 4 — CMS и админка (Payload)',
+  desc:'Схема данных и админка. Модель — ARCHITECTURE «Модель данных».',
+  items:[
+  { id:'C-CAT', t:'Коллекции categories и products', d:'Дерево категорий, товары со всеми полями карточки, характеристики-фильтры, guid1c, manualOverride, черновики/публикация, SEO.', pr:'P0', st:'todo', own:'agent',
+    req:['T-ADM «Управление каталогом», T-1C (ручная правка при ошибках 1С).', 'Фильтры: основа, покрытие, цвет, размер (ответ заказчика).'],
+    deps:['S-5'],
+    links:[['ARCHITECTURE.md', 'Архитектура'], ['TZ.md', 'ТЗ: сводка']],
+    acc:'Админ создаёт/публикует товар, он виден на витрине; manualOverride защищает поля от импорта (unit-тест импортёра в I-1C-CAT).' },
+  { id:'C-CONTENT', t:'Globals и страницы: home, about, delivery, settings, pages; SEO-плагин', d:'Тексты блоков главной/о компании/доставки, контакты и реквизиты, баннеры, счётчики аналитики, произвольные страницы, SEO-поля.', pr:'P1', st:'todo', own:'agent',
+    req:['T-ADM «Управление контентом», T-SEO (SEO в CMS).'],
+    deps:['S-5'],
+    links:[['ARCHITECTURE.md', 'Архитектура'], ['TZ.md', 'ТЗ: сводка']],
+    acc:'Правка в админке меняет витрину без деплоя (revalidate).' },
+  { id:'C-BLOG', t:'Коллекции posts и post-categories', d:'Статьи с черновиками, обложкой, анонсом, lexical-текстом, категорией, связанными, SEO.', pr:'P1', st:'todo', own:'agent',
+    req:['T-BLOG, T-ADM «Управление блогом».'],
+    deps:['S-5'],
+    links:[['TZ.md', 'ТЗ: сводка']],
+    acc:'CRUD статьи в админке, снятие с публикации скрывает её на витрине.' },
+  { id:'C-ORD', t:'Коллекция orders и админ-вид заказов', d:'Состав (снапшот), клиент/гость, доставка, оплата, статус, sync-поля Б24/1С, фильтры и колонки списка, кнопка «Отправить в Б24 повторно».', pr:'P0', st:'todo', own:'agent',
+    req:['T-ADM «Управление заказами», T-ST.', 'Менеджер видит, content — нет.'],
+    deps:['S-5'],
+    links:[['ARCHITECTURE.md', 'Архитектура'], ['TZ.md', 'ТЗ: сводка']],
+    acc:'Заказ с витрины виден в админке со всеми полями; фильтр по статусу/оплате.' },
+  { id:'C-LEADS', t:'Коллекция leads (заявки всех форм)', d:'Тип формы, данные, согласие ПДн, b24LeadId, syncError, повторная отправка.', pr:'P1', st:'todo', own:'agent',
+    req:['T-FORM, КП 6.6.'],
+    deps:['S-5'],
+    links:[['TZ.md', 'ТЗ: сводка']],
+    acc:'Заявка с любой формы видна в админке с типом.' },
+  { id:'C-REV', t:'Отзывы с модерацией', d:'reviews: товар, автор, оценка, текст, approved; на витрине только одобренные.', pr:'P2', st:'todo', own:'agent',
+    req:['CONTRA-1.'],
+    deps:['C-CAT'],
+    links:[['CONTRADICTIONS.md', 'Противоречия']],
+    acc:'Неодобренный отзыв не виден на витрине.' },
+  ]
+},
+{
+  id:'shop', name:'Этапы 5–6 — Магазин, ЛК, формы',
+  desc:'Корзина → заказ → оплата/счёт → ЛК. Цены всегда пересчитывает сервер.',
+  items:[
+  { id:'SH-CART', t:'Корзина на серверных ценах', d:'Корзина остаётся в localStorage (lib/store.tsx), цены/остатки/лоты — из Payload; заявка менеджеру vs заказ (как в прототипе).', pr:'P0', st:'todo', own:'agent',
+    req:['T-CART.'],
+    deps:['F-PDP'],
+    links:[['TZ.md', 'ТЗ: сводка']],
+    acc:'Корзина прототипа работает на ценах/остатках Payload; кратность упаковки и минимум (Learned) соблюдаются.' },
+  { id:'SH-CHK', t:'Оформление заказа', d:'/checkout: поля T-CHK, гость или автоподстановка из профиля, способ оплаты, согласие ПДн; server action createOrder с серверным пересчётом цен и номером заказа; письмо клиенту и менеджеру.', pr:'P0', st:'todo', own:'agent',
+    req:['T-CHK, T-PAY.', 'Сервер не доверяет цене из клиента; недоступный товар — ошибка до создания заказа.'],
+    deps:['SH-CART', 'C-ORD'],
+    links:[['TZ.md', 'ТЗ: сводка']],
+    acc:'Гость и клиент оформляют заказ; подменённая цена в запросе не влияет на сумму (тест); заказ в админке.' },
+  { id:'SH-AUTH', t:'Регистрация, вход, восстановление пароля (email)', d:'customers (Payload auth): /register, /login, сброс пароля по email, сессия; разграничение гость/клиент.', pr:'P0', st:'todo', own:'agent',
+    req:['T-AUTH, CONTRA-2 (телефон — после BIZ-2).', 'В прототипе сессия «2–3 дня» → tokenExpiration.'],
+    deps:['S-5'],
+    links:[['CONTRADICTIONS.md', 'Противоречия']],
+    acc:'Регистрация/вход/выход/сброс работают; клиент не читает чужие заказы и чужой профиль (access-тест).' },
+  { id:'SH-YA', t:'Вход через Яндекс ID', d:'OAuth Яндекс → поиск/создание customer → сессия Payload.', pr:'P2', st:'todo', own:'agent',
+    req:['Есть в прототипе, нет в ТЗ (CONTRA-2).'],
+    deps:['SH-AUTH', 'BIZ-2'],
+    links:[['CONTRADICTIONS.md', 'Противоречия']],
+    acc:'Вход через Яндекс создаёт/находит клиента по email.' },
+  { id:'SH-LK', t:'Личный кабинет', d:'/account: профиль и правка контактов/адресов, история заказов, карточка заказа, статус заказа и оплаты.', pr:'P0', st:'todo', own:'agent',
+    req:['T-LK.'],
+    deps:['SH-AUTH', 'C-ORD'],
+    links:[['TZ.md', 'ТЗ: сводка']],
+    acc:'ЛК прототипа на данных Payload; чужие данные недоступны.' },
+  { id:'SH-REPEAT', t:'Повторить заказ с перерасчётом', d:'Кнопка в ЛК: позиции прошлого заказа → корзина по текущим ценам, показ изменившихся цен и недоступных товаров.', pr:'P1', st:'todo', own:'agent',
+    req:['T-REPEAT.'],
+    deps:['SH-LK', 'SH-CART'],
+    links:[['TZ.md', 'ТЗ: сводка']],
+    acc:'Unit-тест пересчёта: изменённая цена, снятый с публикации товар, остаток.' },
+  { id:'SH-INV', t:'Счёт на оплату (PDF) по запросу', d:'Генерация PDF-счёта с реквизитами из settings по кнопке после заказа и в ЛК.', pr:'P1', st:'todo', own:'agent',
+    req:['T-PAY «Оплата по счёту», вариант 2.', 'Реквизиты и формат счёта — BIZ-6.'],
+    deps:['SH-CHK', 'BIZ-6'],
+    links:[['TZ.md', 'ТЗ: сводка']],
+    acc:'PDF открывается, суммы совпадают с заказом, реквизиты из админки.' },
+  { id:'SH-PAY', t:'Онлайн-оплата', d:'Платёж у провайдера, редирект, вебхук с проверкой подписи/идемпотентностью → paymentStatus; статус оплаты в ЛК.', pr:'P1', st:'todo', own:'agent',
+    req:['T-PAY «Онлайн-оплата». Провайдер — BIZ-4 (по умолчанию ЮKassa).'],
+    deps:['SH-CHK', 'BIZ-4'],
+    links:[['TZ.md', 'ТЗ: сводка']],
+    acc:'Тестовый платёж меняет статус; повтор вебхука не дублирует; отказ оплаты обрабатывается.' },
+  { id:'SH-FORMS', t:'Формы → leads: обратная связь, расчёт, образцы, запрос по товару', d:'Server actions с валидацией, согласием ПДн, защитой от спама (honeypot + rate limit), сообщение об успехе, письмо менеджеру.', pr:'P0', st:'todo', own:'agent',
+    req:['T-FORM, КП 6.5–6.6.'],
+    deps:['C-LEADS'],
+    links:[['TZ.md', 'ТЗ: сводка']],
+    acc:'Каждая форма создаёт лид нужного типа; невалидный ввод и отсутствие согласия отклоняются.' },
+  { id:'SH-TRACK', t:'Отследить заказ', d:'/track: номер + email (как в прототипе) → статус без ПДн.', pr:'P2', st:'todo', own:'agent',
+    req:['CONTRA-1.'],
+    deps:['C-ORD'],
+    links:[['CONTRADICTIONS.md', 'Противоречия']],
+    acc:'Статус по номеру+email из Payload; неверная пара ничего не раскрывает.' },
+  { id:'SH-CHAT', t:'Чат менеджера → открытые линии Битрикс24', d:'Мок manager-chat заменить виджетом/коннектором открытых линий Б24, сохранив кнопку «уточнить у менеджера» с контекстом товара.', pr:'P2', st:'todo', own:'agent',
+    req:['CONTRA-1; UX — Sharteks (Learned).'],
+    deps:['BIZ-5', 'BIZ-1'],
+    acc:'Сообщение с сайта приходит в открытую линию Б24.' },
+  { id:'SH-MAIL', t:'Почта: SMTP-адаптер и шаблоны писем', d:'Email-адаптер Payload (nodemailer), письма: заказ, заявка, регистрация, сброс пароля. Локально — вывод в консоль.', pr:'P1', st:'todo', own:'agent',
+    req:['Реквизиты SMTP — у заказчика.'],
+    deps:['S-1'],
+    acc:'Письма уходят в тестовый ящик/консоль с корректными данными.' },
+  ]
+},
+{
+  id:'int', name:'Этапы 7–8 — Интеграции 1С КА 2 и Битрикс24',
+  desc:'1С — CommerceML «Обмен с сайтом»; Б24 — REST вебхуки + Payload Jobs. Live-проверка только на тестовых стендах заказчика (BIZ-5).',
+  items:[
+  { id:'I-1C-CAT', t:'1С → сайт: каталог, характеристики, цены, остатки (CommerceML)', d:'/api/1c-exchange: checkauth/init/file/import; парсер import.xml/offers.xml; upsert по guid1c; картинки; manualOverride.', pr:'P0', st:'todo', own:'agent',
+    req:['T-1C. Источник цен и остатков — 1С (ответ заказчика).', 'Невалидный пакет не должен частично затирать каталог.'],
+    deps:['C-CAT'],
+    links:[['ARCHITECTURE.md', 'Архитектура'], ['TZ.md', 'ТЗ: сводка']],
+    acc:'Unit-тесты парсера на фикстурах CommerceML; повторный импорт идемпотентен; manualOverride соблюдается; live — на тестовой 1С (I-TEST).' },
+  { id:'I-1C-ORD', t:'Сайт → 1С: заказы и клиенты', d:'type=sale&mode=query/success: XML заказов (состав, клиент, оплата, доставка), пометка выгруженных.', pr:'P1', st:'todo', own:'agent',
+    req:['T-1C «С сайта в 1С».'],
+    deps:['C-ORD', 'I-1C-CAT'],
+    links:[['ARCHITECTURE.md', 'Архитектура']],
+    acc:'Фикстура XML проходит загрузку в тестовую 1С; выгруженный заказ не уходит повторно.' },
+  { id:'I-B24-CORE', t:'Б24: клиент REST, очередь Jobs с ретраями, повторная отправка', d:'Обёртка REST по вебхуку, задачи Payload Jobs с backoff, syncError в документах, кнопка повтора в админке.', pr:'P0', st:'todo', own:'agent',
+    req:['T-B24: обработка ошибок и повторная отправка.'],
+    deps:['C-ORD', 'C-LEADS'],
+    links:[['ARCHITECTURE.md', 'Архитектура']],
+    acc:'Недоступность Б24 не ломает оформление заказа; job повторяется и доставляет после восстановления (тест с моком).' },
+  { id:'I-B24-COMP', t:'Регистрация → компания и контакт в Б24', d:'customers afterChange (create) → crm.company.add + crm.contact.add, сохранить id.', pr:'P1', st:'todo', own:'agent',
+    req:['Ответ заказчика «Интеграции» 3.'],
+    deps:['I-B24-CORE', 'SH-AUTH'],
+    acc:'Новый клиент → компания в Б24 (мок/тест-портал), повтор не создаёт дубль.' },
+  { id:'I-B24-DEAL', t:'Заказ → сделка в Б24 (счёт и онлайн)', d:'crm.deal.add + productrows, все поля T-B24; для гостя — по BIZ-7.', pr:'P0', st:'todo', own:'agent',
+    req:['T-B24.'],
+    deps:['I-B24-CORE', 'SH-CHK'],
+    acc:'Сделка содержит номер, дату, клиента, состав, сумму, доставку, оплату, комментарий.' },
+  { id:'I-B24-LEAD', t:'Заявки на расчёт/консультацию → лид в Б24', d:'leads afterChange → crm.lead.add.', pr:'P1', st:'todo', own:'agent',
+    req:['Ответ заказчика «Интеграции» 3.'],
+    deps:['I-B24-CORE', 'SH-FORMS'],
+    acc:'Каждый тип формы создаёт лид с источником.' },
+  { id:'I-B24-ST', t:'Статусы из Б24 → заказ на сайте', d:'Исходящий вебхук ONCRMDEALUPDATE → crm.deal.get → маппинг стадий (настраивается в settings) → orders.status; статус оплаты.', pr:'P0', st:'todo', own:'agent',
+    req:['T-ST: источник статуса — Б24. Стадии воронки — BIZ-5.'],
+    deps:['I-B24-DEAL', 'BIZ-5'],
+    acc:'Смена стадии в Б24 отражается в ЛК; неизвестная стадия не ломает заказ; вебхук проверяет токен.' },
+  { id:'I-TEST', t:'Совместное тестирование обменов с 1С и Б24 заказчика', d:'Прогон сценариев на тестовой 1С КА 2 и портале Б24, протокол.', pr:'P1', st:'todo', own:'agent',
+    req:['КП 10.2.'],
+    deps:['I-1C-ORD', 'I-B24-ST', 'I-B24-LEAD', 'I-B24-COMP', 'BIZ-5'],
+    acc:'Протокол: каталог, цены/остатки, заказ → 1С, сделка/лид/компания, статусы — пройдены.' },
+  ]
+},
+{
+  id:'seo', name:'Этап 9 — SEO и аналитика',
+  desc:'',
+  items:[
+  { id:'SEO-1', t:'ЧПУ, meta/OG, sitemap.xml, robots.txt, микроразметка', d:'generateMetadata из SEO-полей, app/sitemap.ts, app/robots.ts, JSON-LD Organization/Product/BreadcrumbList/Article.', pr:'P1', st:'todo', own:'agent',
+    req:['T-SEO.'],
+    deps:['F-CAT', 'F-PDP', 'F-BLOG'],
+    acc:'Валидатор микроразметки без ошибок; sitemap содержит товары/категории/статьи.' },
+  { id:'SEO-2', t:'301-редиректы со старого WordPress', d:'Карта старых URL zevsprotect.ru → новые (товары, категории, статьи), redirects в next.config или коллекция redirects.', pr:'P1', st:'todo', own:'agent',
+    req:['Замена сайта без потери позиций (цель ТЗ «SEO-площадка»).'],
+    deps:['S-6'],
+    acc:'Все URL из sitemap старого сайта отдают 301 на актуальные страницы.' },
+  { id:'AN-1', t:'Яндекс.Метрика, GA и события', d:'Счётчики из settings, события T-AN (просмотр товара, корзина, начало/успех оформления, оплата, формы, регистрация, вход).', pr:'P2', st:'todo', own:'agent',
+    req:['T-AN; GA — после BIZ-3.'],
+    deps:['SH-CHK', 'SH-FORMS', 'BIZ-3'],
+    acc:'События видны в отладке Метрики.' },
+  ]
+},
+{
+  id:'launch', name:'Этап 10 — Тестирование, запуск, передача',
+  desc:'',
+  items:[
+  { id:'L-QA', t:'E2E основных сценариев и функциональное тестирование', d:'Playwright: каталог → корзина → заказ гостем/клиентом, регистрация/вход, формы, ЛК, повтор заказа; протокол.', pr:'P1', st:'todo', own:'agent',
+    req:['КП 10.1, 10.3.'],
+    deps:['SH-CHK', 'SH-LK', 'SH-FORMS'],
+    acc:'E2E зелёные на чистой БД с сидом; протокол тестирования.' },
+  { id:'L-DEPLOY', t:'Продакшен на VPS в РФ', d:'Dockerfile (standalone), compose prod: app + Postgres + volume media, миграции Payload, бэкапы БД, домен, SSL.', pr:'P1', st:'todo', own:'agent',
+    req:['ARCHITECTURE, Решение 3; CONTRA-4. Хостинг оплачивает заказчик.', 'Деплой — только по прямому поручению владельца (AGENTS).'],
+    deps:['L-QA', 'BIZ-3'],
+    links:[['ARCHITECTURE.md', 'Архитектура'], ['CONTRADICTIONS.md', 'Противоречия']],
+    acc:'Сайт на домене по HTTPS, миграции накатываются, бэкап восстанавливается.' },
+  { id:'L-DOCS', t:'Инструкция администратора и обучение', d:'Короткая инструкция: товары, контент, блог, заказы, лиды, повторная отправка в Б24.', pr:'P2', st:'todo', own:'agent',
+    req:['КП 10.5.'],
+    deps:['L-DEPLOY'],
+    acc:'Инструкция передана, обучение проведено.' },
+  ]
+},
+{
+  id:'biz', name:'Вопросы бизнесу',
+  desc:'Решения заказчика, без которых карточки не закрыть. Не выдумывать ответы.',
+  items:[
+  { id:'BIZ-1', t:'Функции прототипа вне КП — в цене или доплата?', d:'Расчёт поставки, образцы, прайс, трекинг, отзывы, вход через Яндекс, чат.', pr:'P1', st:'todo', own:'business',
+    req:['CONTRA-1.'],
+    links:[['CONTRADICTIONS.md', 'Противоречия']],
+    acc:'Письменное решение заказчика.' },
+  { id:'BIZ-2', t:'Регистрация по телефону (SMS) нужна?', d:'SMS требует платного провайдера; по умолчанию email + Яндекс ID.', pr:'P2', st:'todo', own:'business',
+    req:['CONTRA-2.'],
+    links:[['CONTRADICTIONS.md', 'Противоречия']],
+    acc:'Решение и, при «да», выбранный SMS-провайдер.' },
+  { id:'BIZ-3', t:'Хостинг в РФ и Google Analytics', d:'Выбор VPS; оставляем ли GA (трансграничная передача ПДн).', pr:'P1', st:'todo', own:'business',
+    req:['CONTRA-4.'],
+    links:[['CONTRADICTIONS.md', 'Противоречия']],
+    acc:'Выбран хостинг, решение по GA.' },
+  { id:'BIZ-4', t:'Платёжный провайдер', d:'Любой популярный — предлагаем ЮKassa; нужен договор и тестовый магазин.', pr:'P1', st:'todo', own:'business',
+    req:['T-PAY.'],
+    acc:'Провайдер выбран, тестовые ключи выданы.' },
+  { id:'BIZ-5', t:'Доступы: тестовая 1С КА 2 и Битрикс24', d:'Узел обмена с сайтом в 1С, входящий/исходящий вебхук Б24, воронка и стадии сделок.', pr:'P0', st:'todo', own:'business',
+    req:['T-1C, T-B24, T-ST.'],
+    acc:'Доступы выданы, стадии воронки перечислены.' },
+  { id:'BIZ-6', t:'Брендбук, контент, реквизиты для счёта', d:'Брендбук, тексты/фото (Александра), реквизиты и образец счёта, SMTP для почты.', pr:'P1', st:'todo', own:'business',
+    req:['КП §6: контент предоставляет заказчик.'],
+    acc:'Материалы получены.' },
+  { id:'BIZ-7', t:'Сделка в Б24 для гостевого заказа?', d:'ТЗ требует сделку для заказа зарегистрированного пользователя; гостевой заказ — сделка, лид или ничего?', pr:'P1', st:'todo', own:'business',
+    req:['Ответ заказчика «Интеграции» 3.'],
+    acc:'Решение заказчика.' },
+  { id:'BIZ-8', t:'Цены: типы цен 1С, НДС, объёмные скидки', d:'Одна цена или типы цен (опт/дилер)? Цены с НДС (прототип считает НДС 20%)? Объёмная шкала трекера — из 1С или правило сайта? Позиция без цены (CONTRA-9)?', pr:'P0', st:'todo', own:'business',
+    req:['B2B-аудитория; источник цен — 1С.'],
+    acc:'Решение заказчика; влияет на I-1C-CAT, SH-CHK, SH-INV.' },
+  { id:'BIZ-9', t:'Доставка: живые тарифы ТК или «рассчитает менеджер»?', d:'В прототипе сравнение ТК на моках; калькулятор вне КП (от 45 000 ₽).', pr:'P2', st:'todo', own:'business',
+    req:['CONTRA-5.'],
+    links:[['CONTRADICTIONS.md', 'Противоречия']],
+    acc:'Решение заказчика.' },
+  { id:'BIZ-10', t:'Мессенджеры, перелив лого на главной, красный блок зевстекс', d:'Письменно: MAX/Telegram/WhatsApp; логотип в герое главной; цвет блока зевстекс на /about.', pr:'P2', st:'todo', own:'business',
+    req:['CONTRA-6, CONTRA-7, CONTRA-8.'],
+    links:[['CONTRADICTIONS.md', 'Противоречия'], ['meetings/2026-09-19-prototype-demo-followup.md', 'Встреча 19.09']],
+    acc:'Решения заказчика.' },
+  { id:'BIZ-11', t:'Направление редизайна личного кабинета', d:'Что именно не нравится в ЛК, референсы.', pr:'P2', st:'todo', own:'business',
+    req:['Встреча 19.09.'],
+    links:[['meetings/2026-09-19-prototype-demo-followup.md', 'Встреча 19.09']],
+    acc:'Референсы/замечания получены.' },
+  ]
+},
+];
+
+// ────────────────────────────────────────────────────────────
+const KEY='zevsprotect-workflow-v1';
+const ST_LABEL={todo:'Не начато',doing:'В работе',done:'Готово',blocked:'Заблокировано',wont:'Не делать',superseded:'Неактуально'};
+const ST_CLASS={todo:'st-todo',doing:'st-doing',done:'st-done',blocked:'st-blocked',wont:'st-wont',superseded:'st-superseded'};
+/** «Оставшиеся» = всё, что ещё предстоит сделать. done — закрыто, wont — отклонено,
+ *  superseded — снято/поглощено более поздним решением; ни то, ни другое, ни третье не в долге. */
+const REMAINING=['todo','doing','blocked'];
+/** Не считается работой: отклонённые (wont) и снятые/поглощённые (superseded). */
+const INACTIVE=['wont','superseded'];
+// «Фронт работ»: карточка ready ⇔ эффективный st=todo и все deps закрыты (wf.mjs list --ready).
+const CLOSED_ST=new Set(['done','wont','superseded']);
+const DEPS_BY_ID=new Map(), OWN_BY_ID=new Map();
+TRACKS.forEach(t=>(t.items||[]).forEach(it=>{ DEPS_BY_ID.set(it.id, it.deps||[]); OWN_BY_ID.set(it.id, it.own||'agent'); }));
+function isReadyId(id){
+  if(get(id).st!=='todo') return false;
+  return (DEPS_BY_ID.get(id)||[]).every(d=>DEPS_BY_ID.has(d)&&CLOSED_ST.has(get(d).st));
+}
+// Бейдж мёртвых якорей: пишется командой `wf.mjs audit-quick`; файла нет (или file://) — бейджей нет.
+let AUDIT_DEAD={};
+fetch('workflow-audit.json').then(r=>r.ok?r.json():null)
+  .then(j=>{ if(j&&j.dead&&Object.keys(j.dead).length){ AUDIT_DEAD=j.dead; render(); } })
+  .catch(()=>{});
+
+let state = load();
+function load(){ try{ return JSON.parse(localStorage.getItem(KEY)) || {}; }catch(e){ return {}; } }
+function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+function get(id){
+  const item = allItems().find(i=>i.id===id);
+  const d = state[id] || {};
+  // Приоритет: правка в браузере (localStorage) → процент, записанный в самой
+  // карточке (pg в TRACKS) → дефолт по статусу. Раньше pg жил ТОЛЬКО в
+  // localStorage, поэтому задачи «в работе» показывали 0% всем, кроме того, кто
+  // лично двигал ползунок, и по эпикам нельзя было понять, сделано 20% или 80%.
+  const базовый = item.pg ?? (item.st==='done'?100:0);
+  return { st: d.st ?? item.st, pg: d.pg ?? базовый, notes: d.notes ?? '' };
+}
+function set(id, patch){ state[id] = Object.assign({}, get(id), patch); save(); render(); }
+function allItems(){ return TRACKS.flatMap(t=>t.items); }
+/**
+ * Пункты, которые считаются работой. Треки с noStats (материалы, справочные) из
+ * статистики исключены: материал от клиента — это не задача, его нельзя «сделать» руками
+ * команды, и он не должен ни разбавлять проценты, ни висеть в «часах осталось».
+ * В списке, поиске и фильтрах такие треки остаются как есть.
+ */
+function statItems(){ return TRACKS.filter(t=>!t.noStats).flatMap(t=>t.items); }
+
+const esc = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+const ICON_COPY='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+const ICON_OK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+const ICON_ERR='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+
+// разметка карточек — это HTML; в промт кладём markdown
+function html2text(s){
+  return String(s)
+    .replace(/<code>([\s\S]*?)<\/code>/gi, (_,x)=>'`'+x+'`')
+    .replace(/<\/?(?:b|strong)>/gi, '**')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g,' ').replace(/&lt;/g,'<').replace(/&gt;/g,'>')
+    .replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&amp;/g,'&')
+    .replace(/[ \t]+/g,' ').trim();
+}
+
+function trackOf(id){ return TRACKS.find(t=>t.items.some(i=>i.id===id)); }
+
+// ── Учёт времени: t0/t1 — «YYYY-MM-DD HH:MM». tApprox — старт восстановлен ──
+function parseTs(s){ return s ? new Date(s.replace(' ','T')) : null; }
+/** Фактические минуты между стартом и финишем; null, если меток нет. */
+function factMinutes(it){
+  const a = parseTs(it.t0), b = parseTs(it.t1);
+  if(!a || !b) return null;
+  const m = Math.round((b - a) / 60000);
+  return m >= 0 ? m : null;
+}
+function fmtDur(min){
+  if(min == null) return '—';
+  const h = Math.floor(min/60), m = min%60;
+  return h ? `${h} ч ${m} мин` : `${m} мин`;
+}
+/** «10.07, 04:43» — год опускаем, он один на всю доску. */
+function fmtTs(s){
+  const d = parseTs(s); if(!d) return '—';
+  const p = n => String(n).padStart(2,'0');
+  return `${p(d.getDate())}.${p(d.getMonth()+1)}, ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+/** Во сколько раз факт быстрее оценки. Оценка в часах, факт в минутах. */
+function speedup(it){
+  const m = factMinutes(it);
+  if(m == null || !it.h || m === 0) return null;
+  return (it.h * 60) / m;
+}
+function timeHTML(it){
+  const m = factMinutes(it);
+  if(m == null) return '';
+  const sp = speedup(it);
+  const approx = it.tApprox ? ' <span class="approx" title="Старт восстановлен по времени коммитов — задача сделана до введения учёта">≈</span>' : '';
+  return `<div class="times">
+    <span>⏱ Начато <b>${fmtTs(it.t0)}</b>${approx}</span>
+    <span>Завершено <b>${fmtTs(it.t1)}</b></span>
+    <span>Факт <b>${fmtDur(m)}</b></span>
+    ${it.h ? `<span>Оценка <b>${it.h} ч</b></span>` : ''}
+    ${sp ? `<span class="sp">×${sp.toFixed(1)} к оценке</span>` : ''}
+    ${it.tNote ? `<span class="tnote">${it.tNote}</span>` : ''}
+  </div>`;
+}
+
+// h — уровень заголовка пункта ('#' одиночный, '##' внутри трека)
+function itemPrompt(it, h){
+  const hh = h+'#', d = get(it.id), L = [];
+  L.push(`${h} ${it.id} — ${html2text(it.t)}`, '');
+  if(it.d) L.push(`_${html2text(it.d)}_`, '');
+  L.push(`- Приоритет: **${it.pr}** · Оценка (агентами): ${it.h ? it.h+' ч' : '—'} · Статус: ${ST_LABEL[d.st]} (${d.pg}%)`);
+  if((it.bt||[]).length) L.push(`- 📋 Таблица заказчика (xlsx): ${it.bt.join(', ')}${it.btNote?' — '+html2text(it.btNote):''}`);
+  if(it.blocked) L.push(`- ⛔ Заблокировано: ${html2text(it.blocked)}`);
+  (it.links||[]).forEach(([href,label]) => L.push(`- 📄 ${html2text(label)}: \`docs/${href}\``));
+  L.push('', `${hh} Данные для запроса`, ...( (it.req||[]).length ? it.req.map(r=>'- '+html2text(r)) : ['—'] ));
+  if(it.acc && it.acc!=='—') L.push('', `${hh} Критерий приёмки`, html2text(it.acc));
+  const fm = factMinutes(it);
+  if(fm != null) L.push(`- ⏱ Начато ${fmtTs(it.t0)}${it.tApprox?' (≈)':''} · завершено ${fmtTs(it.t1)} · факт ${fmtDur(fm)}`);
+  if(it.res) L.push('', `${hh} Результат (сделано)`, html2text(it.res));
+  const steps = (it.test||{}).steps||[], shots = itemShots(it);
+  if(steps.length || shots.length){
+    L.push('', `${hh} Тестирование`);
+    steps.forEach((s,i)=>L.push(`${i+1}. ${html2text(s)}`));
+    shots.forEach(([p,c])=>L.push(`- 📸 \`${p}\`${c?' — '+html2text(c):''}`));
+  }
+  if(it.left) L.push('', `${hh} Осталось`, html2text(it.left));
+  if(d.notes.trim()) L.push('', `${hh} Нюансы реализации (заметки из дашборда)`, d.notes.trim());
+  return L.join('\n');
+}
+
+const PROMPT_FOOTER = '---\nКонвенции проекта — в `CLAUDE.md`.';
+
+function singlePrompt(id){
+  const it = allItems().find(i=>i.id===id), tr = trackOf(id);
+  return `${itemPrompt(it,'#')}\n\n> Трек: ${html2text(tr.name)} — ${html2text(tr.desc)}\n\n${PROMPT_FOOTER}\n`;
+}
+
+// копируем ровно то, что видно с учётом активных фильтров
+function trackPrompt(trackId){
+  const t = TRACKS.find(x=>x.id===trackId);
+  const visible = new Set(
+    [...document.querySelectorAll(`.track[data-track="${trackId}"] .item:not(.hidden)`)].map(el=>el.dataset.id)
+  );
+  const items = t.items.filter(i=>visible.has(i.id));
+  const hours = items.reduce((s,i)=>s+i.h, 0);
+  const head = [
+    `# ${html2text(t.name)}`, '',
+    `> ${html2text(t.desc)}`,
+    `> Пунктов: ${items.length} · Суммарная оценка: ${Math.round(hours*10)/10} ч`, '', '',
+  ].join('\n');
+  return `${head}${items.map(i=>itemPrompt(i,'##')).join('\n\n')}\n\n${PROMPT_FOOTER}\n`;
+}
+
+async function copyText(txt, btn){
+  let ok = false;
+  try{ await navigator.clipboard.writeText(txt); ok = true; }
+  catch(e){
+    const ta = document.createElement('textarea');
+    ta.value = txt; ta.style.cssText = 'position:fixed;left:-9999px;opacity:0';
+    document.body.appendChild(ta); ta.select();
+    try{ ok = document.execCommand('copy'); }catch(_){}
+    ta.remove();
+  }
+  btn.innerHTML = ok ? ICON_OK : ICON_ERR;
+  btn.classList.toggle('ok', ok); btn.classList.toggle('err', !ok);
+  clearTimeout(btn._t);
+  btn._t = setTimeout(()=>{ btn.innerHTML = ICON_COPY; btn.classList.remove('ok','err'); }, 1300);
+}
+
+/**
+ * Ячейки внешней таблицы заказчика (xlsx / Google-таблица), которые закрывает пункт.
+ * Формат — `Лист!A12`, ровно как адресуется в самой таблице: по этой строке можно
+ * найти пункт в файле и проставить там статус. Пусто — пункт не из таблицы
+ * (обзор аналогов, транскрибации, наша инициатива).
+ */
+function btHTML(it){
+  const cells = it.bt || [];
+  if(!cells.length && !it.btNote) return '';
+  const chips = cells.length
+    ? cells.map(c=>`<span class="btchip">${esc(c)}</span>`).join('')
+    : '<span class="btchip miss">не из таблицы</span>';
+  return `<div class="bt"><span class="btlbl">Таблица заказчика</span>${chips}
+    ${it.btNote?`<span class="btlbl" style="text-transform:none;letter-spacing:0;font-weight:400">${it.btNote}</span>`:''}</div>`;
+}
+
+/**
+ * «Тестирование» пункта: шаги проверки (`it.test.steps`) + визуальный контроль.
+ * Скриншоты собираются из ДВУХ источников: явного `it.test.shots` ([путь, подпись])
+ * и авто-извлечения упоминаний `screenshots/*.png` из текстов карточки (res/left/req/…) —
+ * карточки, где скриншот уже назван в результате, получают просмотрщик без дублирования данных.
+ * Пути — от корня репозитория (дашборд лежит в docs/, поэтому префикс `../`). Сами файлы
+ * в .gitignore, так что на машине без них миниатюра честно скажет «файл не найден»,
+ * а не покажет битую картинку.
+ */
+const SHOT_RE = /screenshots\/[A-Za-z0-9._-]+\.(?:png|jpe?g|webp|gif)/g;
+function itemShots(it){
+  const map = new Map();                              // путь → подпись; явные — первыми
+  ((it.test||{}).shots||[]).forEach(s=>{
+    const [p,c] = Array.isArray(s) ? s : [s,''];
+    map.set(p, c||'');
+  });
+  const texts = [it.res, it.left, it.blocked, it.tNote, ...(it.req||[])].filter(Boolean).join('\n');
+  (texts.match(SHOT_RE)||[]).forEach(p=>{ if(!map.has(p)) map.set(p,''); });
+  return [...map.entries()];
+}
+function testHTML(it){
+  const steps = (it.test||{}).steps || [];
+  const shots = itemShots(it);
+  if(!steps.length && !shots.length) return '';
+  return `<h4>Тестирование</h4>
+    ${steps.length?`<ol class="tsteps">${steps.map(s=>`<li>${s}</li>`).join('')}</ol>`:''}
+    ${shots.length?`<div class="shots">${shots.map(([p,c])=>`
+      <figure class="shot" data-shot="../${esc(p)}" data-cap="${esc(c?c+' — '+p:p)}" title="Открыть с масштабированием">
+        <img src="../${esc(p)}" loading="lazy" alt="${esc(c||p)}" onerror="this.closest('.shot').classList.add('miss')">
+        <figcaption><span class="scap" title="${esc(p)}">${esc(c || p.replace(/^screenshots\//,''))}</span><a href="../${esc(p)}" target="_blank" rel="noopener" title="Открыть в новой вкладке" data-shot-ext>↗</a></figcaption>
+        <span class="smiss">файл не найден (screenshots/ не в git)</span>
+      </figure>`).join('')}</div>`:''}`;
+}
+
+function itemHTML(it){
+  const d = get(it.id);
+  const links = (it.links||[]).map(([href,label])=>`<a href="${href}">${esc(label)}</a>`).join('');
+  const req = (it.req||[]).map(r=>`<li>${r}</li>`).join('');
+  return `
+  <details class="item" data-id="${it.id}" data-st="${d.st}" data-pr="${it.pr}" data-own="${it.own||'agent'}">
+    <summary>
+      <span class="chev">▶</span>
+      <span class="id">${esc(it.id)}</span>
+      <span class="title"><span>${esc(it.t)}</span></span>
+      <span class="pill p-${it.pr}">${it.pr}</span>
+      <span class="st ${ST_CLASS[d.st]}">${ST_LABEL[d.st]}</span>
+      ${AUDIT_DEAD[it.id]?`<span class="st st-blocked" title="Мёртвые якоря (wf.mjs audit-quick): ${esc(AUDIT_DEAD[it.id].join(', '))}">⚠ якорь</span>`:''}
+      <span class="hrs">${it.h?it.h+'ч':'—'}</span>
+      <span class="ipro"><span class="bar slim ${d.pg===100?'ok':''}"><i style="width:${d.pg}%"></i></span></span>
+      <button type="button" class="copy" data-copy="item" title="Скопировать промт по пункту" aria-label="Скопировать промт по пункту ${esc(it.id)}">${ICON_COPY}</button>
+    </summary>
+    <div class="body">
+      ${it.d?`<h4>Описание</h4><p class="desc">${it.d}</p>`:''}
+      ${it.blocked?`<div class="note stop"><b>Заблокировано:</b> ${it.blocked}</div>`:''}
+      ${btHTML(it)}
+      ${links?`<div class="links">${links}</div>`:''}
+      <h4>Данные для запроса</h4>
+      <ul>${req||'<li>—</li>'}</ul>
+      ${it.acc && it.acc!=='—' ? `<h4>Критерий приёмки</h4><p>${it.acc}</p>` : ''}
+      ${timeHTML(it)}
+      ${it.res ? `<h4>Результат</h4><div class="note ok">${it.res}</div>` : ''}
+      ${testHTML(it)}
+      ${it.left ? `<h4>Осталось</h4><div class="note left">${it.left}</div>` : ''}
+      <div class="ctrl">
+        <label>Статус</label>
+        <select data-act="st">
+          ${Object.keys(ST_LABEL).map(k=>`<option value="${k}" ${k===d.st?'selected':''}>${ST_LABEL[k]}</option>`).join('')}
+        </select>
+        <label>Прогресс</label>
+        <input type="range" min="0" max="100" step="5" value="${d.pg}" data-act="pg">
+        <b style="font-variant-numeric:tabular-nums;min-width:42px">${d.pg}%</b>
+      </div>
+      <h4>Нюансы реализации <span style="text-transform:none;font-weight:400">(заполняется после реализации)</span></h4>
+      <textarea data-act="notes" placeholder="Что всплыло по ходу: подводные камни, отступления от спеки, номера миграций, коммиты…">${esc(d.notes)}</textarea>
+      <div class="saved" data-saved>Сохранено</div>
+    </div>
+  </details>`;
+}
+
+function trackProgress(t){
+  const act = t.items.filter(i=>!INACTIVE.includes(get(i.id).st));
+  if(!act.length) return 100;
+  const w = act.reduce((s,i)=>s+Math.max(i.h,0.5),0);
+  const p = act.reduce((s,i)=>s+Math.max(i.h,0.5)*get(i.id).pg,0);
+  return Math.round(p/w);
+}
+
+function render(){
+  const root=document.getElementById('root');
+  root.innerHTML = TRACKS.map(t=>{
+    const pg=trackProgress(t);
+    return `<details class="track" data-track="${t.id}" ${t.id==='mp'?'open':''}>
+      <summary>
+        <span class="chev">▶</span>
+        <span class="tname">${esc(t.name)}<small>${esc(t.desc)}</small></span>
+        <span class="tprog"><div class="lbl">${pg}%</div><span class="bar ${pg===100?'ok':''}"><i style="width:${pg}%"></i></span></span>
+        <button type="button" class="copy" data-copy="track" title="Скопировать промт по всем видимым пунктам трека" aria-label="Скопировать промт по треку ${esc(t.name)}">${ICON_COPY}</button>
+      </summary>
+      <div class="items">${t.items.map(itemHTML).join('')}</div>
+    </details>`;
+  }).join('');
+  stats(); applyFilter();
+}
+
+function stats(){
+  const items=statItems();                 // без noStats-треков — это не работа
+  const act=items.filter(i=>!INACTIVE.includes(get(i.id).st));
+  const w=act.reduce((s,i)=>s+Math.max(i.h,0.5),0);
+  const p=act.reduce((s,i)=>s+Math.max(i.h,0.5)*get(i.id).pg,0);
+  const ov=w?Math.round(p/w):0;
+  document.getElementById('ovBar').style.width=ov+'%';
+  document.getElementById('ovPct').textContent=ov+'%';
+  const cnt = st => act.filter(i=>get(i.id).st===st).length;
+  document.getElementById('stTotal').textContent=act.length;
+  document.getElementById('stDone').textContent=cnt('done');
+  document.getElementById('stDoing').textContent=cnt('doing');
+  document.getElementById('stTodo').textContent=cnt('todo');
+  document.getElementById('stBlocked').textContent=cnt('blocked');
+  // «Оставшиеся» — сумма трёх незакрытых статусов; wont считаем отдельно и в act не входит,
+  // поэтому Готово + Оставшиеся = Задач (раньше строка не сходилась: «не начато» нигде не показывалось).
+  document.getElementById('stRemaining').textContent=act.filter(i=>REMAINING.includes(get(i.id).st)).length;
+  document.getElementById('stWont').textContent=items.filter(i=>get(i.id).st==='wont').length;
+  document.getElementById('stSuperseded').textContent=items.filter(i=>get(i.id).st==='superseded').length;
+  // материалы в статистику не идут — показываем их числом «вне счёта», чтобы не выглядело, будто потерялись
+  document.getElementById('stMat').textContent=TRACKS.filter(t=>t.noStats).flatMap(t=>t.items).length;
+  const left=act.filter(i=>get(i.id).st!=='done').reduce((s,i)=>s+i.h,0);
+  document.getElementById('stHours').textContent=Math.round(left*10)/10;
+
+  // Факт vs оценка по пунктам с обеими метками времени.
+  // `tShared` — пункт, сделанный одним прогоном с другим (MP-4 вместе с MP-3):
+  // его МИНУТЫ уже учтены там и в сумму дважды не идут, а вот ОЦЕНКА учитывается —
+  // работа-то доставлена.
+  const timed = items.filter(i=>factMinutes(i)!=null);
+  const factMin = timed.filter(i=>!i.tShared).reduce((s,i)=>s+factMinutes(i),0);
+  const estMin  = timed.reduce((s,i)=>s+i.h*60,0);
+  document.getElementById('stFact').textContent = timed.length
+    ? `${fmtDur(factMin)} против ${Math.round(estMin/60*10)/10} ч оценки` +
+      (factMin ? ` (×${(estMin/factMin).toFixed(1)})` : '')
+    : '—';
+
+  const readyIds=[...DEPS_BY_ID.keys()].filter(isReadyId);
+  const rOpt=document.querySelector('#fStatus option[value="ready"]');
+  if(rOpt){
+    rOpt.textContent=`⚡ Фронт работ (${readyIds.length})`;
+    const rAgent=readyIds.filter(id=>OWN_BY_ID.get(id)==='agent').length;
+    rOpt.title=`ready: за агентами ${rAgent}, за бизнесом ${readyIds.length-rAgent} (+ в работе)`;
+  }
+
+  btStats();
+}
+
+/**
+ * Покрытие внешней таблицы заказчика. Считаем по УНИКАЛЬНЫМ ячейкам, а не по задачам:
+ * одна ячейка может висеть на нескольких пунктах, и
+ * наоборот — один пункт закрывает пачку строк таблицы. Ячейка считается закрытой,
+ * если ХОТЯ БЫ одна задача, на которой она висит, в статусе done; «не делать» (wont)
+ * из знаменателя исключаем — это отклонённые пункты, они не долг.
+ */
+function btStats(){
+  const cells = new Map();               // 'ЖД!A18' → закрыта ли
+  statItems().forEach(it=>{
+    const st = get(it.id).st;
+    (it.bt||[]).forEach(c=>{
+      if(INACTIVE.includes(st) && !cells.has(c)) { cells.set(c, null); return; }   // null = снято (wont/superseded)
+      cells.set(c, (cells.get(c)===true) || st==='done');
+    });
+  });
+  const live = [...cells.values()].filter(v=>v!==null);
+  const done = live.filter(Boolean).length;
+  const pct  = live.length ? Math.round(done/live.length*100) : 0;
+  // Нет ни одной ячейки — у проекта нет внешней таблицы, блок не показываем.
+  const block = document.getElementById('btBlock');
+  if(block) block.classList.toggle('hidden', live.length === 0);
+  if(!live.length) return;
+  document.getElementById('btBar').style.width = pct+'%';
+  document.getElementById('btPct').textContent = pct+'%';
+  document.getElementById('btTotal').textContent = live.length;
+  document.getElementById('btDone').textContent = done;
+  document.getElementById('btLeft').textContent = live.length - done;
+}
+
+function applyFilter(){
+  const q=document.getElementById('q').value.trim().toLowerCase();
+  const fs=document.getElementById('fStatus').value;
+  const fp=document.getElementById('fPrio').value;
+  const noStats = new Set(TRACKS.filter(t=>t.noStats).map(t=>t.id));
+  document.querySelectorAll('.track').forEach(tr=>{
+    let vis=0;
+    // Фильтр по статусу — это срез РАБОТЫ, поэтому нерабочие треки (noStats: материалы,
+    // справочные) под ним не показываем: иначе число в шапке спорило бы с числом на экране.
+    // Без фильтра статуса такие треки видны как обычно.
+    const скрытьТрек = fs && noStats.has(tr.dataset.track);
+    tr.querySelectorAll('.item').forEach(el=>{
+      // 'remaining' — не статус, а объединение всего незакрытого: не начато + в работе +
+      // заблокировано. Именно этот срез отвечает на вопрос «что ещё делать», а поодиночке
+      // ни один статус его не даёт.
+      const okS = !fs || (fs==='remaining' ? REMAINING.includes(el.dataset.st)
+        : fs==='ready' ? (isReadyId(el.dataset.id) || el.dataset.st==='doing')
+        : el.dataset.st===fs);
+      const okP = !fp || el.dataset.pr===fp;
+      const okQ = !q || el.textContent.toLowerCase().includes(q);
+      const show = okS&&okP&&okQ && !скрытьТрек;
+      el.classList.toggle('hidden', !show);
+      if(show) vis++;
+    });
+    tr.classList.toggle('hidden', vis===0);
+    if(q && vis) tr.open=true;
+  });
+}
+
+// ── Лайтбокс скриншотов: колесо/кнопки — масштаб (к курсору), drag — панорама,
+//    dblclick — 250% ⇄ вписать, Esc/фон/✕ — закрыть, ↗ — новая вкладка ──
+const lb = {el:null};
+function lbBuild(){
+  if(lb.el) return;
+  const el = document.createElement('div');
+  el.className = 'lb hidden';
+  el.setAttribute('role','dialog'); el.setAttribute('aria-label','Просмотр скриншота');
+  el.innerHTML = `
+    <div class="lb-bar">
+      <span class="lb-cap" data-lb="cap"></span>
+      <button type="button" data-lb="out" title="Уменьшить">−</button>
+      <span class="lb-pct" data-lb="pct">100%</span>
+      <button type="button" data-lb="in" title="Увеличить">+</button>
+      <button type="button" data-lb="fit" title="Вписать в окно">Вписать</button>
+      <button type="button" data-lb="full" title="Реальный размер">1:1</button>
+      <a data-lb="ext" target="_blank" rel="noopener" title="Открыть в новой вкладке">↗</a>
+      <button type="button" data-lb="close" title="Закрыть (Esc)">✕</button>
+    </div>
+    <div class="lb-view" data-lb="view"><img draggable="false" alt=""></div>`;
+  document.body.appendChild(el);
+  Object.assign(lb, { el, img: el.querySelector('img'),
+    cap: el.querySelector('[data-lb=cap]'), pct: el.querySelector('[data-lb=pct]'),
+    ext: el.querySelector('[data-lb=ext]'), view: el.querySelector('[data-lb=view]'),
+    s:1, s0:1, x:0, y:0 });
+  el.addEventListener('click', e=>{
+    const a = (e.target.closest('[data-lb]')||{}).dataset?.lb;
+    if(a==='close') lbClose();
+    else if(a==='in')  lbZoom(1.25);
+    else if(a==='out') lbZoom(1/1.25);
+    else if(a==='fit') lbFit();
+    else if(a==='full') lbSetScale(1);
+    else if(e.target===lb.view) lbClose();        // клик по пустому фону
+  });
+  lb.view.addEventListener('wheel', e=>{
+    e.preventDefault();
+    lbZoom(Math.exp(-e.deltaY*0.0015), e.clientX, e.clientY);
+  }, {passive:false});
+  lb.img.addEventListener('dblclick', e=> lb.s > lb.s0*1.01 ? lbFit() : lbSetScale(2.5, e.clientX, e.clientY));
+  let drag = null;                                 // панорама перетаскиванием
+  lb.view.addEventListener('pointerdown', e=>{
+    if(e.target!==lb.img) return;
+    drag = {px:e.clientX, py:e.clientY, x:lb.x, y:lb.y};
+    lb.view.classList.add('drag'); lb.view.setPointerCapture(e.pointerId);
+  });
+  lb.view.addEventListener('pointermove', e=>{
+    if(!drag) return;
+    lb.x = drag.x + e.clientX - drag.px; lb.y = drag.y + e.clientY - drag.py; lbApply();
+  });
+  ['pointerup','pointercancel'].forEach(ev=>lb.view.addEventListener(ev, ()=>{ drag=null; lb.view.classList.remove('drag'); }));
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape' && lb.el && !lb.el.classList.contains('hidden')) lbClose(); });
+}
+function lbApply(){
+  lb.img.style.transform = `translate(${lb.x}px,${lb.y}px) scale(${lb.s})`;
+  lb.pct.textContent = Math.round(lb.s*100)+'%';
+}
+function lbFit(){
+  const vw=lb.view.clientWidth, vh=lb.view.clientHeight,
+        iw=lb.img.naturalWidth||1, ih=lb.img.naturalHeight||1;
+  lb.s0 = Math.min(vw/iw, vh/ih, 1)*0.98;
+  lb.s = lb.s0; lb.x = (vw-iw*lb.s)/2; lb.y = (vh-ih*lb.s)/2; lbApply();
+}
+/** Масштаб с якорем в точке (cx,cy) — точка под курсором остаётся на месте. */
+function lbSetScale(ns, cx, cy){
+  const r = lb.view.getBoundingClientRect();
+  const px = (cx ?? r.left+r.width/2)-r.left, py = (cy ?? r.top+r.height/2)-r.top;
+  ns = Math.min(Math.max(ns, Math.min(lb.s0,1)*0.3), 12);
+  lb.x = px-(px-lb.x)*(ns/lb.s); lb.y = py-(py-lb.y)*(ns/lb.s); lb.s = ns; lbApply();
+}
+function lbZoom(k, cx, cy){ lbSetScale(lb.s*k, cx, cy); }
+function lbOpen(src, cap){
+  lbBuild();
+  lb.cap.textContent = cap; lb.cap.title = cap; lb.ext.href = src;
+  lb.el.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  lb.img.onload = lbFit;
+  if(lb.img.src === new URL(src, location.href).href) lbFit(); else lb.img.src = src;
+}
+function lbClose(){ lb.el.classList.add('hidden'); document.body.style.overflow=''; }
+
+document.addEventListener('click', e=>{
+  if(e.target.closest('[data-shot-ext]')) return;   // ссылка ↗ — обычная навигация в новую вкладку
+  const fig = e.target.closest('.shot');
+  if(fig && !fig.classList.contains('miss')){ e.preventDefault(); lbOpen(fig.dataset.shot, fig.dataset.cap); }
+});
+
+// events (delegated)
+document.addEventListener('input', e=>{
+  const el=e.target, box=el.closest('.item'); if(!box) return;
+  const id=box.dataset.id, act=el.dataset.act;
+  if(act==='pg'){ const v=+el.value; state[id]=Object.assign({},get(id),{pg:v, st: v===100?'done':(v>0?'doing':get(id).st)}); save(); render(); }
+  if(act==='notes'){ state[id]=Object.assign({},get(id),{notes:el.value}); save(); stats();
+    const s=box.querySelector('[data-saved]'); s.classList.add('on'); clearTimeout(s._t); s._t=setTimeout(()=>s.classList.remove('on'),900); }
+});
+document.addEventListener('change', e=>{
+  const el=e.target, box=el.closest('.item'); if(!box) return;
+  if(el.dataset.act==='st'){ const id=box.dataset.id, v=el.value;
+    state[id]=Object.assign({},get(id),{st:v, pg: v==='done'?100:(v==='todo'?0:get(id).pg)}); save(); render(); }
+});
+document.addEventListener('click', e=>{
+  const btn = e.target.closest('.copy'); if(!btn) return;
+  e.preventDefault();                       // клик внутри <summary> не должен раскрывать аккордеон
+  copyText(btn.dataset.copy==='track'
+    ? trackPrompt(btn.closest('.track').dataset.track)
+    : singlePrompt(btn.closest('.item').dataset.id), btn);
+});
+['q','fStatus','fPrio'].forEach(id=>document.getElementById(id).addEventListener('input',applyFilter));
+document.getElementById('expandAll').onclick=()=>document.querySelectorAll('details').forEach(d=>d.open=true);
+document.getElementById('collapseAll').onclick=()=>document.querySelectorAll('details').forEach(d=>d.open=false);
+document.getElementById('btnTheme').onclick=()=>{
+  const next = document.documentElement.getAttribute('data-theme')==='light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme',next); localStorage.setItem(KEY+':theme',next);
+};
+document.getElementById('btnReset').onclick=()=>{ if(confirm('Сбросить весь прогресс и заметки?')){ state={}; save(); render(); } };
+document.getElementById('btnExport').onclick=()=>{
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='workflow-progress.json'; a.click(); URL.revokeObjectURL(a.href);
+};
+document.getElementById('btnImport').onclick=()=>document.getElementById('fileIn').click();
+document.getElementById('fileIn').onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader(); r.onload=()=>{ try{ state=JSON.parse(r.result); save(); render(); }catch(err){ alert('Не JSON'); } }; r.readAsText(f);
+};
+document.documentElement.setAttribute('data-theme', localStorage.getItem(KEY+':theme') || 'dark');
+render();
+</script>
+</body>
+</html>
