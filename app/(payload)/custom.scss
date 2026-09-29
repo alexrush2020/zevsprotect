@@ -561,10 +561,14 @@ $zp-wide: '.textarea, .rich-text-lexical, .array-field, .blocks-field, .upload, 
 }
 
 // Подписи, подсказки
-label.field-label:not(.unstyled) {
-  padding-bottom: 6px;
+label.field-label:not(.unstyled),
+.edit-many span.field-label,
+.drawer span.field-label {
+  display: block;
+  padding-bottom: 8px;
   font-size: 13px;
   font-weight: 500;
+  line-height: 1.4;
   color: var(--text-2);
 }
 .field-description {
@@ -807,5 +811,51 @@ html {
   }
   @media (max-width: 700px) {
     padding-top: 24px;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Выдвижные панели (массовое редактирование, создание связанного документа):
+// заголовок отделён от полей линией и воздухом.
+// ---------------------------------------------------------------------------
+.edit-many {
+  &__header {
+    align-items: flex-start;
+    margin-top: 40px;
+    margin-bottom: 0;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--panel-border);
+    &__title {
+      font-size: 24px;
+      line-height: 1.25;
+    }
+    &__close {
+      flex-shrink: 0;
+    }
+  }
+  &__edit {
+    padding-top: 28px;
+    padding-bottom: 40px;
+    // Подпись и поле: заметный зазор между блоками.
+    .field-type {
+      margin-bottom: 20px;
+    }
+  }
+}
+.drawer__header {
+  margin-bottom: 0;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--panel-border);
+}
+.drawer__content-children > .drawer__header + * {
+  margin-top: 24px;
+}
+
+// Массовое редактирование: поля лежат прямо в форме (без .edit-many__edit) — отступ от линии заголовка и между полями.
+.edit-many__form {
+  padding-top: 28px;
+  padding-bottom: 40px;
+  > .field-type {
+    margin-bottom: 24px;
   }
 }
