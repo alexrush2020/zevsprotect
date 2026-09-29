@@ -8,6 +8,7 @@ import { ru } from '@payloadcms/translations/languages/ru'
 import { ruOverrides } from './payload/i18n'
 import { seoPlugin } from '@payloadcms/plugin-seo'
 
+import { mailAdapter } from './lib/mail/adapter'
 import { Users } from './payload/collections/Users'
 import { Media } from './payload/collections/Media'
 import { Customers } from './payload/collections/Customers'
@@ -58,6 +59,7 @@ export default buildConfig({
       connectionString: process.env.DATABASE_URL || '',
     },
   }),
+  email: mailAdapter,
   sharp,
   plugins: [
     seoPlugin({
