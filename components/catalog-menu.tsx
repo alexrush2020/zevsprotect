@@ -69,12 +69,10 @@ export function CatalogMenu({ extra }: { extra: ExtraLink[] }) {
     };
   }, [open]);
 
-  useEffect(() => {
-    if (!open) {
-      setHoveredId(null);
-      setPanel(null);
-    }
-  }, [open]);
+  if (!open && (hoveredId !== null || panel !== null)) {
+    setHoveredId(null);
+    setPanel(null);
+  }
 
   function hoverItem(item: MenuItem) {
     setHoveredId(item.id);

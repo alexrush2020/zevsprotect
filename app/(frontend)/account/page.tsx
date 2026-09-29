@@ -14,6 +14,7 @@ export default function AccountHomePage() {
   const [notices, setNotices] = useState<AccountNotice[]>([]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- чтение localStorage после гидратации
     setNotices(readNotices().slice(0, 3));
   }, []);
 

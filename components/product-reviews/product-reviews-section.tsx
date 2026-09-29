@@ -55,6 +55,7 @@ export function ProductReviewsSection({ product }: { product: Product }) {
     if (!match) return;
     const inPreview = reviews.slice(0, 4).some((review) => review.id === anchorId);
     if (!inPreview) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- раскрытие списка по якорю из URL
       setAllOpen(true);
       return;
     }

@@ -64,6 +64,7 @@ export function CartOrderForm({ formId }: { formId: string }) {
     if (!ready) return;
     const remembered = readInquiryContacts();
     const source = user ?? lastUser;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- подстановка контактов из localStorage/сессии после гидратации
     setName((v) => v || source?.name || remembered?.name || "");
     setPhone((v) => v || source?.phone || remembered?.phone || "");
     setEmail((v) => v || source?.email || "");

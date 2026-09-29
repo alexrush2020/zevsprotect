@@ -96,6 +96,7 @@ export function ProcessContour({ className }: { className?: string }) {
 
     if (!inView) {
       runId.current += 1;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- анимация синхронизируется с видимостью секции
       setLit(0);
       setFuse(-1);
       setSpark(-1);

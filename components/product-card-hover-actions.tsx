@@ -214,6 +214,7 @@ function QuickOrderModal({
 
   useEffect(() => {
     if (!open) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- сброс количества при открытии модалки
     setQty(volumeQty);
   }, [open, volumeQty]);
 

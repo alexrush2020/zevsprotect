@@ -41,7 +41,9 @@ export default function CheckoutPage() {
   const [manualAddress, setManualAddress] = useState(addresses.length === 0);
   const [manualValue, setManualValue] = useState(user?.address ?? "");
 
-  useEffect(() => {
+  const [prevUser, setPrevUser] = useState(user);
+  if (user !== prevUser) {
+    setPrevUser(user);
     setGuest(!user);
     const def = defaultAddress(user);
     if (def) {
@@ -53,7 +55,7 @@ export default function CheckoutPage() {
       setManualAddress(true);
       setManualValue(user?.address ?? "");
     }
-  }, [user]);
+  }
 
   const pickup = carrierId === "pickup";
   const selectedAddr = addresses.find((a) => a.id === selectedAddressId);
