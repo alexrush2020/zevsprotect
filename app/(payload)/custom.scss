@@ -19,6 +19,10 @@ html[data-theme='dark'] {
   --accent-line: rgba(233, 123, 63, 0.46);
   --on-accent: #120802;
   --accent-hover: #f08a4e;
+  // Основная кнопка: белый текст на глубоком оранжевом (контраст ≈ 4.9:1), а не тёмный на светлом.
+  --btn-bg: #b9531a;
+  --btn-fg: #ffffff;
+  --btn-hover: #a64914;
   --pay: #e3c062;
   --err: #e0a39b;
   --err-bg: rgba(224, 163, 155, 0.13);
@@ -50,6 +54,9 @@ html[data-theme='light'] {
   --accent-line: rgba(188, 74, 16, 0.42);
   --on-accent: #ffffff;
   --accent-hover: #a63f0b;
+  --btn-bg: #bc4a10;
+  --btn-fg: #ffffff;
+  --btn-hover: #a63f0b;
   --pay: #8a6410;
   --err: #a8564d;
   --err-bg: rgba(168, 86, 77, 0.09);
@@ -86,9 +93,9 @@ html {
 // Основные кнопки — акцент вместо инверсного цвета Payload (единственная привязка к классу Payload).
 // Текст кнопки: полужирный и крупнее — на оранжевом тонкий шрифт в тёмной теме читался вяло.
 .btn--style-primary {
-  --bg-color: var(--accent);
-  --color: var(--on-accent);
-  --hover-bg: var(--accent-hover);
+  --bg-color: var(--btn-bg);
+  --color: var(--btn-fg);
+  --hover-bg: var(--btn-hover);
   font-weight: 600;
   letter-spacing: 0.01em;
   &,
@@ -798,5 +805,25 @@ html {
     border-top-left-radius: 0;
     border-top: 0;
     box-shadow: var(--panel-shadow);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Списки коллекций: воздух между шапкой приложения, заголовком, поиском и таблицей.
+// ---------------------------------------------------------------------------
+.collection-list__wrap {
+  padding-top: 32px;
+  padding-bottom: 72px;
+  .list-header {
+    margin-bottom: 24px;
+  }
+  .list-header__title-and-actions {
+    gap: 14px;
+  }
+  .list-controls {
+    margin-bottom: 28px;
+  }
+  @media (max-width: 700px) {
+    padding-top: 24px;
   }
 }
