@@ -50,6 +50,7 @@ export const Settings: GlobalConfig = {
     {
       name: 'b24StageMap',
       type: 'array',
+      labels: { singular: 'Соответствие', plural: 'Соответствия' },
       label: 'Стадии Б24 → статус заказа',
       access: { read: hasRole('admin', 'manager') },
       fields: [

@@ -51,6 +51,7 @@ export const Customers: CollectionConfig = {
     {
       name: 'addresses',
       type: 'array',
+      labels: { singular: 'Адрес', plural: 'Адреса' },
       label: 'Адреса доставки',
       fields: [
         { name: 'label', type: 'text', label: 'Название', required: true },

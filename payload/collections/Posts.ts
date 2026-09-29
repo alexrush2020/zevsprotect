@@ -26,6 +26,7 @@ export const Posts: CollectionConfig = {
     {
       name: 'slides',
       type: 'array',
+      labels: { singular: 'Слайд', plural: 'Слайды' },
       label: 'Слайды',
       fields: [
         { name: 'image', type: 'upload', relationTo: 'media', required: true },

@@ -11,6 +11,7 @@ export const About: GlobalConfig = {
     {
       name: 'documents',
       type: 'array',
+      labels: { singular: 'Документ', plural: 'Документы' },
       label: 'Декларации соответствия',
       fields: [
         { name: 'title', type: 'text', label: 'Название', required: true },

@@ -11,6 +11,7 @@ export const Delivery: GlobalConfig = {
     {
       name: 'terms',
       type: 'array',
+      labels: { singular: 'Условие', plural: 'Условия' },
       label: 'Условия',
       fields: [
         { name: 'title', type: 'text', label: 'Заголовок', required: true },

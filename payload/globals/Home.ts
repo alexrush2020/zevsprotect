@@ -14,6 +14,7 @@ export const Home: GlobalConfig = {
     {
       name: 'banners',
       type: 'array',
+      labels: { singular: 'Баннер', plural: 'Баннеры' },
       label: 'Баннеры',
       fields: [
         { name: 'title', type: 'text', label: 'Заголовок', required: true },

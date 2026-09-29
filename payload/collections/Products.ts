@@ -54,6 +54,7 @@ export const Products: CollectionConfig = {
             {
               name: 'specs',
               type: 'array',
+              labels: { singular: 'Характеристика', plural: 'Характеристики' },
               label: 'Характеристики (свободные)',
               fields: [
                 { name: 'key', type: 'text', label: 'Название', required: true },
@@ -68,12 +69,14 @@ export const Products: CollectionConfig = {
             {
               name: 'gallery',
               type: 'array',
+              labels: { singular: 'Фото', plural: 'Фото' },
               label: 'Галерея (первое фото — главное)',
               fields: [{ name: 'image', type: 'upload', relationTo: 'media', required: true }],
             },
             {
               name: 'documents',
               type: 'array',
+              labels: { singular: 'Документ', plural: 'Документы' },
               label: 'Документы (декларации)',
               fields: [
                 { name: 'title', type: 'text', label: 'Название', required: true },

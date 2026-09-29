@@ -5,6 +5,7 @@ import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
 import { ru } from '@payloadcms/translations/languages/ru'
+import { ruOverrides } from './payload/i18n'
 import { seoPlugin } from '@payloadcms/plugin-seo'
 
 import { Users } from './payload/collections/Users'
@@ -40,7 +41,7 @@ export default buildConfig({
     },
     meta: { titleSuffix: ' · зевспротект®' },
   },
-  i18n: { supportedLanguages: { ru }, fallbackLanguage: 'ru' },
+  i18n: { supportedLanguages: { ru }, fallbackLanguage: 'ru', translations: { ru: ruOverrides } },
   collections: [Users, Customers, Categories, Products, Media, Reviews, Orders, Leads, PostCategories, Posts, Pages],
   globals: [Home, About, Delivery, Navigation, Settings],
   upload: { limits: { fileSize: 25 * 1024 * 1024 } },

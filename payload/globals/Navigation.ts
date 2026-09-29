@@ -4,6 +4,7 @@ import { hasRole } from '../access'
 const links = (name: string, label: string): ArrayField => ({
   name,
   type: 'array',
+  labels: { singular: 'Пункт', plural: 'Пункты' },
   label,
   fields: [
     { name: 'label', type: 'text', label: 'Текст', required: true },

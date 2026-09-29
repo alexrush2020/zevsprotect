@@ -83,6 +83,7 @@ export const Orders: CollectionConfig = {
     {
       name: 'items',
       type: 'array',
+      labels: { singular: 'Позиция', plural: 'Позиции' },
       label: 'Состав (снапшот)',
       required: true,
       minRows: 1,
@@ -162,6 +163,7 @@ export const Orders: CollectionConfig = {
     {
       name: 'statusHistory',
       type: 'array',
+      labels: { singular: 'Запись', plural: 'Записи' },
       label: 'История статусов',
       access: { create: () => false, update: () => false },
       admin: { readOnly: true },

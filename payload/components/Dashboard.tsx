@@ -82,7 +82,7 @@ export async function Dashboard({ initPageResult }: AdminViewServerProps) {
   if (drafts?.total)
     alerts.push({ title: `Моделей в черновиках: ${drafts.total}`, sub: list(drafts.docs, 'title'), href: col('products'), dot: 'var(--pay)' })
   if (pending?.total)
-    alerts.push({ title: `Заказов ожидают оплаты: ${pending.total}`, sub: `№ ${list(pending.docs, 'number')}`, href: col('orders'), dot: 'var(--pay)' })
+    alerts.push({ title: `Заказы, ожидающие оплаты: ${pending.total}`, sub: `№ ${list(pending.docs, 'number')}`, href: col('orders'), dot: 'var(--pay)' })
   for (const [label, slug, key, r] of [
     ['заказов', 'orders', 'number', syncOrders],
     ['заявок', 'leads', 'name', syncLeads],
