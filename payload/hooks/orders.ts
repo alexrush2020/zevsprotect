@@ -28,3 +28,9 @@ export function nextStatusHistory(
 
 export const hasCustomerOrGuest = (d: { customer?: unknown; guest?: { phone?: string; name?: string } }) =>
   Boolean(d.customer) || Boolean(d.guest?.phone)
+
+/** Следующий порядковый номер по последнему номеру года; мусор/пусто → 1. */
+export function nextOrderSeq(lastNumber: string | undefined): number {
+  const m = /-(\d+)$/.exec(lastNumber ?? '')
+  return m ? Number(m[1]) + 1 : 1
+}

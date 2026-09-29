@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { hasRole, isAdmin, ownOrRoles } from '../access'
-import { computeTotal, formatOrderNumber, hasCustomerOrGuest, nextStatusHistory } from '../hooks/orders'
+import { computeTotal, formatOrderNumber, nextOrderSeq, hasCustomerOrGuest, nextStatusHistory } from '../hooks/orders'
 
 const manager = hasRole('admin', 'manager')
 const syncField = (name: string, label: string) => ({
@@ -32,13 +32,17 @@ export const Orders: CollectionConfig = {
       async ({ data, operation, req }) => {
         if (operation === 'create' && data && !data.number) {
           const year = new Date().getFullYear()
-          const { totalDocs } = await req.payload.count({
+          const last = await req.payload.find({
             collection: 'orders',
             where: { number: { like: `ZP-${year}-` } },
+            sort: '-number',
+            limit: 1,
+            depth: 0,
+            pagination: false,
             req,
           })
-          // ponytail: count+1 — при гонке unique-индекс вернёт ошибку, вызывающий повторяет; счётчик-sequence при нагрузке
-          data.number = formatOrderNumber(year, totalDocs + 1)
+          // ponytail: сортировка строк корректна до 9999 заказов в год (дальше длина хвоста ломает порядок) — тогда sequence/числовое поле; при гонке unique вернёт ошибку, вызывающий повторяет
+          data.number = formatOrderNumber(year, nextOrderSeq(last.docs[0]?.number))
         }
         return data
       },
@@ -168,8 +172,8 @@ export const Orders: CollectionConfig = {
       ],
     },
     { name: 'consentPdAt', type: 'date', label: 'Согласие на ПДн', admin: { readOnly: true } },
-    { name: 'paymentId', type: 'text', label: 'ID платежа', unique: true, index: true, admin: { position: 'sidebar', readOnly: true } },
-    { name: 'onecExportedAt', type: 'date', label: 'Выгружен в 1С', admin: { position: 'sidebar', readOnly: true } },
+    { name: 'paymentId', type: 'text', label: 'ID платежа', unique: true, index: true, access: { create: isAdmin, update: isAdmin }, admin: { position: 'sidebar', readOnly: true } },
+    { name: 'onecExportedAt', type: 'date', label: 'Выгружен в 1С', access: { create: isAdmin, update: isAdmin }, admin: { position: 'sidebar', readOnly: true } },
     syncField('b24DealId', 'ID сделки Б24'),
     syncField('syncError', 'Ошибка синхронизации'),
   ],

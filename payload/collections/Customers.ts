@@ -67,13 +67,14 @@ export const Customers: CollectionConfig = {
       type: 'select',
       label: 'Способ входа',
       defaultValue: 'password',
+      access: { create: isAdmin, update: isAdmin },
       options: [
         { label: 'Пароль', value: 'password' },
         { label: 'Телефон', value: 'phone' },
         { label: 'Яндекс ID', value: 'yandex' },
       ],
     },
-    { name: 'yandexId', type: 'text', label: 'Yandex ID', index: true },
+    { name: 'yandexId', type: 'text', label: 'Yandex ID', index: true, unique: true, access: { create: isAdmin, update: isAdmin } },
     { name: 'favorites', type: 'relationship', relationTo: 'products', hasMany: true, label: 'Избранное' },
     { name: 'consentPdAt', type: 'date', label: 'Согласие на обработку ПДн', admin: { readOnly: true } },
     ...['b24CompanyId', 'b24ContactId', 'onecId', 'syncError'].map((name) => ({

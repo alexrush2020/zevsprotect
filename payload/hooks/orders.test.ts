@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computeTotal, formatOrderNumber, hasCustomerOrGuest, nextStatusHistory, round2 } from './orders'
+import { computeTotal, formatOrderNumber, hasCustomerOrGuest, nextOrderSeq, nextStatusHistory, round2 } from './orders'
 
 describe('round2', () => {
   it('убирает хвост float', () => expect(round2(0.1 * 3)).toBe(0.3))
@@ -53,5 +53,15 @@ describe('hasCustomerOrGuest', () => {
     expect(hasCustomerOrGuest({ guest: { phone: '+79001112233' } })).toBe(true)
     expect(hasCustomerOrGuest({})).toBe(false)
     expect(hasCustomerOrGuest({ guest: { name: 'Иван' } })).toBe(false)
+  })
+})
+
+describe('nextOrderSeq', () => {
+  it('пусто → 1', () => expect(nextOrderSeq(undefined)).toBe(1))
+  it('обычный', () => expect(nextOrderSeq('ZP-2026-0418')).toBe(419))
+  it('после дыры 0001,0003 → 4', () => expect(nextOrderSeq('ZP-2026-0003')).toBe(4))
+  it('мусор → 1', () => {
+    expect(nextOrderSeq('abc')).toBe(1)
+    expect(nextOrderSeq('ZP-2026-xx')).toBe(1)
   })
 })
