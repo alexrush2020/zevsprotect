@@ -1,4 +1,4 @@
-import type { Access } from 'payload'
+import type { Access, PayloadRequest } from 'payload'
 
 export type Role = 'admin' | 'manager' | 'content'
 
@@ -6,16 +6,17 @@ type Actor = { collection?: string; role?: Role; id?: string | number } | null |
 
 const actor = (req: { user?: unknown }) => req.user as Actor
 
-export const isStaff: Access = ({ req }) => actor(req)?.collection === 'users'
+export const isStaff = ({ req }: { req: PayloadRequest }): boolean =>
+  actor(req)?.collection === 'users'
 
-export const isAdmin: Access = ({ req }) => {
+export const isAdmin = ({ req }: { req: PayloadRequest }): boolean => {
   const u = actor(req)
   return u?.collection === 'users' && u.role === 'admin'
 }
 
 export const hasRole =
-  (...roles: Role[]): Access =>
-  ({ req }) => {
+  (...roles: Role[]) =>
+  ({ req }: { req: PayloadRequest }): boolean => {
     const u = actor(req)
     return u?.collection === 'users' && !!u.role && roles.includes(u.role)
   }
@@ -28,7 +29,7 @@ export const publishedOrStaff: Access = ({ req }) =>
 export const ownOrRoles =
   (field: string, ...roles: Role[]): Access =>
   (args) => {
-    if (hasRole(...roles)(args)) return true
+    if (hasRole(...roles)({ req: args.req })) return true
     const u = actor(args.req)
     if (u?.collection === 'customers' && u.id != null) return { [field]: { equals: u.id } }
     return false
@@ -36,7 +37,7 @@ export const ownOrRoles =
 
 /** Admin видит всех пользователей, остальные сотрудники — только себя. */
 export const selfOrAdmin: Access = (args) => {
-  if (isAdmin(args)) return true
+  if (isAdmin({ req: args.req })) return true
   const u = actor(args.req)
   return u?.collection === 'users' && u.id != null ? { id: { equals: u.id } } : false
 }
