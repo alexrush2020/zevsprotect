@@ -14,9 +14,13 @@ describe('visibleGroups', () => {
     for (const hidden of ['Заказы', 'Клиенты', 'Заявки', 'Пользователи']) expect(l).not.toContain(hidden)
     expect(l).toContain('Модели')
     expect(l).toContain('Статьи')
+    expect(l).not.toContain('Отзывы')
+    expect(l).not.toContain('Настройки')
   })
   it('manager: заказы есть, правки каталога — нет (пункты каталога только для чтения видны)', () => {
     expect(labels('manager')).toContain('Заказы')
+    expect(labels('manager')).toContain('Отзывы')
+    expect(labels('manager')).toContain('Настройки')
     expect(labels('manager')).not.toContain('Пользователи')
   })
   it('без роли (неизвестный пользователь) — пусто, без исключения', () => {

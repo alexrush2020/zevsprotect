@@ -90,7 +90,8 @@ input:focus-visible {
   flex-direction: column;
   gap: 22px;
   min-height: 100%;
-  padding: 20px 12px;
+  // сверху — высота шапки Payload: под ней лежит кнопка-переключатель меню
+  padding: calc(var(--app-header-height) + 8px) 12px 20px;
   background: var(--sidebar);
   color: var(--text);
   font-family: var(--font-body);
@@ -224,6 +225,8 @@ input:focus-visible {
 
 // Дашборд
 .zp-dash {
+  // отступы как у видов Payload
+  padding: var(--base) var(--gutter-h) var(--spacing-view-bottom);
   display: flex;
   flex-direction: column;
   gap: 24px;
