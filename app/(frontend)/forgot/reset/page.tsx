@@ -8,24 +8,30 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Reveal } from "@/components/home/motion";
+import { resetRequest } from "@/lib/auth-client";
 
 const fieldClass = "h-11 rounded-xl bg-white";
 
 function ResetForm() {
   const params = useSearchParams();
-  const token = params.get("token") || "demo";
+  const token = params.get("token") || "";
   const [password, setPassword] = useState("");
   const [repeat, setRepeat] = useState("");
   const [done, setDone] = useState(false);
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (password.length < 4 || password !== repeat) {
-      toast.error("Пароли должны совпадать и быть не короче 4 символов");
+    if (password.length < 8 || password !== repeat) {
+      toast.error("Пароли должны совпадать и быть не короче 8 символов");
       return;
     }
-    setDone(true);
-    toast.success("Пароль обновлён. Можно войти с новым паролем.");
+    try {
+      await resetRequest(token, password);
+      setDone(true);
+      toast.success("Пароль обновлён. Можно войти с новым паролем.");
+    } catch {
+      toast.error("Ссылка недействительна или устарела. Запросите новую.");
+    }
   }
 
   return (
@@ -51,10 +57,10 @@ function ResetForm() {
 
         <section className="mt-8 rounded-2xl border bg-card p-5 shadow-[0_18px_50px_rgb(4_0_64_/_0.06)] sm:p-6">
           <h2 className="font-heading text-2xl text-ink">Новый пароль</h2>
-          <p className="mt-1 text-sm text-steel">Токен {token} в прототипе не проверяется на сервере.</p>
+          
           {done ? (
             <div className="mt-5 rounded-xl border bg-paper/80 p-4 text-sm text-ink">
-              Пароль обновлён. В бою это уйдёт в кабинет. Сейчас можно войти с любым паролем.
+              Пароль обновлён. Войдите с новым паролем.
             </div>
           ) : (
             <form className="mt-5 grid gap-3" onSubmit={onSubmit}>

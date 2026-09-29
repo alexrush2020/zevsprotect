@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Reveal } from "@/components/home/motion";
-import { demoAccount, formatRuPhone } from "@/lib/demo-account";
+import { formatRuPhone } from "@/lib/demo-account";
+import { forgotRequest, loginRequest, registerRequest } from "@/lib/auth-client";
 import { useStore } from "@/lib/store";
 import type { AccountKind, UserProfile } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -32,8 +32,8 @@ function hrefForMode(mode: AuthMode) {
 export function AccountAuthForm() {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, lastUser, login, register, loginYandex, loginDemo, resumeSession, addLead } =
-    useStore();
+  const { user, register, loginYandex } = useStore();
+  const [busy, setBusy] = useState(false);
 
   const [mode, setMode] = useState<AuthMode>(() => modeFromPath(pathname));
   const [resetSent, setResetSent] = useState(false);
@@ -50,7 +50,6 @@ export function AccountAuthForm() {
   const [bankName, setBankName] = useState("");
   const [bik, setBik] = useState("");
 
-  const remembered = lastUser ?? demoAccount;
   const isLegal = kind === "legal";
   const isLogin = mode === "login";
   const isForgot = mode === "forgot";
@@ -66,10 +65,6 @@ export function AccountAuthForm() {
     }
   }, [pathname]);
 
-  useEffect(() => {
-    if (lastUser?.email) setEmail((current) => current || lastUser.email);
-  }, [lastUser?.email]);
-
   function goToCabinet() {
     if (pathname !== "/account") router.push("/account");
   }
@@ -82,31 +77,44 @@ export function AccountAuthForm() {
     }
   }
 
-  function onForgot(e: React.FormEvent<HTMLFormElement>) {
+  async function onForgot(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const value = email.trim();
     if (!value) {
       toast.error("Укажите email кабинета");
       return;
     }
-    addLead("password_reset", { email: value });
-    setResetSent(true);
-    toast.success("Письмо со ссылкой «отправлено»");
+    setBusy(true);
+    try {
+      await forgotRequest(value);
+      setResetSent(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Не удалось отправить письмо");
+    } finally {
+      setBusy(false);
+    }
   }
 
-  function onLogin(e: React.FormEvent<HTMLFormElement>) {
+  async function onLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const ok = login(email.trim(), password);
-    if (!ok) {
-      toast.error("Укажите email и пароль");
+    setBusy(true);
+    try {
+      register(await loginRequest(email.trim(), password));
+      toast.success("Вход выполнен");
+      goToCabinet();
+    } catch {
+      toast.error("Неверный email или пароль");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onRegister(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (password.length < 8) {
+      toast.error("Пароль не короче 8 символов");
       return;
     }
-    toast.success("Вход выполнен");
-    goToCabinet();
-  }
-
-  function onRegister(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
     const profile: UserProfile = {
       name: name.trim(),
       phone: phone.trim(),
@@ -119,19 +127,17 @@ export function AccountAuthForm() {
       bik: isLegal && fillRequisites ? bik.trim() : "",
       address: "",
       kind,
-      authProvider: "phone",
     };
-    const ok = register(profile);
-    if (!ok) {
-      toast.error("Укажите телефон или e-mail");
-      return;
+    setBusy(true);
+    try {
+      register(await registerRequest(profile, password));
+      toast.success(isLegal ? "Кабинет юрлица создан" : "Кабинет создан");
+      goToCabinet();
+    } catch {
+      toast.error("Не удалось создать кабинет. Если он уже есть — войдите или восстановите пароль");
+    } finally {
+      setBusy(false);
     }
-    toast.success(
-      isLegal
-        ? "Кабинет юрлица создан. В прототипе профиль хранится локально."
-        : "Кабинет создан. В прототипе профиль хранится локально.",
-    );
-    goToCabinet();
   }
 
   return (
@@ -177,15 +183,7 @@ export function AccountAuthForm() {
               </p>
               {resetSent ? (
                 <div className="mt-5 rounded-xl border bg-paper/80 p-4 text-sm text-ink">
-                  Если кабинет с адресом {email} существует, на него уйдёт ссылка.
-                  Откройте{" "}
-                  <Link
-                    href="/forgot/reset?token=demo"
-                    className="underline underline-offset-2 hover:text-navy"
-                  >
-                    ссылку из письма
-                  </Link>{" "}
-                  или вернитесь ко входу — в прототипе подойдёт любой пароль.
+                  Если кабинет с адресом {email} существует, на него уйдёт ссылка для нового пароля.
                 </div>
               ) : (
                 <form onSubmit={onForgot} className="mt-5 grid gap-3">
@@ -198,7 +196,7 @@ export function AccountAuthForm() {
                     onChange={setEmail}
                     required
                   />
-                  <Button type="submit" className="btn-press-in mt-1 h-12 w-full text-base">
+                  <Button type="submit" disabled={busy} className="btn-press-in mt-1 h-12 w-full text-base">
                     Отправить ссылку
                   </Button>
                 </form>
@@ -215,26 +213,13 @@ export function AccountAuthForm() {
             <>
               <h2 className="mt-5 font-heading text-2xl text-ink">Вход</h2>
               <p className="mt-1 text-sm text-steel">
-                Яндекс или email и пароль. Дальше система помнит профиль; сессия живёт
-                2–3 дня, потом достаточно нажать «Продолжить».
+                Яндекс или email и пароль. Сессия живёт 2–3 дня.
               </p>
 
               <Button
                 type="button"
-                className="mt-5 h-12 w-full bg-navy text-base text-paper hover:bg-ink-2"
-                onClick={() => {
-                  resumeSession();
-                  toast.success(`Снова ${remembered.name}`);
-                  goToCabinet();
-                }}
-              >
-                Продолжить как {remembered.name}
-              </Button>
-
-              <Button
-                type="button"
                 variant="outline"
-                className="mt-3 h-11 w-full gap-2 rounded-xl border-border bg-white text-ink hover:bg-paper"
+                className="mt-5 h-11 w-full gap-2 rounded-xl border-border bg-white text-ink hover:bg-paper"
                 onClick={() => {
                   loginYandex();
                   toast.success("Вход через Яндекс ID (заглушка прототипа)");
@@ -277,25 +262,17 @@ export function AccountAuthForm() {
                     Забыли пароль?
                   </button>
                 </p>
-                <Button type="submit" className="btn-press-in mt-1 h-12 w-full text-base">
+                <Button type="submit" disabled={busy} className="btn-press-in mt-1 h-12 w-full text-base">
                   Войти
                 </Button>
               </form>
 
-              <DemoEntry
-                rememberedEmail={remembered.email}
-                onDemo={() => {
-                  loginDemo();
-                  toast.success("Вход в демо-кабинет");
-                  goToCabinet();
-                }}
-              />
             </>
           ) : (
             <form onSubmit={onRegister}>
               <h2 className="mt-5 font-heading text-2xl text-ink">Регистрация</h2>
               <p className="mt-1 text-sm text-steel">
-                Первый раз — форма по телефону. Частное лицо или юрлицо; реквизиты можно
+                Частное лицо или юрлицо; реквизиты можно
                 добавить позже.
               </p>
 
@@ -326,11 +303,10 @@ export function AccountAuthForm() {
                 />
                 <Field
                   id="auth-phone"
-                  label="Телефон *"
+                  label="Телефон"
                   placeholder="+7 (___) ___-__-__"
                   value={phone}
                   onChange={(v) => setPhone(formatRuPhone(v))}
-                  required
                 />
                 <Field
                   id="auth-reg-email"
@@ -339,6 +315,15 @@ export function AccountAuthForm() {
                   placeholder="partner@email.ru"
                   value={email}
                   onChange={setEmail}
+                  required
+                />
+                <Field
+                  id="auth-reg-password"
+                  label="Пароль * (от 8 символов)"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={setPassword}
                   required
                 />
                 {isLegal ? (
@@ -386,7 +371,7 @@ export function AccountAuthForm() {
                   />
                 ) : null}
 
-                <Button type="submit" className="btn-press-in mt-1 h-12 w-full text-base">
+                <Button type="submit" disabled={busy} className="btn-press-in mt-1 h-12 w-full text-base">
                   Создать кабинет
                 </Button>
               </div>
@@ -394,32 +379,6 @@ export function AccountAuthForm() {
           )}
         </section>
       </div>
-    </div>
-  );
-}
-
-function DemoEntry({
-  rememberedEmail,
-  onDemo,
-}: {
-  rememberedEmail: string;
-  onDemo: () => void;
-}) {
-  if (rememberedEmail === demoAccount.email) return null;
-  return (
-    <div className="mt-5 rounded-xl border bg-paper/80 p-4">
-      <p className="text-xs font-medium uppercase tracking-[0.16em] text-steel">
-        Демо-аккаунт для презентации
-      </p>
-      <p className="mt-1 text-sm text-ink">
-        {demoAccount.company} · {demoAccount.name}
-      </p>
-      <p className="text-xs text-steel">
-        {demoAccount.phone} · заказы, счёт, повтор покупки
-      </p>
-      <Button type="button" variant="outline" className="mt-3 h-10 w-full" onClick={onDemo}>
-        Войти демо-аккаунтом
-      </Button>
     </div>
   );
 }

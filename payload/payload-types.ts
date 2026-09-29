@@ -202,7 +202,7 @@ export interface Customer {
   id: number;
   kind?: ('person' | 'legal') | null;
   name: string;
-  phone: string;
+  phone?: string | null;
   company?: string | null;
   inn?: string | null;
   kpp?: string | null;

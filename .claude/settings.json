@@ -1,0 +1,6 @@
+{
+  "env": {
+    "PLAYWRIGHT_MCP_OUTPUT_DIR": "screenshots/playwright"
+  },
+  "hooks": {}
+}

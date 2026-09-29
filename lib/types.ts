@@ -84,6 +84,7 @@ export type Lead = {
 };
 
 export type UserProfile = {
+  customerId?: string;
   email: string;
   name: string;
   phone: string;
@@ -96,7 +97,7 @@ export type UserProfile = {
   bankName?: string;
   bankAccount?: string;
   bik?: string;
-  authProvider?: "phone" | "yandex" | "demo";
+  authProvider?: "phone" | "yandex" | "demo" | "password";
 };
 
 export type Order = {

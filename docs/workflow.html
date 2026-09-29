@@ -502,7 +502,7 @@ const TRACKS = [
     deps:['SH-CART', 'C-ORD'],
     links:[['TZ.md', 'ТЗ: сводка']],
     acc:'Гость и клиент оформляют заказ; подменённая цена в запросе не влияет на сумму (тест); заказ в админке.' },
-  { id:'SH-AUTH', t:'Регистрация, вход, восстановление пароля (email)', d:'customers (Payload auth): /register, /login, сброс пароля по email, сессия; разграничение гость/клиент.', pr:'P0', st:'todo', own:'agent',
+  { id:'SH-AUTH', t:'Регистрация, вход, восстановление пароля (email)', d:'customers (Payload auth): /register, /login, сброс пароля по email, сессия; разграничение гость/клиент.', pr:'P0', st:'done', anchors:['lib/auth-client.ts','components/account-auth-form.tsx','payload/collections/Customers.test.ts'], res:'<b>Коммиты 622de82, 6d5d060.</b> Формы /login,/register,/forgot,/forgot/reset на REST customers (lib/auth-client.ts), сессия 3 дня, письма сброса/регистрации, профиль и адреса сохраняются через PATCH. Проверено: npm run test 66/66, typecheck, независимое ревью opus (дыр access нет; находки исправлены). Вживую не прогонялось; нужна миграция (customers.phone не required) перед деплоем; csrf не менялся; Яндекс — заглушка; согласие ПДн — SH-CONSENT.', own:'agent',
     req:['T-AUTH, CONTRA-2 (телефон — после BIZ-2).', 'В прототипе сессия «2–3 дня» → tokenExpiration.'],
     deps:['S-5'],
     links:[['CONTRADICTIONS.md', 'Противоречия']],
@@ -550,6 +550,10 @@ const TRACKS = [
     req:['Реквизиты SMTP — у заказчика.'],
     deps:['S-1'],
     acc:'Письма уходят в тестовый ящик/консоль с корректными данными.' },
+
+  { id:'SH-CONSENT', t:'Согласие на обработку ПДн при регистрации клиента', d:'В форме регистрации нет чекбокса согласия, customers.consentPdAt не заполняется (в заявках чекбокс есть). Нужно решение: чекбокс + текст согласия, момент фиксации.', pr:'P1', st:'todo', own:'business', deps:['SH-AUTH'],
+    req:['152-ФЗ: не подменять требование предположением; поле consentPdAt защищено (только admin), ставить его — через хук при регистрации.'],
+    acc:'Решение владельца о тексте и обязательности согласия; после — чекбокс и запись consentPdAt на сервере.' },
   ]
 },
 {
