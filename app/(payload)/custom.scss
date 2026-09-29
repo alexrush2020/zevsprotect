@@ -721,3 +721,13 @@ html {
     font-size: 14px;
   }
 }
+
+// Вкладка, внутри которой единственная группа (например SEO), — без своей рамки:
+// иначе получается панель в панели.
+.tabs-field__tab:has(> .render-fields > .group-field:only-child) {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
