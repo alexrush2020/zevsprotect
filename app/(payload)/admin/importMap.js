@@ -1,3 +1,4 @@
+import { DocTitle as DocTitle_20eef2c2f20662931808bf1eb82b6155 } from '../../../payload/components/DocTitle'
 import { OverviewComponent as OverviewComponent_a8a977ebc872c5d5ea7ee689724c0860 } from '@payloadcms/plugin-seo/client'
 import { MetaTitleComponent as MetaTitleComponent_a8a977ebc872c5d5ea7ee689724c0860 } from '@payloadcms/plugin-seo/client'
 import { MetaDescriptionComponent as MetaDescriptionComponent_a8a977ebc872c5d5ea7ee689724c0860 } from '@payloadcms/plugin-seo/client'
@@ -26,6 +27,7 @@ import { StrikethroughFeatureClient as StrikethroughFeatureClient_e70f5e05f09f93
 import { UnderlineFeatureClient as UnderlineFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { BoldFeatureClient as BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { ItalicFeatureClient as ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
+import { StatusCell as StatusCell_616382b01f5760c5e64965d655a4ec2c } from '../../../payload/components/StatusCell'
 import { AdminNav as AdminNav_d75d6f53ddc8c45ae1d1a1f42b3751a0 } from '../../../payload/components/AdminNav'
 import { Icon as Icon_9abc6a0eda54972459e8ec55822fafb2 } from '../../../payload/components/Brand'
 import { Logo as Logo_9abc6a0eda54972459e8ec55822fafb2 } from '../../../payload/components/Brand'
@@ -35,6 +37,7 @@ import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } f
 
 /** @type import('payload').ImportMap */
 export const importMap = {
+  "/payload/components/DocTitle#DocTitle": DocTitle_20eef2c2f20662931808bf1eb82b6155,
   "@payloadcms/plugin-seo/client#OverviewComponent": OverviewComponent_a8a977ebc872c5d5ea7ee689724c0860,
   "@payloadcms/plugin-seo/client#MetaTitleComponent": MetaTitleComponent_a8a977ebc872c5d5ea7ee689724c0860,
   "@payloadcms/plugin-seo/client#MetaDescriptionComponent": MetaDescriptionComponent_a8a977ebc872c5d5ea7ee689724c0860,
@@ -63,6 +66,7 @@ export const importMap = {
   "@payloadcms/richtext-lexical/client#UnderlineFeatureClient": UnderlineFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/richtext-lexical/client#BoldFeatureClient": BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/richtext-lexical/client#ItalicFeatureClient": ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
+  "/payload/components/StatusCell#StatusCell": StatusCell_616382b01f5760c5e64965d655a4ec2c,
   "/payload/components/AdminNav#AdminNav": AdminNav_d75d6f53ddc8c45ae1d1a1f42b3751a0,
   "/payload/components/Brand#Icon": Icon_9abc6a0eda54972459e8ec55822fafb2,
   "/payload/components/Brand#Logo": Logo_9abc6a0eda54972459e8ec55822fafb2,

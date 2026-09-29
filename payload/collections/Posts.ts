@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { docTitle, slugField } from '../admin-ui'
 import { hasRole, isStaff, publishedOrStaff } from '../access'
 
 const editor = hasRole('admin', 'content')
@@ -6,13 +7,13 @@ const editor = hasRole('admin', 'content')
 export const Posts: CollectionConfig = {
   slug: 'posts',
   labels: { singular: 'Статья', plural: 'Статьи' },
-  admin: { group: 'Контент', useAsTitle: 'title', defaultColumns: ['title', 'category', 'publishedAt', '_status'] },
+  admin: { group: 'Контент', useAsTitle: 'title', defaultColumns: ['title', 'category', 'publishedAt', '_status'], listSearchableFields: ['title', 'slug'], components: docTitle('Новая статья') },
   defaultSort: '-publishedAt',
   versions: { drafts: true, maxPerDoc: 20 },
   access: { read: publishedOrStaff, readVersions: isStaff, create: editor, update: editor, delete: hasRole('admin') },
   fields: [
     { name: 'title', type: 'text', label: 'Заголовок', required: true },
-    { name: 'slug', type: 'text', label: 'Slug', required: true, unique: true, index: true },
+    slugField('/blog/<slug>'),
     { name: 'category', type: 'relationship', relationTo: 'post-categories', label: 'Рубрика' },
     {
       name: 'cover',

@@ -1,10 +1,11 @@
 import type { CollectionConfig } from 'payload'
+import { docTitle } from '../admin-ui'
 import { isAdmin, selfOrAdmin } from '../access'
 
 export const Users: CollectionConfig = {
   slug: 'users',
   labels: { singular: 'Пользователь', plural: 'Пользователи' },
-  admin: { useAsTitle: 'email', group: 'Система', defaultColumns: ['email', 'name', 'role'] },
+  admin: { useAsTitle: 'email', group: 'Система', defaultColumns: ['email', 'name', 'role'], listSearchableFields: ['email', 'name'], components: docTitle('Новый пользователь') },
   auth: true,
   access: {
     read: selfOrAdmin,

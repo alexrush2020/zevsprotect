@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { docTitle, statusCell } from '../admin-ui'
 import { hasRole, isAdmin, ownOrRoles } from '../access'
 import { computeTotal, resolveDeliveryCost, formatOrderNumber, nextOrderSeq, hasCustomerOrGuest, nextStatusHistory } from '../hooks/orders'
 
@@ -18,7 +19,8 @@ export const Orders: CollectionConfig = {
     group: 'Продажи',
     useAsTitle: 'number',
     defaultColumns: ['number', 'customer', 'total', 'status', 'paymentStatus', 'createdAt'],
-    listSearchableFields: ['number', 'guest.name', 'guest.phone'],
+    listSearchableFields: ['number', 'guest.name', 'guest.phone', 'guest.email', 'guest.company'],
+    components: docTitle('Новый заказ', 'Заказ № '),
   },
   defaultSort: '-createdAt',
   access: {
@@ -84,7 +86,8 @@ export const Orders: CollectionConfig = {
       name: 'items',
       type: 'array',
       labels: { singular: 'Позиция', plural: 'Позиции' },
-      label: 'Состав (снапшот)',
+      label: 'Состав заказа',
+      admin: { description: 'Названия и цены зафиксированы на момент оформления и не меняются вслед за каталогом.' },
       required: true,
       minRows: 1,
       fields: [
@@ -142,7 +145,7 @@ export const Orders: CollectionConfig = {
         { label: 'Оплачен', value: 'paid' },
         { label: 'Ошибка', value: 'failed' },
       ],
-      admin: { position: 'sidebar' },
+      admin: { position: 'sidebar', ...statusCell },
     },
     {
       name: 'status',
@@ -158,7 +161,7 @@ export const Orders: CollectionConfig = {
         { label: 'Доставлен', value: 'delivered' },
         { label: 'Отменён', value: 'cancelled' },
       ],
-      admin: { position: 'sidebar' },
+      admin: { position: 'sidebar', ...statusCell },
     },
     {
       name: 'statusHistory',

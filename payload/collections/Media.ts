@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { docTitle } from '../admin-ui'
 import { hasRole } from '../access'
 import { kindFromMime } from '../hooks/media'
 
@@ -7,7 +8,7 @@ const MB = 1024 * 1024
 export const Media: CollectionConfig = {
   slug: 'media',
   labels: { singular: 'Файл', plural: 'Медиа' },
-  admin: { group: 'Каталог', useAsTitle: 'title', defaultColumns: ['filename', 'title', 'kind', 'updatedAt'] },
+  admin: { group: 'Каталог', useAsTitle: 'title', defaultColumns: ['filename', 'title', 'kind', 'updatedAt'], listSearchableFields: ['title', 'filename', 'alt'], components: docTitle('Новый файл') },
   access: {
     read: () => true,
     create: hasRole('admin', 'content'),

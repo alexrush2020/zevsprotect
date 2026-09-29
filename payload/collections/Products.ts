@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { docTitle, slugField } from '../admin-ui'
 import { hasRole, isAdmin, isStaff, publishedOrStaff } from '../access'
 import { isPriceLockedFor, protectFromImport } from '../hooks/products'
 import { validateKnitClass } from '../validators'
@@ -13,6 +14,8 @@ export const Products: CollectionConfig = {
     group: 'Каталог',
     useAsTitle: 'title',
     defaultColumns: ['title', 'sku', 'category', 'price', '_status', 'updatedAt'],
+    listSearchableFields: ['title', 'sku', 'slug'],
+    components: docTitle('Новая модель'),
   },
   versions: { drafts: true, maxPerDoc: 20 },
   access: {
@@ -33,7 +36,7 @@ export const Products: CollectionConfig = {
           label: 'Основное',
           fields: [
             { name: 'title', type: 'text', label: 'Название', required: true },
-            { name: 'slug', type: 'text', label: 'Slug', required: true, unique: true, index: true },
+            slugField('/product/<slug>'),
             { name: 'sku', type: 'text', label: 'Артикул', required: true, unique: true, index: true },
             { name: 'category', type: 'relationship', relationTo: 'categories', label: 'Категория', required: true },
             { name: 'description', type: 'richText', label: 'Описание' },

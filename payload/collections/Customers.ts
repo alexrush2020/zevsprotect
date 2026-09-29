@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { docTitle } from '../admin-ui'
 import { hasRole, isAdmin } from '../access'
 import { validateInn } from '../validators'
 
@@ -7,7 +8,7 @@ const staffRead = hasRole('admin', 'manager')
 export const Customers: CollectionConfig = {
   slug: 'customers',
   labels: { singular: 'Клиент', plural: 'Клиенты' },
-  admin: { group: 'Продажи', useAsTitle: 'email', defaultColumns: ['name', 'email', 'phone', 'company', 'kind'] },
+  admin: { group: 'Продажи', useAsTitle: 'email', defaultColumns: ['name', 'email', 'phone', 'company', 'kind'], listSearchableFields: ['name', 'email', 'phone', 'company', 'inn'], components: docTitle('Новый клиент') },
   auth: true,
   access: {
     read: (args) => {

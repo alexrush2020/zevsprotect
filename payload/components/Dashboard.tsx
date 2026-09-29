@@ -50,6 +50,7 @@ const fmt = (iso: string) =>
 
 export async function Dashboard({ initPageResult }: AdminViewServerProps) {
   const { user } = initPageResult.req
+  const { permissions } = initPageResult
   const payload = initPageResult.req.payload as unknown as LoosePayload
   if (!user) return null
   const role = user.collection === 'users' ? (user.role as Role | undefined) : undefined
@@ -63,7 +64,11 @@ export async function Dashboard({ initPageResult }: AdminViewServerProps) {
           await Promise.all(
             g.items
               .filter((i) => i.href.startsWith('/admin/collections/'))
-              .map(async (i) => ({ ...i, count: await safeCount(payload, user, i.href.split('/').pop()!) })),
+              .map(async (i) => {
+                const slug = i.href.split('/').pop()!
+                const canCreate = Boolean(permissions?.collections?.[slug]?.create)
+                return { ...i, canCreate, count: await safeCount(payload, user, slug) }
+              }),
           )
         ).filter((c) => c.count !== null),
       })),
@@ -138,10 +143,17 @@ export async function Dashboard({ initPageResult }: AdminViewServerProps) {
               <h2 className="zp-caps">{g.title.toUpperCase()}</h2>
               <div className="zp-dash__cards">
                 {g.cards.map((c) => (
-                  <Link key={c.href} href={c.href} className="zp-dash__card">
-                    <span className="zp-dash__card-label">{c.label}</span>
-                    <strong className="zp-dash__card-count">{c.count}</strong>
-                  </Link>
+                  <div key={c.href} className="zp-dash__card">
+                    <Link href={c.href} className="zp-dash__card-link">
+                      <span className="zp-dash__card-label">{c.label}</span>
+                      <strong className="zp-dash__card-count">{c.count}</strong>
+                    </Link>
+                    {c.canCreate && (
+                      <Link href={`${c.href}/create`} className="zp-dash__card-add" aria-label={`Создать: ${c.label}`} title="Создать">
+                        +
+                      </Link>
+                    )}
+                  </div>
                 ))}
               </div>
             </section>

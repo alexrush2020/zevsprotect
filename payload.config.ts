@@ -41,6 +41,8 @@ export default buildConfig({
       views: { dashboard: { Component: '/payload/components/Dashboard#Dashboard' } },
     },
     meta: { titleSuffix: ' · зевспротект®' },
+    // штатный формат даёт «сентября 30-е 2026, 1:54 ДП»
+    dateFormat: 'd MMMM yyyy, HH:mm',
   },
   i18n: { supportedLanguages: { ru }, fallbackLanguage: 'ru', translations: { ru: ruOverrides } },
   collections: [Users, Customers, Categories, Products, Media, Reviews, Orders, Leads, PostCategories, Posts, Pages],

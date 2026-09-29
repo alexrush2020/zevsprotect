@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { docTitle, statusCell } from '../admin-ui'
 import { hasRole, isAdmin } from '../access'
 
 const manager = hasRole('admin', 'manager')
@@ -6,7 +7,7 @@ const manager = hasRole('admin', 'manager')
 export const Leads: CollectionConfig = {
   slug: 'leads',
   labels: { singular: 'Заявка', plural: 'Заявки' },
-  admin: { group: 'Продажи', useAsTitle: 'name', defaultColumns: ['type', 'name', 'phone', 'status', 'createdAt'] },
+  admin: { group: 'Продажи', useAsTitle: 'name', defaultColumns: ['type', 'name', 'phone', 'status', 'createdAt'], listSearchableFields: ['name', 'phone', 'email', 'company'], components: docTitle('Новая заявка') },
   defaultSort: '-createdAt',
   access: { read: manager, create: () => true, update: manager, delete: isAdmin },
   fields: [
@@ -40,7 +41,7 @@ export const Leads: CollectionConfig = {
         { label: 'Новая', value: 'new' },
         { label: 'Обработана', value: 'processed' },
       ],
-      admin: { position: 'sidebar' },
+      admin: { position: 'sidebar', ...statusCell },
     },
     { name: 'b24LeadId', type: 'text', label: 'ID лида Б24', access: { create: isAdmin, update: isAdmin }, admin: { position: 'sidebar', readOnly: true } },
     { name: 'syncError', type: 'text', label: 'Ошибка синхронизации', access: { create: isAdmin, update: isAdmin }, admin: { position: 'sidebar', readOnly: true } },

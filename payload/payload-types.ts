@@ -255,6 +255,9 @@ export interface Customer {
 export interface Product {
   id: number;
   title: string;
+  /**
+   * Латиница, цифры и дефис, например feniks-nitril. На сайте: /product/<slug>
+   */
   slug: string;
   sku: string;
   category: number | Category;
@@ -330,6 +333,9 @@ export interface Product {
 export interface Category {
   id: number;
   title: string;
+  /**
+   * Латиница, цифры и дефис, например feniks-nitril.
+   */
   slug: string;
   parent?: (number | null) | Category;
   icon?: string | null;
@@ -425,6 +431,9 @@ export interface Order {
     company?: string | null;
     inn?: string | null;
   };
+  /**
+   * Названия и цены зафиксированы на момент оформления и не меняются вслед за каталогом.
+   */
   items: {
     product?: (number | null) | Product;
     sku?: string | null;
@@ -499,6 +508,9 @@ export interface Lead {
 export interface PostCategory {
   id: number;
   title: string;
+  /**
+   * Латиница, цифры и дефис, например feniks-nitril.
+   */
   slug: string;
   updatedAt: string;
   createdAt: string;
@@ -510,6 +522,9 @@ export interface PostCategory {
 export interface Post {
   id: number;
   title: string;
+  /**
+   * Латиница, цифры и дефис, например feniks-nitril. На сайте: /blog/<slug>
+   */
   slug: string;
   category?: (number | null) | PostCategory;
   /**
@@ -562,6 +577,9 @@ export interface Post {
 export interface Page {
   id: number;
   title: string;
+  /**
+   * Латиница, цифры и дефис, например feniks-nitril.
+   */
   slug: string;
   content?: {
     root: {
