@@ -153,7 +153,7 @@ export default async function ProductPage({
           </div>
         ))}
         <div className="md:col-span-2 pt-4">
-          <p className="text-sm font-medium">Сертификаты и документы</p>
+          <p className="text-sm font-medium">Документы</p>
           <ul className="mt-2 space-y-1">
             {docs.map((d) => (
               <li key={d.title}>
