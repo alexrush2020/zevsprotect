@@ -52,3 +52,11 @@ next-env.d.ts
 /media
 /screenshots
 !.env.example
+
+# playwright (MCP-плагин, отчёты и результаты прогонов), логи
+.playwright-mcp/
+playwright-report/
+playwright/.cache/
+test-results/
+*.log
+/html/
