@@ -28,6 +28,9 @@ html[data-theme='dark'] {
   --ok-line: rgba(159, 201, 168, 0.34);
   --pay-bg: rgba(227, 192, 98, 0.13);
   --pay-line: rgba(227, 192, 98, 0.34);
+  --panel-border: #46423d;
+  --panel-head: #1d1c1a;
+  --panel-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 10px 24px -12px rgba(0, 0, 0, 0.7);
 }
 
 html[data-theme='light'] {
@@ -56,6 +59,9 @@ html[data-theme='light'] {
   --ok-line: rgba(63, 122, 82, 0.3);
   --pay-bg: rgba(138, 100, 16, 0.1);
   --pay-line: rgba(138, 100, 16, 0.3);
+  --panel-border: #bfb8a9;
+  --panel-head: #f3f0e9;
+  --panel-shadow: 0 1px 2px rgba(27, 26, 24, 0.07), 0 10px 24px -14px rgba(27, 26, 24, 0.28);
 }
 
 // Маппинг на переменные Payload.
@@ -439,6 +445,15 @@ input:focus-visible {
 // Поля, занимающие всю строку панели.
 $zp-wide: '.textarea, .rich-text-lexical, .array-field, .blocks-field, .upload, .group-field, .tabs-field, .collapsible-field, .join, .json-field, .code-field, .point';
 
+
+// Панель: чёткая рамка, тень, тонкая акцентная линия сверху (фирменный штрих), тинтованная шапка.
+@mixin zp-panel-box {
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: inset 0 2px 0 var(--accent-line), var(--panel-shadow);
+}
+
 // Сетка из двух колонок; на ≤ 700px — одна.
 @mixin zp-grid {
   display: grid;
@@ -472,24 +487,34 @@ $zp-wide: '.textarea, .rich-text-lexical, .array-field, .blocks-field, .upload, 
 .group-field:not(.group-field--within-group) {
   margin: 0;
   padding: 0;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface);
+  @include zp-panel-box;
   overflow: hidden;
   .group-field__header {
     display: flex;
     align-items: center;
     min-height: 56px;
-    margin: 0;
+    margin: 2px 0 0;
     padding: 0 20px;
-    border-bottom: 1px solid var(--border);
+    background: var(--panel-head);
+    border-bottom: 1px solid var(--panel-border);
   }
   .group-field__title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     margin: 0;
     font-size: 16px;
     font-weight: 600;
     color: var(--text);
     line-height: 1.3;
+    // Акцентная метка перед заголовком.
+    &::before {
+      content: '';
+      width: 4px;
+      height: 16px;
+      border-radius: 2px;
+      background: var(--accent);
+    }
   }
   .group-field__wrap > .render-fields {
     @include zp-grid;
@@ -528,10 +553,8 @@ $zp-wide: '.textarea, .rich-text-lexical, .array-field, .blocks-field, .upload, 
     padding: 0;
   }
   &__tab {
-    padding: 20px;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    background: var(--surface);
+    padding: 22px 20px 20px;
+    @include zp-panel-box;
     > .render-fields {
       @include zp-grid;
     }
@@ -673,5 +696,28 @@ html {
   &::after {
     border-top-color: var(--err-line);
     border-bottom-color: var(--err-line);
+  }
+}
+
+// Правая колонка документа (метки, GUID, статусы) — тоже панель, а не поля на голом фоне.
+.document-fields__sidebar-fields:not(:has(> .render-fields:empty)) {
+  margin: 22px var(--gutter-h, 20px) 20px 20px;
+  padding: 22px 20px 20px;
+  @include zp-panel-box;
+  .field-type {
+    margin: 0 0 16px;
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+// На узких экранах панель действий документа прокручивается по горизонтали (так задумано в Payload) —
+// чуть уменьшаем кнопки, чтобы «Опубликовать изменения» помещалась.
+@media (max-width: 700px) {
+  .btn--style-primary,
+  .btn--style-primary .btn__content,
+  .btn--style-primary .btn__label {
+    font-size: 14px;
   }
 }
