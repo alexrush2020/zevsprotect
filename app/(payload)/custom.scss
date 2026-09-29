@@ -19,8 +19,14 @@ html[data-theme='dark'] {
   --accent-line: rgba(233, 123, 63, 0.46);
   --on-accent: #1a0e06;
   --pay: #e3c062;
-  --err: #f09a90;
-  --err-bg: rgba(240, 154, 144, 0.16);
+  --err: #e0a39b;
+  --err-bg: rgba(224, 163, 155, 0.13);
+  --err-line: rgba(224, 163, 155, 0.34);
+  --ok: #9fc9a8;
+  --ok-bg: rgba(159, 201, 168, 0.13);
+  --ok-line: rgba(159, 201, 168, 0.34);
+  --pay-bg: rgba(227, 192, 98, 0.13);
+  --pay-line: rgba(227, 192, 98, 0.34);
 }
 
 html[data-theme='light'] {
@@ -40,8 +46,14 @@ html[data-theme='light'] {
   --accent-line: rgba(188, 74, 16, 0.42);
   --on-accent: #ffffff;
   --pay: #8a6410;
-  --err: #b3372b;
-  --err-bg: rgba(179, 55, 43, 0.1);
+  --err: #a8564d;
+  --err-bg: rgba(168, 86, 77, 0.09);
+  --err-line: rgba(168, 86, 77, 0.3);
+  --ok: #3f7a52;
+  --ok-bg: rgba(63, 122, 82, 0.09);
+  --ok-line: rgba(63, 122, 82, 0.3);
+  --pay-bg: rgba(138, 100, 16, 0.1);
+  --pay-line: rgba(138, 100, 16, 0.3);
 }
 
 // Маппинг на переменные Payload.
@@ -75,6 +87,16 @@ button:focus-visible,
 input:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+// В полях форм фокус показывает сама рамка поля (акцентная рамка + мягкое кольцо) —
+// второй обвод outline давал «двойное выделение».
+.field-type {
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: none;
+  }
 }
 
 .zp-caps {
@@ -577,4 +599,68 @@ label.field-label:not(.unstyled) {
 // В тёмной теме поля на --surface-2, чтобы отделяться от панели.
 html[data-theme='dark'] {
   --theme-input-bg: var(--surface-2);
+}
+
+// Приглушённые статусные цвета: штатные ошибки Payload (красный 500 слишком яркий) берут токены темы.
+html {
+  --theme-error-50: var(--err-bg);
+  --theme-error-100: var(--err-bg);
+  --theme-error-150: var(--err-bg);
+  --theme-error-200: var(--err-line);
+  --theme-error-250: var(--err-line);
+  --theme-error-300: var(--err);
+  --theme-error-350: var(--err);
+  --theme-error-400: var(--err);
+  --theme-error-450: var(--err);
+  --theme-error-500: var(--err);
+  --theme-error-550: var(--err);
+  --theme-error-600: var(--err);
+}
+
+// SEO-плагин красит бейджи и полоску длины inline-стилями (red/orange/orangered/green, белый текст) —
+// перебить можно только !important по атрибуту style. Источник: @payloadcms/plugin-seo dist/ui/Pill.js, LengthIndicator.js.
+.plugin-seo__field,
+.template-default__wrap {
+  div[style*='border-radius: 2px'][style*='background-color: red'] {
+    background-color: var(--err-bg) !important;
+    color: var(--err) !important;
+    border: 1px solid var(--err-line);
+  }
+  div[style*='border-radius: 2px'][style*='background-color: orangered'],
+  div[style*='border-radius: 2px'][style*='background-color: orange'] {
+    background-color: var(--pay-bg) !important;
+    color: var(--pay) !important;
+    border: 1px solid var(--pay-line);
+  }
+  div[style*='border-radius: 2px'][style*='background-color: green'] {
+    background-color: var(--ok-bg) !important;
+    color: var(--ok) !important;
+    border: 1px solid var(--ok-line);
+  }
+  // Дорожка и заливка индикатора длины.
+  div[style*='height: 2px'][style*='background-color: rgb(243, 243, 243)'] {
+    background-color: var(--border) !important;
+  }
+  div[style*='height: 100%'][style*='position: absolute'][style*='background-color: red'] {
+    background-color: var(--err) !important;
+  }
+  div[style*='height: 100%'][style*='position: absolute'][style*='background-color: orangered'],
+  div[style*='height: 100%'][style*='position: absolute'][style*='background-color: orange'] {
+    background-color: var(--pay) !important;
+  }
+  div[style*='height: 100%'][style*='position: absolute'][style*='background-color: green'] {
+    background-color: var(--ok) !important;
+  }
+}
+
+// Подсказка «Это обязательное поле»: бледная плашка вместо плотной красной (штатно error-300 + error-950).
+.field-error.tooltip {
+  --err-solid: color-mix(in srgb, var(--err) 14%, var(--surface));
+  background-color: var(--err-solid);
+  color: var(--err);
+  border: 1px solid var(--err-line);
+  &::after {
+    border-top-color: var(--err-line);
+    border-bottom-color: var(--err-line);
+  }
 }
