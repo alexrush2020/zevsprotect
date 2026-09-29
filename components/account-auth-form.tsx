@@ -133,8 +133,8 @@ export function AccountAuthForm() {
       register(await registerRequest(profile, password));
       toast.success(isLegal ? "Кабинет юрлица создан" : "Кабинет создан");
       goToCabinet();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Не удалось зарегистрироваться");
+    } catch {
+      toast.error("Не удалось создать кабинет. Если он уже есть — войдите или восстановите пароль");
     } finally {
       setBusy(false);
     }

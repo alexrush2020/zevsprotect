@@ -17,6 +17,15 @@ describe('Customers/Orders access', () => {
     }
   })
 
+  it('consentPdAt: клиент не может задать через API, только admin', () => {
+    const f = Customers.fields.find((x) => 'name' in x && x.name === 'consentPdAt') as { access: Record<string, (a: never) => boolean> }
+    for (const op of ['create', 'update']) {
+      expect(f.access[op](as(null))).toBe(false)
+      expect(f.access[op](as(customer()))).toBe(false)
+      expect(f.access[op](as(staff('admin')))).toBe(true)
+    }
+  })
+
   it('клиент не удаляет профили; регистрация открыта', () => {
     expect((Customers.access!.delete as (a: never) => boolean)(as(customer()))).toBe(false)
     expect((Customers.access!.create as () => boolean)()).toBe(true)

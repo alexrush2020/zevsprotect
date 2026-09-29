@@ -16,10 +16,11 @@ export const Customers: CollectionConfig = {
     tokenExpiration: SESSION_SECONDS,
     forgotPassword: {
       generateEmailSubject: () => resetPasswordMail({ resetUrl: '' }).subject,
-      generateEmailHTML: (args) =>
-        resetPasswordMail({
-          resetUrl: `${process.env.NEXT_PUBLIC_SERVER_URL || ''}/forgot/reset?token=${args?.token}`,
-        }).html,
+      generateEmailHTML: (args) => {
+        const base = args?.req?.payload?.config?.serverURL || process.env.NEXT_PUBLIC_SERVER_URL
+        if (!base) args?.req?.payload?.logger.error('NEXT_PUBLIC_SERVER_URL не задан: ссылка сброса пароля относительная')
+        return resetPasswordMail({ resetUrl: `${base || ''}/forgot/reset?token=${args?.token}` }).html
+      },
     },
   },
   hooks: {
@@ -104,7 +105,7 @@ export const Customers: CollectionConfig = {
     },
     { name: 'yandexId', type: 'text', label: 'Yandex ID', index: true, unique: true, access: { create: isAdmin, update: isAdmin } },
     { name: 'favorites', type: 'relationship', relationTo: 'products', hasMany: true, label: 'Избранное' },
-    { name: 'consentPdAt', type: 'date', label: 'Согласие на обработку ПДн', admin: { readOnly: true } },
+    { name: 'consentPdAt', type: 'date', label: 'Согласие на обработку ПДн', access: { create: isAdmin, update: isAdmin }, admin: { readOnly: true } },
     ...['b24CompanyId', 'b24ContactId', 'onecId', 'syncError'].map((name) => ({
       name,
       type: 'text' as const,

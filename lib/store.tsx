@@ -13,7 +13,8 @@ import { products } from "@/lib/data/catalog";
 import { cartGoodsTotal, cartLineKey } from "@/lib/lots";
 import { snapOrderQty } from "@/lib/order-qty";
 import { demoAccount, yandexStubAccount } from "@/lib/demo-account";
-import { logoutRequest, meRequest } from "@/lib/auth-client";
+import { toast } from "sonner";
+import { logoutRequest, meRequest, updateRequest } from "@/lib/auth-client";
 import type {
   CartItem,
   Lead,
@@ -90,7 +91,7 @@ type Store = {
   loginYandex: () => boolean;
   loginDemo: () => boolean;
   resumeSession: () => boolean;
-  logout: () => void;
+  logout: () => void | Promise<void>;
   updateProfile: (profile: UserProfile) => void;
   placeOrder: (input: {
     profile: UserProfile;
@@ -420,8 +421,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!ready) return;
     if (user) {
       localStorage.setItem(USER_KEY, JSON.stringify(user));
-      localStorage.setItem(LAST_USER_KEY, JSON.stringify(user));
-      setLastUser(user);
+      if (user.authProvider !== "password") {
+        localStorage.setItem(LAST_USER_KEY, JSON.stringify(user));
+        setLastUser(user);
+      }
     } else {
       localStorage.removeItem(USER_KEY);
     }
@@ -556,17 +559,31 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return true;
   }, [enterAccount, lastUser]);
 
-  const logout = useCallback(() => {
-    void logoutRequest();
+  const logout = useCallback(async () => {
+    if (user?.authProvider === "password") {
+      try {
+        await logoutRequest();
+      } catch {
+        toast.error("Не удалось выйти. Попробуйте ещё раз.");
+        return;
+      }
+    }
     setUser((current) => {
-      if (current) setLastUser(current);
+      if (current && current.authProvider !== "password") setLastUser(current);
       return null;
     });
-  }, []);
+  }, [user?.authProvider]);
 
-  const updateProfile = useCallback((profile: UserProfile) => {
-    setUser((prev) => (prev ? { ...prev, ...profile } : profile));
-  }, []);
+  const updateProfile = useCallback(
+    (profile: UserProfile) => {
+      const next = user ? { ...user, ...profile } : profile;
+      setUser(next);
+      if (next.authProvider === "password") {
+        updateRequest(next).catch(() => toast.error("Не удалось сохранить профиль на сервере"));
+      }
+    },
+    [user],
+  );
 
   const placeOrder = useCallback(
     (input: {

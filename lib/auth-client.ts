@@ -4,8 +4,21 @@ type Doc = Record<string, unknown> & { email: string; name: string };
 
 const str = (v: unknown) => (typeof v === "string" ? v : "");
 
+type Row = { id?: string; label?: string; city?: string; line?: string; phone?: string; isDefault?: boolean };
+
 export function toProfile(d: Doc): UserProfile {
   return {
+    customerId: String(d.id ?? ""),
+    addresses: Array.isArray(d.addresses)
+      ? (d.addresses as Row[]).map((a) => ({
+          id: String(a.id ?? ""),
+          label: str(a.label),
+          city: str(a.city),
+          line: str(a.line),
+          phone: str(a.phone),
+          isDefault: !!a.isDefault,
+        }))
+      : undefined,
     email: d.email,
     name: d.name,
     phone: str(d.phone),
@@ -47,10 +60,29 @@ export async function registerRequest(profile: UserProfile, password: string): P
   return loginRequest(email, password);
 }
 
-export const logoutRequest = () => call("/logout").catch(() => undefined);
 export const forgotRequest = (email: string) => call("/forgot-password", { email });
 export const resetRequest = (token: string, password: string) =>
   call("/reset-password", { token, password });
+
+export async function updateRequest(p: UserProfile): Promise<void> {
+  if (!p.customerId) return;
+  const { name, phone, company, inn, kpp, address, kind, bankName, bankAccount, bik, addresses } = p;
+  const res = await fetch(`/api/customers/${p.customerId}`, {
+    method: "PATCH",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name, phone, company, inn, kpp, address, kind, bankName, bankAccount, bik,
+      addresses: addresses?.map(({ id, ...a }) => ({ ...a, ...(id ? { id } : {}) })),
+    }),
+  });
+  if (!res.ok) throw new Error("Не удалось сохранить профиль");
+}
+
+export const logoutRequest = async () => {
+  const res = await fetch("/api/customers/logout", { method: "POST", credentials: "same-origin" });
+  if (!res.ok) throw new Error("Не удалось выйти");
+};
 
 /** Профиль по cookie-сессии или null. */
 export async function meRequest(): Promise<UserProfile | null> {

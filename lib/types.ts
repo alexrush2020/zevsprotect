@@ -84,6 +84,7 @@ export type Lead = {
 };
 
 export type UserProfile = {
+  customerId?: string;
   email: string;
   name: string;
   phone: string;

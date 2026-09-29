@@ -50,6 +50,7 @@ export default buildConfig({
   globals: [Home, About, Delivery, Navigation, Settings],
   upload: { limits: { fileSize: 25 * 1024 * 1024 } },
   editor: lexicalEditor(),
+  serverURL: process.env.NEXT_PUBLIC_SERVER_URL || undefined,
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
     outputFile: path.resolve(dirname, 'payload/payload-types.ts'),
