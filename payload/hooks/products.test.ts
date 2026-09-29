@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isPriceLocked, protectFromImport } from './products'
+import { isPriceLocked, isPriceLockedFor, protectFromImport } from './products'
 
 const original = {
   manualOverride: true,
@@ -47,5 +47,21 @@ describe('isPriceLocked', () => {
     expect(isPriceLocked({ guid1c: 'g', manualOverride: true })).toBe(false)
     expect(isPriceLocked({ manualOverride: false })).toBe(false)
     expect(isPriceLocked(undefined)).toBe(false)
+  })
+})
+
+describe('isPriceLockedFor', () => {
+  const doc = { guid1c: 'g', manualOverride: false }
+  it('PATCH только price при guid1c и manualOverride=false — заблокировано', () => {
+    expect(isPriceLockedFor({ doc, data: { price: 1 } as never })).toBe(true)
+  })
+  it('manualOverride=true в doc — разрешено', () => {
+    expect(isPriceLockedFor({ doc: { ...doc, manualOverride: true }, data: {} })).toBe(false)
+  })
+  it('manualOverride=true в data — разрешено', () => {
+    expect(isPriceLockedFor({ doc, data: { manualOverride: true } })).toBe(false)
+  })
+  it('создание без doc — разрешено', () => {
+    expect(isPriceLockedFor({ data: { guid1c: 'g' } })).toBe(false)
   })
 })

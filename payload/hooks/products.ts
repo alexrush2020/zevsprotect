@@ -34,3 +34,14 @@ export function protectFromImport(
 /** Цена/остаток приходят из 1С и правятся вручную только при manualOverride. */
 export const isPriceLocked = (d: { guid1c?: unknown; manualOverride?: unknown } | undefined) =>
   Boolean(d?.guid1c) && !d?.manualOverride
+
+type Lockable = { guid1c?: unknown; manualOverride?: unknown }
+
+/** Блокировка для field-access update: guid1c — из текущего документа, manualOverride — из тела запроса, иначе из документа. */
+export function isPriceLockedFor({ doc, data }: { doc?: Lockable; data?: Lockable }): boolean {
+  if (!doc) return false
+  return isPriceLocked({
+    guid1c: doc.guid1c,
+    manualOverride: data && 'manualOverride' in data ? data.manualOverride : doc.manualOverride,
+  })
+}

@@ -1,10 +1,10 @@
 import type { CollectionConfig } from 'payload'
 import { hasRole, publishedOrStaff } from '../access'
-import { isPriceLocked, protectFromImport } from '../hooks/products'
+import { isPriceLockedFor, protectFromImport } from '../hooks/products'
 import { validateKnitClass } from '../validators'
 
-const editablePrice = ({ data }: { data?: { guid1c?: unknown; manualOverride?: unknown } }) =>
-  !isPriceLocked(data)
+const editablePrice = ({ doc, data }: { doc?: object; data?: object }) =>
+  !isPriceLockedFor({ doc, data })
 
 export const Products: CollectionConfig = {
   slug: 'products',
