@@ -2,6 +2,9 @@ import type { CollectionConfig } from 'payload'
 import { docTitle } from '../admin-ui'
 import { hasRole, isAdmin } from '../access'
 import { validateInn } from '../validators'
+import { registrationMail, resetPasswordMail } from '../../lib/mail/templates'
+
+const SESSION_SECONDS = 3 * 24 * 60 * 60 // сессия «2–3 дня»
 
 const staffRead = hasRole('admin', 'manager')
 
@@ -9,7 +12,29 @@ export const Customers: CollectionConfig = {
   slug: 'customers',
   labels: { singular: 'Клиент', plural: 'Клиенты' },
   admin: { group: 'Продажи', useAsTitle: 'email', defaultColumns: ['name', 'email', 'phone', 'company', 'kind'], listSearchableFields: ['name', 'email', 'phone', 'company', 'inn'], components: docTitle('Новый клиент') },
-  auth: true,
+  auth: {
+    tokenExpiration: SESSION_SECONDS,
+    forgotPassword: {
+      generateEmailSubject: () => resetPasswordMail({ resetUrl: '' }).subject,
+      generateEmailHTML: (args) =>
+        resetPasswordMail({
+          resetUrl: `${process.env.NEXT_PUBLIC_SERVER_URL || ''}/forgot/reset?token=${args?.token}`,
+        }).html,
+    },
+  },
+  hooks: {
+    afterChange: [
+      async ({ doc, operation, req }) => {
+        if (operation !== 'create') return
+        const m = registrationMail({ name: doc.name })
+        try {
+          await req.payload.sendEmail({ to: doc.email, subject: m.subject, text: m.text, html: m.html })
+        } catch (e) {
+          req.payload.logger.error(e, 'registrationMail failed') // письмо не должно ронять регистрацию
+        }
+      },
+    ],
+  },
   access: {
     read: (args) => {
       if (staffRead(args)) return true
@@ -38,7 +63,7 @@ export const Customers: CollectionConfig = {
       ],
     },
     { name: 'name', type: 'text', label: 'ФИО / контактное лицо', required: true },
-    { name: 'phone', type: 'text', label: 'Телефон', required: true },
+    { name: 'phone', type: 'text', label: 'Телефон' }, // не обязателен (CONTRA-2/BIZ-2)
     { name: 'company', type: 'text', label: 'Организация' },
     {
       name: 'inn',

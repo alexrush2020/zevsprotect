@@ -13,6 +13,7 @@ import { products } from "@/lib/data/catalog";
 import { cartGoodsTotal, cartLineKey } from "@/lib/lots";
 import { snapOrderQty } from "@/lib/order-qty";
 import { demoAccount, yandexStubAccount } from "@/lib/demo-account";
+import { logoutRequest, meRequest } from "@/lib/auth-client";
 import type {
   CartItem,
   Lead,
@@ -403,6 +404,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setLeads(nextLeads);
     setFavoriteIds(Array.isArray(nextFavorites) ? nextFavorites : []);
     setReady(true);
+    // серверная сессия Payload — источник истины для реальных аккаунтов
+    void meRequest().then((me) => {
+      if (me) setUser(me);
+      else setUser((cur) => (cur?.authProvider === "password" ? null : cur));
+    });
   }, []);
 
   useEffect(() => {
@@ -551,6 +557,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [enterAccount, lastUser]);
 
   const logout = useCallback(() => {
+    void logoutRequest();
     setUser((current) => {
       if (current) setLastUser(current);
       return null;
