@@ -9,6 +9,7 @@ export const Users: CollectionConfig = {
   access: {
     read: selfOrAdmin,
     create: isAdmin,
+    unlock: isAdmin,
     update: selfOrAdmin,
     delete: isAdmin,
     admin: ({ req }) => req.user?.collection === 'users',

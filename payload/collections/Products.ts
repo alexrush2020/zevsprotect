@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { hasRole, publishedOrStaff } from '../access'
+import { hasRole, isAdmin, isStaff, publishedOrStaff } from '../access'
 import { isPriceLockedFor, protectFromImport } from '../hooks/products'
 import { validateKnitClass } from '../validators'
 
@@ -17,6 +17,7 @@ export const Products: CollectionConfig = {
   versions: { drafts: true, maxPerDoc: 20 },
   access: {
     read: publishedOrStaff,
+    readVersions: isStaff,
     create: hasRole('admin', 'content'),
     update: hasRole('admin', 'content'),
     delete: hasRole('admin'),
@@ -107,7 +108,7 @@ export const Products: CollectionConfig = {
       ],
       admin: { position: 'sidebar' },
     },
-    { name: 'guid1c', type: 'text', label: 'GUID 1С', unique: true, index: true, admin: { position: 'sidebar', readOnly: true } },
+    { name: 'guid1c', type: 'text', label: 'GUID 1С', unique: true, index: true, access: { create: isAdmin, update: isAdmin }, admin: { position: 'sidebar', readOnly: true } },
     {
       name: 'manualOverride',
       type: 'checkbox',

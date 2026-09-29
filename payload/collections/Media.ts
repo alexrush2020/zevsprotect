@@ -16,11 +16,11 @@ export const Media: CollectionConfig = {
   },
   hooks: {
     beforeChange: [
-      ({ data, req }) => {
+      ({ data, originalDoc, req }) => {
         const size = req.file?.size ?? 0
         if (req.file?.mimetype?.startsWith('image/') && size > 10 * MB)
           throw new Error('Изображение больше 10 МБ')
-        data.kind = kindFromMime(req.file?.mimetype ?? data.mimeType)
+        data.kind = kindFromMime(req.file?.mimetype ?? data.mimeType ?? originalDoc?.mimeType)
         return data
       },
     ],

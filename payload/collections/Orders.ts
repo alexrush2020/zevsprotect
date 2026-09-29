@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { hasRole, isAdmin, ownOrRoles } from '../access'
-import { computeTotal, formatOrderNumber, nextOrderSeq, hasCustomerOrGuest, nextStatusHistory } from '../hooks/orders'
+import { computeTotal, resolveDeliveryCost, formatOrderNumber, nextOrderSeq, hasCustomerOrGuest, nextStatusHistory } from '../hooks/orders'
 
 const manager = hasRole('admin', 'manager')
 const syncField = (name: string, label: string) => ({
@@ -49,7 +49,7 @@ export const Orders: CollectionConfig = {
     ],
     beforeChange: [
       ({ data, originalDoc }) => {
-        data.total = computeTotal(data.items ?? originalDoc?.items, data.delivery?.cost ?? originalDoc?.delivery?.cost)
+        data.total = computeTotal(data.items ?? originalDoc?.items, resolveDeliveryCost(data, originalDoc))
         const status = data.status ?? originalDoc?.status
         if (status)
           data.statusHistory = nextStatusHistory(originalDoc?.statusHistory, originalDoc?.status, status, new Date().toISOString())

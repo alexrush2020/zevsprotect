@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computeTotal, formatOrderNumber, hasCustomerOrGuest, nextOrderSeq, nextStatusHistory, round2 } from './orders'
+import { computeTotal, formatOrderNumber, hasCustomerOrGuest, nextOrderSeq, nextStatusHistory, resolveDeliveryCost, round2 } from './orders'
 
 describe('round2', () => {
   it('убирает хвост float', () => expect(round2(0.1 * 3)).toBe(0.3))
@@ -64,4 +64,16 @@ describe('nextOrderSeq', () => {
     expect(nextOrderSeq('abc')).toBe(1)
     expect(nextOrderSeq('ZP-2026-xx')).toBe(1)
   })
+})
+
+describe('resolveDeliveryCost', () => {
+  const orig = { delivery: { cost: 500 } }
+  it('null очищает → итог без доставки', () => {
+    const c = resolveDeliveryCost({ delivery: { cost: null } }, orig)
+    expect(c).toBeNull()
+    expect(computeTotal([{ price: 10, qty: 2 }], c)).toBe(20)
+  })
+  it('нет ключа cost → из originalDoc', () => expect(resolveDeliveryCost({ delivery: {} }, orig)).toBe(500))
+  it('delivery не передан → из originalDoc', () => expect(resolveDeliveryCost({}, orig)).toBe(500))
+  it('новое число', () => expect(resolveDeliveryCost({ delivery: { cost: 300 } }, orig)).toBe(300))
 })

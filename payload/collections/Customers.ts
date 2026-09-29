@@ -16,6 +16,7 @@ export const Customers: CollectionConfig = {
       return u?.collection === 'customers' ? { id: { equals: u.id } } : false
     },
     create: () => true, // регистрация
+    unlock: isAdmin,
     update: (args) => {
       if (staffRead(args)) return true
       const u = args.req.user

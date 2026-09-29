@@ -34,3 +34,10 @@ export function nextOrderSeq(lastNumber: string | undefined): number {
   const m = /-(\d+)$/.exec(lastNumber ?? '')
   return m ? Number(m[1]) + 1 : 1
 }
+
+type WithDelivery = { delivery?: { cost?: number | null } | null }
+
+/** Стоимость доставки: явно переданный ключ cost (в т.ч. null = очистка) главнее оригинала; частичный PATCH без ключа берёт из originalDoc. */
+export function resolveDeliveryCost(data: WithDelivery, originalDoc?: WithDelivery): number | null | undefined {
+  return data.delivery && 'cost' in data.delivery ? data.delivery.cost : originalDoc?.delivery?.cost
+}
