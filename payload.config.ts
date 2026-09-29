@@ -35,6 +35,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
     components: {
+      graphics: { Logo: '/payload/components/Brand#Logo', Icon: '/payload/components/Brand#Icon' },
       Nav: '/payload/components/AdminNav#AdminNav',
       actions: ['/payload/components/ThemeToggle#ThemeToggle'],
       views: { dashboard: { Component: '/payload/components/Dashboard#Dashboard' } },

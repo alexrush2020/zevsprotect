@@ -23,6 +23,10 @@ export const ruOverrides: DeepPartial<DefaultTranslationsObject> = {
     newLabel: 'Новая запись: {{label}}',
   },
   general: {
+    // Штатное «Искать по» теряет {{label}} — в поиске не видно, по какому полю ищем.
+    searchBy: 'Поиск: {{label}}',
+    // Пустая ячейка списка: прочерк вместо «Без метки».
+    noLabel: '—',
     newLabel: 'Новая запись: {{label}}',
     showAllLabel: 'Показать все: {{label}}',
     createNewLabel: 'Создать: {{label}}',

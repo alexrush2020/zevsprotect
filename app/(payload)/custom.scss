@@ -859,3 +859,111 @@ html {
     margin-bottom: 24px;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Бренд вместо графики Payload (payload/components/Brand.tsx): маска + цвет темы.
+// ---------------------------------------------------------------------------
+.zp-logo {
+  display: block;
+  width: 240px;
+  aspect-ratio: 1046 / 211;
+  background: var(--text);
+  mask: url('/brand/logo-en-wide-black.png') center / contain no-repeat;
+}
+.zp-mark {
+  display: block;
+  width: 18px;
+  aspect-ratio: 500 / 567;
+  background: currentColor;
+  mask: url('/logo-mark.svg') center / contain no-repeat;
+}
+.zp-nav__logo .zp-mark {
+  width: 16px;
+}
+
+// ---------------------------------------------------------------------------
+// Rich text (Lexical): шрифт интерфейса вместо Georgia и рамка как у остальных полей.
+// ---------------------------------------------------------------------------
+html {
+  --font-serif: var(--font-body);
+}
+.document-fields .rich-text-lexical .editor-scroller {
+  min-height: 120px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--theme-input-bg);
+  &:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Массив верхнего уровня (состав заказа, баннеры) — панель, как группа полей.
+// ---------------------------------------------------------------------------
+.document-fields__fields > .array-field {
+  padding: 16px 20px 20px;
+  @include zp-panel-box;
+}
+.array-field__title .field-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+// ---------------------------------------------------------------------------
+// Телефон: кнопки сохранения делят ширину и переносят подпись, а не уезжают за край;
+// правая колонка — с теми же полями, что и основная.
+// ---------------------------------------------------------------------------
+@media (max-width: 768px) {
+  .doc-controls__controls-wrapper {
+    height: auto;
+    padding-block: 10px;
+  }
+  .doc-controls__controls {
+    flex-grow: 1;
+    align-items: stretch;
+    padding-right: 0;
+    overflow: visible;
+    // градиент-подсказка горизонтальной прокрутки: прокрутки больше нет
+    &::after {
+      display: none;
+    }
+    .form-submit {
+      display: flex;
+      flex: 1 1 0;
+    }
+    .btn {
+      width: 100%;
+      margin: 0;
+    }
+    .btn__label {
+      white-space: normal;
+      line-height: 1.2;
+    }
+  }
+  .document-fields__sidebar-fields:not(:has(> .render-fields:empty)) {
+    margin-inline: var(--gutter-h);
+  }
+  // Ручек блоков на телефоне нет — текст не должен прилипать к рамке.
+  .document-fields .rich-text-lexical .editor-scroller {
+    padding-inline: 12px;
+  }
+}
+
+// Дашборд на узких экранах: «Требует внимания» — первым, карточки в две колонки.
+@media (max-width: 1100px) {
+  .zp-dash__side {
+    order: -1;
+  }
+}
+@media (max-width: 700px) {
+  .zp-dash__cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .zp-dash__card {
+    padding: 14px 16px;
+    gap: 8px;
+  }
+}

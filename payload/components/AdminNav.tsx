@@ -1,5 +1,7 @@
 import type { ServerProps } from 'payload'
 import type { Role } from '../access'
+import { Icon as BrandMark } from './Brand'
+import { NavAutoOpen } from './NavAutoOpen'
 import { NavLink } from './NavLink'
 import { ThemeToggle } from './ThemeToggle'
 import { visibleGroups } from './nav-config'
@@ -43,7 +45,10 @@ export function AdminNav({ user }: ServerProps) {
   return (
     <nav className="zp-nav" aria-label="Разделы админки">
       <div className="zp-nav__brand">
-        <span className="zp-nav__logo" aria-hidden="true">z</span>
+        <NavAutoOpen />
+        <span className="zp-nav__logo">
+          <BrandMark />
+        </span>
         <div className="zp-nav__brand-text">
           <strong>зевспротект®</strong>
           <small className="zp-caps">CMS · админка</small>
