@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createLocalReq, getFieldsToSign, getPayload, jwtSign, type Payload, type TypedUser } from "payload";
 import { addSessionToUser, generatePayloadCookie } from "payload/shared";
 import config from "@payload-config";
-import { STATE_COOKIE, STATE_COOKIE_PATH, allowCallback, yandexCallback, yandexConfig } from "@/lib/server/yandex";
+import { STATE_COOKIE, STATE_COOKIE_PATH, allowCallback, isLocked, yandexCallback, yandexConfig } from "@/lib/server/yandex";
 
 // Возврат из Яндекс ID (SH-YA): проверка state → профиль → клиент → сессия Payload → /account.
 export const dynamic = "force-dynamic";
@@ -13,6 +13,8 @@ async function sessionCookie(payload: Payload, id: number | string): Promise<str
   const req = await createLocalReq({}, payload);
   const user = (await payload.db.findOne({ collection: "customers", where: { id: { equals: id } }, req })) as TypedUser | null;
   if (!user) throw new Error("клиент не найден");
+  // повторная проверка на свежей записи (между поиском и сессией могли заблокировать)
+  if (isLocked((user as { lockUntil?: string | null }).lockUntil, Date.now())) throw new Error("аккаунт заблокирован");
   const { sid } = await addSessionToUser({ collectionConfig, payload, req, user });
   const fieldsToSign = getFieldsToSign({ collectionConfig, email: String(user.email), sid, user });
   const { token } = await jwtSign({ fieldsToSign, secret: payload.secret, tokenExpiration: collectionConfig.auth.tokenExpiration });
@@ -41,7 +43,8 @@ export async function GET(request: NextRequest) {
   try {
     const payload = await getPayload({ config });
     const one = async (where: Record<string, { equals: string }>) =>
-      (await payload.find({ collection: "customers", where, limit: 1, depth: 0, overrideAccess: true })).docs[0] ?? null;
+      (await payload.find({ collection: "customers", where, limit: 1, depth: 0, overrideAccess: true, showHiddenFields: true })) // lockUntil — скрытое поле auth
+        .docs[0] ?? null;
     const result = await yandexCallback(
       cfg,
       { code: q.get("code"), state: q.get("state"), error: q.get("error") },

@@ -2,7 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import {
   STATE_TTL_MS,
   authorizeUrl,
+  isCanonicalHost,
+  isLocked,
   mapYandexProfile,
+  yandexEnabled,
   signState,
   verifyState,
   yandexCallback,
@@ -34,7 +37,7 @@ function yandexFetch(info: unknown = INFO, opts: { tokenStatus?: number; infoSta
   }) as unknown as typeof fetch & ReturnType<typeof vi.fn>;
 }
 
-type Row = { id: number; email: string; yandexId?: string; authProvider?: string };
+type Row = { id: number; email: string; yandexId?: string; authProvider?: string; lockUntil?: string };
 
 function deps(rows: Row[] = [], f = yandexFetch()) {
   const created: NewYandexCustomer[] = [];
@@ -72,6 +75,22 @@ describe("yandexConfig", () => {
     expect(yandexConfig({ ...env, YANDEX_CLIENT_ID: undefined })).toBeNull();
     expect(yandexConfig({ ...env, NEXT_PUBLIC_SERVER_URL: "" })).toBeNull();
     expect(yandexConfig({ ...env, PAYLOAD_SECRET: "" })).toBeNull();
+  });
+
+  it("yandexEnabled — тот же флаг, что и конфиг", () => {
+    expect(yandexEnabled(env)).toBe(true);
+    expect(yandexEnabled({})).toBe(false);
+    expect(yandexEnabled({ ...env, YANDEX_CLIENT_SECRET: " " })).toBe(false);
+  });
+
+  it("isCanonicalHost: только хост NEXT_PUBLIC_SERVER_URL (с портом, без учёта регистра)", () => {
+    expect(isCanonicalHost("zevs.test", cfg.baseUrl)).toBe(true);
+    expect(isCanonicalHost("ZEVS.test", cfg.baseUrl)).toBe(true);
+    expect(isCanonicalHost("www.zevs.test", cfg.baseUrl)).toBe(false);
+    expect(isCanonicalHost(null, cfg.baseUrl)).toBe(false);
+    expect(isCanonicalHost("localhost:43127", "http://localhost:43127")).toBe(true);
+    expect(isCanonicalHost("127.0.0.1:43127", "http://localhost:43127")).toBe(false);
+    expect(isCanonicalHost("localhost:3000", "http://localhost:43127")).toBe(false);
   });
 
   it("redirect_uri фиксирован от NEXT_PUBLIC_SERVER_URL; scope email+info", () => {
@@ -136,6 +155,14 @@ describe("yandexCallback", () => {
     const { d, created } = deps(rows);
     expect(await run(d)).toEqual({ ok: true, customerId: 5, created: false });
     expect(created).toHaveLength(0);
+  });
+
+  it("аккаунт заблокирован перебором пароля (lockUntil в будущем) → yandex; истёкшая блокировка — вход", async () => {
+    const locked: Row[] = [{ id: 5, email: "artem@yandex.ru", yandexId: "12345", lockUntil: new Date(NOW + 60_000).toISOString() }];
+    expect(await run(deps(locked).d)).toEqual({ ok: false, error: "yandex" });
+    const expired: Row[] = [{ id: 5, email: "artem@yandex.ru", yandexId: "12345", lockUntil: new Date(NOW - 1).toISOString() }];
+    expect(await run(deps(expired).d)).toEqual({ ok: true, customerId: 5, created: false });
+    expect(isLocked(null, NOW)).toBe(false);
   });
 
   it("email занят клиентом с паролем → отказ yandex-exists, без линковки и записи", async () => {

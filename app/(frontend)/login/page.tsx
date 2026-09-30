@@ -1,5 +1,5 @@
 import { AccountAuthForm } from "@/components/account-auth-form";
-import { yandexConfig } from "@/lib/server/yandex";
+import { yandexEnabled } from "@/lib/server/yandex";
 
 export default async function LoginPage({
   searchParams,
@@ -9,7 +9,7 @@ export default async function LoginPage({
   const { error } = await searchParams;
   return (
     <AccountAuthForm
-      yandexEnabled={yandexConfig() !== null}
+      yandexEnabled={yandexEnabled()}
       authError={typeof error === "string" ? error : undefined}
     />
   );

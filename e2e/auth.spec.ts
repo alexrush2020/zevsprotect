@@ -106,3 +106,11 @@ test("Яндекс ID без ключей: маршруты выключены, 
   await page.waitForURL(/\/account$/);
   await expect(page.getByText("Вход через Яндекс ID (заглушка прототипа)")).toBeVisible();
 });
+
+test("Яндекс ID без ключей: форма входа на /account без сессии — та же заглушка", async ({ page }) => {
+  await page.goto("/account");
+  await page.getByRole("button", { name: "Войти через Яндекс" }).click();
+  await expect(page.getByText("Вход через Яндекс ID (заглушка прототипа)")).toBeVisible();
+  await expect(page).toHaveURL(/\/account$/);
+  await expect(page.getByRole("button", { name: "Выйти" })).toBeVisible();
+});

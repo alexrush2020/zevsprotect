@@ -23,6 +23,21 @@ export function yandexConfig(env: Record<string, string | undefined> = process.e
   return { clientId, clientSecret, baseUrl, secret, redirectUri: `${baseUrl}/api/auth/yandex/callback` };
 }
 
+/** Единый флаг для всех мест с AccountAuthForm: реальный вход или заглушка прототипа. */
+export const yandexEnabled = (env: Record<string, string | undefined> = process.env) => yandexConfig(env) !== null;
+
+/**
+ * Хост запроса совпадает с NEXT_PUBLIC_SERVER_URL? Иначе cookie state встанет на другой хост, чем вернёт
+ * redirect_uri (www/без www, localhost/127.0.0.1), и callback отклонит вход — /start сначала уводит на канонический.
+ */
+export function isCanonicalHost(requestHost: string | null | undefined, baseUrl: string): boolean {
+  return !!requestHost && requestHost.trim().toLowerCase() === new URL(baseUrl).host.toLowerCase();
+}
+
+/** Блокировка Payload после перебора пароля (lockUntil) действует и на вход через Яндекс. */
+export const isLocked = (lockUntil: string | Date | null | undefined, now: number) =>
+  !!lockUntil && new Date(lockUntil).getTime() > now;
+
 const sign = (secret: string, data: string) => createHmac("sha256", secret).update(data).digest("base64url");
 
 const safeEqual = (a: string, b: string) =>
@@ -106,7 +121,7 @@ export type NewYandexCustomer = {
 
 export type YandexDeps = {
   fetch: typeof fetch;
-  findByYandexId: (id: string) => Promise<{ id: number | string } | null>;
+  findByYandexId: (id: string) => Promise<{ id: number | string; lockUntil?: string | null } | null>;
   findByEmail: (email: string) => Promise<{ id: number | string } | null>;
   create: (data: NewYandexCustomer) => Promise<{ id: number | string }>;
   log: (msg: string) => void;
@@ -142,7 +157,10 @@ export async function yandexCallback(
   if (!profile) return fail("профиль без id или email");
 
   const own = await deps.findByYandexId(profile.yandexId);
-  if (own) return { ok: true, customerId: own.id, created: false };
+  if (own) {
+    if (isLocked(own.lockUntil, now)) return fail("аккаунт временно заблокирован (lockUntil)");
+    return { ok: true, customerId: own.id, created: false };
+  }
   if (await deps.findByEmail(profile.email)) return fail("email уже занят — автолинковка запрещена", "yandex-exists");
 
   try {
