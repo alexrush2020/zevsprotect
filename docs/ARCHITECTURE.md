@@ -39,7 +39,7 @@ scripts/               shoot.mjs, seed из мок-данных прототип
 | `categories` | 7 категорий по видам защиты (+ подкатегории через `parent`) | title, slug, иконка/картинка, порядок, SEO |
 | `products` | Каталог (80–90 шт.) | `guid1c`, sku, slug, title, gallery, description, основа, покрытие, цвет, размеры[], класс/плотность и прочие характеристики, price, stock, minQty, упаковка, документы[], related[], `_status` (публикация), **`manualOverride`**, SEO |
 | `orders` | Заказы | number, customer \| guest{…}, items[] (снапшот: product, sku, title, price, qty), total, delivery{…}, comment, `paymentMethod` invoice/online, `paymentStatus`, `status` (T-ST), `b24DealId`, `onecExportedAt`, `syncError` |
-| `leads` | Заявки со всех форм | `type` feedback / calculation / samples / consultation / product-request, данные формы, согласие ПДн, `b24LeadId`, `syncError` |
+| `leads` | Заявки со всех форм | `type` feedback / calculation / samples / consultation / product-request / pricelist / cart, данные формы, согласие ПДн, `b24LeadId`, `syncError` |
 | `reviews` | Отзывы на товары | product, author, rating, text, `approved` |
 | `posts`, `post-categories` | Блог | title, slug, cover, excerpt, content (lexical), category, related[], publishedAt, SEO, черновики |
 | `pages` | Прочие информационные страницы | title, slug, content, SEO |

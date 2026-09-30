@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Reveal, Stagger, StaggerItem } from "@/components/home/motion";
-import { useStore } from "@/lib/store";
+import { submitLead } from "@/lib/server/lead-action";
 import { toast } from "sonner";
 import { useState } from "react";
 import { brand } from "@/lib/brand";
@@ -41,19 +41,28 @@ const desks = [
 ] as const;
 
 export default function ContactsPage() {
-  const { addLead } = useStore();
   const [sent, setSent] = useState(false);
+  const [pending, setPending] = useState(false);
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (pending) return;
     const data = new FormData(e.currentTarget);
-    addLead("contact", {
+    setPending(true);
+    const res = await submitLead("feedback", {
       name: String(data.get("name") || ""),
       phone: String(data.get("phone") || ""),
       email: String(data.get("email") || ""),
       company: String(data.get("company") || ""),
       message: String(data.get("message") || ""),
-    });
+      consent: String(data.get("consent") || ""),
+      website: String(data.get("website") || ""),
+    }).catch(() => null);
+    setPending(false);
+    if (!res?.ok) {
+      toast.error(res?.error ?? "Не удалось отправить сообщение. Попробуйте ещё раз или позвоните нам.");
+      return;
+    }
     setSent(true);
     toast.success("Заявка сохранена и отправлена лидом в Битрикс24");
   }
@@ -194,11 +203,12 @@ export default function ContactsPage() {
                     <Textarea id="message" name="message" required rows={4} className="min-h-24" />
                   </div>
                   <label className="flex items-start gap-2 text-xs text-steel">
-                    <Checkbox required defaultChecked />
+                    <Checkbox name="consent" required defaultChecked />
                     Согласен с политикой обработки персональных данных
                   </label>
                   <MessengerRow />
-                  <Button type="submit" className="btn-press-in h-11">
+                  <input name="website" tabIndex={-1} autoComplete="off" aria-hidden className="hidden" />
+                  <Button type="submit" className="btn-press-in h-11" disabled={pending}>
                     Отправить
                   </Button>
                 </form>

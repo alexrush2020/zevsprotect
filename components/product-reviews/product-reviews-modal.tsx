@@ -18,6 +18,7 @@ import {
   reviewStats,
   reviewsForProduct,
   topicLabels,
+  type ProductReview,
   type ReviewSort,
   type ReviewTopic,
 } from "@/lib/data/product-reviews";
@@ -32,12 +33,14 @@ const SORT_OPTIONS: { value: ReviewSort; label: string }[] = [
 
 export function ProductReviewsModal({
   slug,
+  approved,
   productTitle,
   open,
   onOpenChange,
   anchorReviewId,
 }: {
   slug: string;
+  approved: ProductReview[];
   productTitle: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -47,8 +50,8 @@ export function ProductReviewsModal({
   const [topic, setTopic] = useState<ReviewTopic | null>(null);
   const [tick, setTick] = useState(0);
 
-  const allReviews = useMemo(() => reviewsForProduct(slug), [slug, tick]);
-  const stats = useMemo(() => reviewStats(slug), [slug, tick]);
+  const allReviews = useMemo(() => reviewsForProduct(slug, approved), [slug, approved, tick]);
+  const stats = useMemo(() => reviewStats(slug, approved), [slug, approved, tick]);
   const filtered = useMemo(
     () => filterAndSortReviews(allReviews, { topic, sort }),
     [allReviews, topic, sort],

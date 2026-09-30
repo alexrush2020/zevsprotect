@@ -186,18 +186,19 @@ function isProductReview(value: unknown): value is ProductReview {
   );
 }
 
-export function allProductReviews(): ProductReview[] {
-  return [...readUserReviewsSafe(), ...sampleProductReviews];
+/** base — одобренные отзывы (с сервера, Payload); мок — по умолчанию. Локальные отзывы автора (на модерации) — сверху. */
+export function allProductReviews(base: ProductReview[] = sampleProductReviews): ProductReview[] {
+  return [...readUserReviewsSafe(), ...base];
 }
 
-export function reviewsForProduct(slug: string): ProductReview[] {
-  return allProductReviews()
+export function reviewsForProduct(slug: string, base?: ProductReview[]): ProductReview[] {
+  return allProductReviews(base)
     .filter((review) => review.productSlug === slug)
     .sort((a, b) => b.date.localeCompare(a.date));
 }
 
-export function reviewStats(slug: string) {
-  const list = reviewsForProduct(slug);
+export function reviewStats(slug: string, base?: ProductReview[]) {
+  const list = reviewsForProduct(slug, base);
   const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } as Record<
     1 | 2 | 3 | 4 | 5,
     number
@@ -266,8 +267,9 @@ export function customerPhotos(reviews: ProductReview[]) {
 export function reviewsForOtherProducts(
   excludeSlug: string,
   limit = 3,
+  base?: ProductReview[],
 ): ProductReview[] {
-  return allProductReviews()
+  return allProductReviews(base)
     .filter((review) => review.productSlug !== excludeSlug)
     .slice(0, limit);
 }

@@ -12,18 +12,28 @@ import {
   reviewsForOtherProducts,
   reviewsForProduct,
   reviewStats,
+  type ProductReview,
 } from "@/lib/data/product-reviews";
 import { useStore } from "@/lib/store";
 import type { Product } from "@/lib/types";
 
-export function ProductReviewsSection({ product }: { product: Product }) {
+/** approved — одобренные отзывы товара, others — других товаров (для пустого состояния); оба из Payload. */
+export function ProductReviewsSection({
+  product,
+  approved,
+  others,
+}: {
+  product: Product;
+  approved: ProductReview[];
+  others: ProductReview[];
+}) {
   const { user } = useStore();
-  const [reviews, setReviews] = useState(() => reviewsForProduct(product.slug));
+  const [reviews, setReviews] = useState(() => reviewsForProduct(product.slug, approved));
   const [allOpen, setAllOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [anchorId, setAnchorId] = useState<string | null>(null);
-  const stats = reviewStats(product.slug);
-  const otherReviews = reviewsForOtherProducts(product.slug);
+  const stats = reviewStats(product.slug, approved);
+  const otherReviews = reviewsForOtherProducts(product.slug, 3, others);
   const author = user?.company || user?.name || "Закупщик";
   const sizeLabel = product.sizes[0];
   const leave = (
@@ -32,12 +42,12 @@ export function ProductReviewsSection({ product }: { product: Product }) {
 
   useEffect(() => {
     function refresh() {
-      setReviews(reviewsForProduct(product.slug));
+      setReviews(reviewsForProduct(product.slug, approved));
     }
     refresh();
     window.addEventListener(REVIEWS_UPDATED_EVENT, refresh);
     return () => window.removeEventListener(REVIEWS_UPDATED_EVENT, refresh);
-  }, [product.slug]);
+  }, [product.slug, approved]);
 
   useEffect(() => {
     function readHash() {
@@ -127,6 +137,7 @@ export function ProductReviewsSection({ product }: { product: Product }) {
       />
       <ProductReviewsModal
         slug={product.slug}
+        approved={approved}
         productTitle={product.name}
         open={allOpen}
         onOpenChange={setAllOpen}

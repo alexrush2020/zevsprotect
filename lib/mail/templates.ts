@@ -32,6 +32,31 @@ export function leadMail(l: { name: string; phone?: string; message?: string }):
   ])
 }
 
+/** Уведомление менеджеру о новой заявке с формы витрины. */
+export function leadManagerMail(l: {
+  type: string
+  name?: string | null
+  phone?: string | null
+  email?: string | null
+  company?: string | null
+  message?: string | null
+  data?: unknown
+  sourceUrl?: string | null
+}): Mail {
+  const extra = l.data && typeof l.data === 'object' ? Object.entries(l.data as Record<string, unknown>) : []
+  return build(`Новая заявка с сайта: ${l.type}`, [
+    `Тип формы: ${l.type}`,
+    `Имя: ${l.name ?? ''}`,
+    ...(l.phone ? [`Телефон: ${l.phone}`] : []),
+    ...(l.email ? [`Email: ${l.email}`] : []),
+    ...(l.company ? [`Организация: ${l.company}`] : []),
+    ...(l.message ? [`Сообщение: ${l.message}`] : []),
+    ...(extra.length ? ['Данные из формы (заполнены клиентом, не проверены сервером):'] : []),
+    ...extra.map(([k, v]) => `${k}: ${String(v)}`),
+    ...(l.sourceUrl ? [`Страница: ${l.sourceUrl}`] : []),
+  ])
+}
+
 export function registrationMail(u: { name: string }): Mail {
   return build('Добро пожаловать в зевспротект', [`${u.name}, регистрация прошла успешно.`])
 }

@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useStore } from "@/lib/store";
+import { submitLead } from "@/lib/server/lead-action";
 
 export function LeadForm({
   type,
@@ -20,14 +21,18 @@ export function LeadForm({
   hint: string;
   extra?: { name: string; label: string; required?: boolean; placeholder?: string }[];
 }) {
-  const { addLead, user } = useStore();
+  const { user } = useStore();
   const [sent, setSent] = useState(false);
+  const [pending, setPending] = useState(false);
   const [leadId, setLeadId] = useState("");
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (pending) return;
     const data = new FormData(e.currentTarget);
     const payload: Record<string, string> = {
+      consent: String(data.get("consent") || ""),
+      website: String(data.get("website") || ""),
       name: String(data.get("name") || ""),
       phone: String(data.get("phone") || ""),
       email: String(data.get("email") || ""),
@@ -37,10 +42,16 @@ export function LeadForm({
     extra?.forEach((f) => {
       payload[f.name] = String(data.get(f.name) || "");
     });
-    const lead = addLead(type, payload);
-    setLeadId(lead.id);
+    setPending(true);
+    const res = await submitLead(type, payload).catch(() => null);
+    setPending(false);
+    if (!res?.ok) {
+      toast.error(res?.error ?? "Не удалось отправить заявку. Попробуйте ещё раз или позвоните нам.");
+      return;
+    }
+    setLeadId(res.id);
     setSent(true);
-    toast.success(`Лид ${lead.id} · мок Битрикс24`);
+    toast.success(`Лид ${res.id} · мок Битрикс24`);
   }
 
   if (sent) {
@@ -90,10 +101,11 @@ export function LeadForm({
         <Textarea id="message" name="message" rows={4} required />
       </div>
       <label className="flex items-start gap-2 text-xs text-steel">
-        <Checkbox required defaultChecked />
+        <Checkbox name="consent" required defaultChecked />
         Согласен с политикой обработки персональных данных
       </label>
-      <Button type="submit" className="h-11">
+      <input name="website" tabIndex={-1} autoComplete="off" aria-hidden className="hidden" />
+      <Button type="submit" className="h-11" disabled={pending}>
         Отправить
       </Button>
     </form>

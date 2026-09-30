@@ -77,10 +77,11 @@ export const getRelatedProducts = cached(
     const same = await payload.find({
       collection: "products",
       ...read,
-      limit: limit + 1,
+      limit,
+      sort: "id", // порядок заведения (сид — в порядке мока), как в прототипе
       where: { and: [{ category: { equals: cat } }, { id: { not_equals: doc.id } }] },
     });
-    return same.docs.slice(0, limit).map(mapProduct);
+    return same.docs.map(mapProduct);
   },
   "related",
   "catalog",
@@ -99,6 +100,25 @@ export const getProductReviews = cached(
     return docs.map(mapProductReview);
   },
   "product-reviews",
+  "catalog",
+);
+
+/** Одобренные отзывы о других товарах — для карточки товара без отзывов. */
+export const getOtherProductReviews = cached(
+  async (excludeSlug: string, limit: number): Promise<ProductReview[]> => {
+    const payload = await getPayload({ config });
+    const { docs } = await payload.find({
+      collection: "reviews",
+      ...read,
+      depth: 1,
+      pagination: true,
+      limit,
+      sort: "id",
+      where: { "product.slug": { not_equals: excludeSlug } },
+    });
+    return docs.map(mapProductReview);
+  },
+  "other-product-reviews",
   "catalog",
 );
 
