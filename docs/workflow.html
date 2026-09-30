@@ -492,7 +492,7 @@ const TRACKS = [
   id:'shop', name:'Этапы 5–6 — Магазин, ЛК, формы',
   desc:'Корзина → заказ → оплата/счёт → ЛК. Цены всегда пересчитывает сервер.',
   items:[
-  { id:'SH-CART', t:'Корзина на серверных ценах', d:'Корзина остаётся в localStorage (lib/store.tsx), цены/остатки/лоты — из Payload; заявка менеджеру vs заказ (как в прототипе).', pr:'P0', st:'doing', own:'agent',
+  { id:'SH-CART', t:'Корзина на серверных ценах', d:'Корзина остаётся в localStorage (lib/store.tsx), цены/остатки/лоты — из Payload; заявка менеджеру vs заказ (как в прототипе).', pr:'P0', st:'done', anchors:['lib/cart-pricing.ts','lib/cart-pricing.test.ts','priceCart','orderableItems'], res:'<b>Коммиты e8f6124, 1e5fadc.</b> Корзина/избранное/быстрый заказ/чекаут/ЛК/прайс/вес доставки на каталоге Payload (getClientCatalog → layout → StoreProvider), ключи zp-cart:v2/zp-favorites:v2 со slug, миграция старых id (lib/legacy-product-ids.ts), priceCart/orderableItems (lib/cart-pricing.ts) — чистые функции для сервера; снятый товар не входит в сумму и заказ, заказ без доступных позиций невозможен. Суммы до/после совпали (82579, 41280, 3911586), цены БД=мок 65/65. test 115/115, typecheck, next build --webpack, e2e в браузере, ревью opus. Осталось: главная на ценах мока (F-HOME); /order и /invoice пересчитывают по текущему прайсу — фиксация цен в заказе (SH-CHK); stock=0 не блокирует на addToCart; шаг упаковки из покрытия, packSizes не участвует; сценарий «Payload недоступен» не воспроизводился.', own:'agent',
     req:['T-CART.'],
     deps:['F-PDP'],
     links:[['TZ.md', 'ТЗ: сводка']],
@@ -609,7 +609,7 @@ const TRACKS = [
   id:'seo', name:'Этап 9 — SEO и аналитика',
   desc:'',
   items:[
-  { id:'SEO-1', t:'ЧПУ, meta/OG, sitemap.xml, robots.txt, микроразметка', d:'generateMetadata из SEO-полей, app/sitemap.ts, app/robots.ts, JSON-LD Organization/Product/BreadcrumbList/Article.', pr:'P1', st:'doing', own:'agent',
+  { id:'SEO-1', t:'ЧПУ, meta/OG, sitemap.xml, robots.txt, микроразметка', d:'generateMetadata из SEO-полей, app/sitemap.ts, app/robots.ts, JSON-LD Organization/Product/BreadcrumbList/Article.', pr:'P1', st:'done', anchors:['app/sitemap.ts','app/robots.ts','lib/seo-jsonld.ts'], res:'<b>Коммиты e349b76, 1e5fadc.</b> metadataBase (brand.domain), app/sitemap.ts (статика + опубликованные товары/статьи, force-dynamic), app/robots.ts, canonical/OG на страницах, JSON-LD Organization/WebSite/BreadcrumbList/Article/Product (lib/seo-jsonld.ts + тесты). test 115/115, typecheck, build, ревью opus. Не проверено: валидатор Google (нет сети) — структура сверена с schema.org вручную. Категории в sitemap не включены (фильтр на одной странице).', own:'agent',
     req:['T-SEO.'],
     deps:['F-CAT', 'F-PDP', 'F-BLOG'],
     acc:'Валидатор микроразметки без ошибок; sitemap содержит товары/категории/статьи.' },
