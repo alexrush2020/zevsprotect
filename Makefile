@@ -12,7 +12,6 @@ help: ## Показать список команд
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 local-up: ## Поднять всё: postgres, mailpit, приложение (http://zevs.test, http://localhost:43128)
-	$(DOCKER) network create dev-local 2>/dev/null || true
 	$(COMPOSE) up -d --build
 
 local-services: ## Поднять только postgres и mailpit (приложение на хосте: npm run dev)

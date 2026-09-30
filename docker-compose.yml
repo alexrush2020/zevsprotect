@@ -1,6 +1,6 @@
 # Локальный стенд. `docker compose up -d` — только сервисы (postgres, mailpit), приложение на хосте: npm run dev.
 # Приложение в контейнере — профиль app (`make local-up`): вход http://zevs.test через общий nginx-local
-# (сеть dev-local, апстрим zevs-app:43127) или напрямую http://localhost:43128.
+# (апстрим — порт стенда на хосте, host.docker.internal:43128) или напрямую http://localhost:43128.
 name: zevs
 
 services:
@@ -34,7 +34,6 @@ services:
     build:
       context: .
       target: dev
-    # имя глобально уникально: в dev-local живут контейнеры соседних проектов с алиасом `app`
     container_name: zevs-app
     restart: unless-stopped
     env_file:
@@ -63,17 +62,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    networks: [default, dev-local]
     healthcheck:
       test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:43127/api/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
       interval: 15s
       timeout: 10s
       retries: 10
       start_period: 180s
-
-networks:
-  dev-local:
-    external: true
 
 volumes:
   pgdata:

@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
   // прод-образ Docker (deploy/, docs/DEPLOY.md): server.js + трассированные node_modules; withPayload учитывает трассировку
   output: "standalone",
   redirects: async () => redirects,
-  // локальный стенд в Docker открывается через nginx-local по http://zevs.test (docker-compose.yml)
+  // локальный стенд в Docker открывается через nginx-local по http://zevs.test (docker-compose.yml); zevs.localhost разрешён по умолчанию
   allowedDevOrigins: ["zevs.test"],
   images: {
     remotePatterns: [
