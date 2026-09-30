@@ -4,6 +4,8 @@ import { hasRole } from '../access'
 import { revalidateAfterChange, revalidateAfterDelete } from '../hooks/revalidate'
 
 const moderators = hasRole('admin', 'manager')
+const bustChange = revalidateAfterChange('catalog')
+const bustDelete = revalidateAfterDelete('catalog')
 
 export const Reviews: CollectionConfig = {
   slug: 'reviews',
@@ -17,8 +19,9 @@ export const Reviews: CollectionConfig = {
     delete: moderators,
   },
   hooks: {
-    afterChange: [revalidateAfterChange('catalog')],
-    afterDelete: [revalidateAfterDelete('catalog')],
+    // витрина видит только одобренные — неодобренный отзыв кэш каталога не трогает (спам не сбрасывает кэш)
+    afterChange: [(args) => (args.doc?.approved || args.previousDoc?.approved ? bustChange(args) : args.doc)],
+    afterDelete: [(args) => (args.doc?.approved ? bustDelete(args) : args.doc)],
   },
   fields: [
     { name: 'product', type: 'relationship', relationTo: 'products', label: 'Модель', required: true },

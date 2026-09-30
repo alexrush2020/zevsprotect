@@ -37,6 +37,7 @@ export function ProductReviewsSection({
   const stats = reviewStats(product.slug, approved);
   const otherReviews = reviewsForOtherProducts(product.slug, 3, others);
   const author = user?.company || user?.name || "Закупщик";
+  const city = (user?.addresses?.find((a) => a.isDefault) ?? user?.addresses?.[0])?.city;
   const sizeLabel = product.sizes[0];
   const leave = (
     <LeaveReviewButton productTitle={product.name} onClick={() => setLeaveOpen(true)} />
@@ -139,6 +140,7 @@ export function ProductReviewsSection({
         productSlug={product.slug}
         productTitle={product.name}
         author={author}
+        city={city}
         colorLabel={product.color}
         sizeLabel={sizeLabel}
       />

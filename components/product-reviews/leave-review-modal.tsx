@@ -24,6 +24,7 @@ export function LeaveReviewModal({
   productSlug,
   productTitle,
   author,
+  city,
   colorLabel,
   sizeLabel,
 }: {
@@ -32,6 +33,7 @@ export function LeaveReviewModal({
   productSlug: string;
   productTitle: string;
   author: string;
+  city?: string;
   colorLabel?: string;
   sizeLabel?: string;
 }) {
@@ -81,6 +83,7 @@ export function LeaveReviewModal({
     try {
       const res = await submitReview(productSlug, {
         authorName: company,
+        city,
         rating,
         text,
         tags,

@@ -41,10 +41,25 @@ describe('Reviews access', () => {
     expect(f.access.read(as(staff('admin')))).toBe(true)
   })
 
-  it('смена approved модератором сбрасывает кэш catalog (PDP)', () => {
-    const doc = { id: 1, approved: true }
+  it('кэш catalog сбрасывается, только если отзыв одобрен сейчас или был одобрен', () => {
     const req = { payload: { logger: { warn: vi.fn() } } }
-    for (const hook of Reviews.hooks!.afterChange!) (hook as (a: never) => unknown)({ doc, req, operation: 'update' } as never)
+    const change = (doc: object, previousDoc?: object) => {
+      revalidateTag.mockClear()
+      for (const hook of Reviews.hooks!.afterChange!) (hook as (a: never) => unknown)({ doc, previousDoc, req } as never)
+      return revalidateTag.mock.calls.length
+    }
+    const remove = (doc: object) => {
+      revalidateTag.mockClear()
+      for (const hook of Reviews.hooks!.afterDelete!) (hook as (a: never) => unknown)({ doc, req } as never)
+      return revalidateTag.mock.calls.length
+    }
+    expect(change({ approved: false })).toBe(0) // новый неодобренный с витрины
+    expect(change({ approved: false }, { approved: false })).toBe(0) // правка неодобренного
+    expect(change({ approved: true }, { approved: false })).toBe(1) // одобрение
     expect(revalidateTag).toHaveBeenCalledWith('catalog', { expire: 0 })
+    expect(change({ approved: false }, { approved: true })).toBe(1) // снятие одобрения
+    expect(change({ approved: true }, { approved: true })).toBe(1) // правка одобренного
+    expect(remove({ approved: true })).toBe(1)
+    expect(remove({ approved: false })).toBe(0)
   })
 })

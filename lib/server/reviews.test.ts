@@ -94,6 +94,15 @@ describe("createReviewReceiver", () => {
     expect((await receive(d, req({ ip: "2.2.2.2", input: { ...ok, text: "t4" } }))).ok).toBe(true);
   });
 
+  it("общий лимит на IP по всем товарам", async () => {
+    const d = deps({ findProduct: async () => ({ id: 1 }) });
+    const receive = createReviewReceiver();
+    for (let i = 0; i < 10; i++) expect((await receive(d, req({ productSlug: `m${i}` }))).ok).toBe(true);
+    expect(await receive(d, req({ productSlug: "m10" }))).toMatchObject({ ok: false, error: expect.stringContaining("Слишком много") });
+    expect((await receive(d, req({ productSlug: "m10", ip: "2.2.2.2" }))).ok).toBe(true);
+    expect((await receive(d, req({ productSlug: "m11", now: 1_000_000 + 10 * 60_000 + 1 }))).ok).toBe(true); // окно прошло
+  });
+
   it("сбой записи — ошибка; повтор не залипает в дедупе", async () => {
     const create = vi.fn().mockRejectedValueOnce(new Error("db")).mockResolvedValue({ id: 5 });
     const d = deps({ create, log: () => {} });

@@ -83,8 +83,9 @@ export type ReviewRequest = { productSlug: unknown; input: ReviewInput; ip: stri
  * Приёмник отзывов с состоянием в памяти процесса.
  * ponytail: rate limit и дедуп — Map в одном процессе; при нескольких инстансах — Redis/таблица.
  */
-export function createReviewReceiver(opts = { limit: 3, windowMs: 10 * 60_000, dedupMs: 60_000 }) {
-  const allow = createRateLimiter(opts.limit, opts.windowMs);
+export function createReviewReceiver(opts = { limit: 3, ipLimit: 10, windowMs: 10 * 60_000, dedupMs: 60_000 }) {
+  const allow = createRateLimiter(opts.limit, opts.windowMs); // IP + товар
+  const allowIp = createRateLimiter(opts.ipLimit, opts.windowMs); // IP на все товары
   const recent = new Map<string, { at: number; result: Promise<ReviewResult> }>();
 
   return async function receive(deps: ReviewDeps, req: ReviewRequest): Promise<ReviewResult> {
@@ -102,7 +103,7 @@ export function createReviewReceiver(opts = { limit: 3, windowMs: 10 * 60_000, d
     const prev = recent.get(key);
     if (prev) return prev.result;
 
-    if (!allow(`${req.ip}|${slug}`, t))
+    if (!allow(`${req.ip}|${slug}`, t) || !allowIp(req.ip, t))
       return { ok: false, error: "Слишком много отзывов. Попробуйте через несколько минут." };
 
     const result = (async (): Promise<ReviewResult> => {
