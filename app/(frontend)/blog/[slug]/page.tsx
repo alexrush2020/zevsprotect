@@ -31,6 +31,7 @@ export async function generateMetadata({
     seo?.description || article.excerpt,
     `/blog/${slug}`,
     seo?.image || article.image || undefined,
+    "article",
   );
 }
 

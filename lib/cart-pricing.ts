@@ -1,4 +1,5 @@
 import { legacySlug } from "@/lib/legacy-product-ids";
+import { cartLineKey } from "@/lib/lots";
 import { snapOrderQty } from "@/lib/order-qty";
 import { splitVat } from "@/lib/vat";
 import { volumeUnitPrice } from "@/lib/volume-quote";
@@ -45,6 +46,43 @@ export function priceCart(items: CartItem[], catalog: Product[]) {
   goods = roundMoney(goods);
   const { net, vat } = splitVat(goods);
   return { lines, goods, net, vat };
+}
+
+/** Позиции к оформлению: только доступные, qty после snapOrderQty — ровно то, что вошло в goods. */
+export function orderableItems(lines: PricedCartLine[]): CartItem[] {
+  return lines
+    .filter((l) => l.available)
+    .map(({ productId, size, coating, qty }) => ({ productId, size, qty, ...(coating ? { coating } : {}) }));
+}
+
+/**
+ * Корзина из localStorage: мусор отбрасывается, одинаковые строки сливаются, qty приводится к упаковке.
+ * Товар вне каталога (снят с публикации или каталог не загрузился) сохраняется как есть — priceCart пометит его недоступным.
+ */
+export function normalizeCart(raw: unknown, catalog: Product[]): CartItem[] {
+  if (!Array.isArray(raw)) return [];
+  const bySlug = new Map(catalog.map((p) => [p.slug, p]));
+  const merged = new Map<string, CartItem>();
+  for (const row of raw) {
+    if (!row || typeof row !== "object") continue;
+    const item = row as CartItem;
+    if (typeof item.productId !== "string" || !item.productId || typeof item.size !== "string" || !item.size) continue;
+    const qty = Number(item.qty);
+    if (!Number.isFinite(qty) || qty <= 0) continue;
+    const key = cartLineKey(item);
+    merged.set(key, {
+      productId: item.productId,
+      size: item.size,
+      coating: typeof item.coating === "string" ? item.coating : undefined,
+      qty: (merged.get(key)?.qty ?? 0) + qty,
+    });
+  }
+  return [...merged.values()].flatMap((item) => {
+    const product = bySlug.get(item.productId);
+    if (!product) return [item];
+    const qty = snapOrderQty(item.qty, product, { allowZero: true });
+    return qty ? [{ ...item, qty }] : [];
+  });
 }
 
 /** Корзина прототипа (ключ без версии, productId вида "p-atlant") → slug; неизвестные позиции отбрасываются. */

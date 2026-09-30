@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { migrateLegacyCart, migrateLegacyFavorites, priceCart } from './cart-pricing'
+import { migrateLegacyCart, migrateLegacyFavorites, normalizeCart, orderableItems, priceCart } from './cart-pricing'
 import { LEGACY_PRODUCT_IDS } from './legacy-product-ids'
 import { products } from './data/catalog'
 import type { Product } from './types'
@@ -55,6 +55,48 @@ describe('priceCart', () => {
     )
     expect(r.lines[0]).toMatchObject({ available: false, product: null, total: 0 })
     expect(r.goods).toBe(5000)
+  })
+})
+
+describe('оформляемые позиции', () => {
+  it('все недоступны → ноль позиций к заказу', () => {
+    const { lines, goods } = priceCart([{ productId: 'snyat', size: 'L', qty: 100 }], catalog)
+    expect(orderableItems(lines)).toEqual([])
+    expect(goods).toBe(0)
+  })
+
+  it('смесь → в заказ только доступные, qty после упаковки и совпадает с суммой', () => {
+    const { lines, goods } = priceCart(
+      [
+        { productId: 'snyat', size: 'L', qty: 100 },
+        { productId: 'tkan', size: 'L', qty: 51, coating: 'Нитрил' },
+      ],
+      catalog,
+    )
+    const items = orderableItems(lines)
+    expect(items).toEqual([{ productId: 'tkan', size: 'L', qty: 100, coating: 'Нитрил' }])
+    expect(priceCart(items, catalog).goods).toBe(goods)
+    expect(goods).toBe(10000)
+  })
+})
+
+describe('normalizeCart', () => {
+  it('пустой каталог (Payload недоступен) — позиции сохраняются как есть', () => {
+    const raw = [
+      { productId: 'tkan', size: 'L', qty: 51 },
+      { productId: 'tkan', size: 'L', qty: 10 },
+    ]
+    expect(normalizeCart(raw, [])).toEqual([{ productId: 'tkan', size: 'L', coating: undefined, qty: 61 }])
+  })
+
+  it('по каталогу: слияние, упаковка, мусор отброшен', () => {
+    expect(
+      normalizeCart(
+        [{ productId: 'tkan', size: 'L', qty: 30 }, { productId: 'tkan', size: 'L', qty: 30 }, { productId: 'tkan', qty: 5 }, null, { productId: 'obliv', size: 'M', qty: -1 }],
+        catalog,
+      ),
+    ).toEqual([{ productId: 'tkan', size: 'L', coating: undefined, qty: 100 }])
+    expect(normalizeCart('мусор', catalog)).toEqual([])
   })
 })
 

@@ -7,6 +7,7 @@ import { CartInquiryForm } from "@/components/cart-inquiry-form";
 import { CartOrderForm } from "@/components/cart-order-form";
 import { CartProductCard } from "@/components/cart-product-card";
 import { useStore } from "@/lib/store";
+import { NoOrderable } from "@/components/cart-no-orderable";
 import { formatPrice } from "@/lib/format";
 import { groupCartByProduct } from "@/lib/lots";
 import { cn } from "@/lib/utils";
@@ -14,7 +15,7 @@ import { cn } from "@/lib/utils";
 const ORDER_FORM_ID = "cart-order-form";
 
 export default function CartPage() {
-  const { cart, cartTotal, getProduct, removeProductFromCart } = useStore();
+  const { cart, orderable, cartTotal, getProduct, removeProductFromCart, clearCart } = useStore();
   const [tab, setTab] = useState<"order" | "request">("order");
   const groups = groupCartByProduct(cart);
 
@@ -32,6 +33,8 @@ export default function CartPage() {
       </div>
     );
   }
+
+  if (!orderable.length) return <NoOrderable onClear={clearCart} />;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">

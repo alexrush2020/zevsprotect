@@ -11,8 +11,8 @@ import { formatPrice } from "@/lib/format";
 import { cartWeightKg, quoteCarriers } from "@/lib/delivery";
 
 export default function DeliveryPage() {
-  const { cart, catalog } = useStore();
-  const cartWeight = cartWeightKg(cart, catalog);
+  const { orderable, catalog } = useStore();
+  const cartWeight = cartWeightKg(orderable, catalog);
 
   const [city, setCity] = useState("Ростов-на-Дону");
   const [weight, setWeight] = useState(cartWeight ? String(cartWeight.toFixed(1)) : "12");

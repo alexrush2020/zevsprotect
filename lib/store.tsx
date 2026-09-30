@@ -9,7 +9,13 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { migrateLegacyCart, migrateLegacyFavorites, priceCart } from "@/lib/cart-pricing";
+import {
+  migrateLegacyCart,
+  migrateLegacyFavorites,
+  normalizeCart,
+  orderableItems,
+  priceCart,
+} from "@/lib/cart-pricing";
 import { legacySlug } from "@/lib/legacy-product-ids";
 import { cartLineKey } from "@/lib/lots";
 import { snapOrderQty } from "@/lib/order-qty";
@@ -39,43 +45,18 @@ function uid(prefix: string) {
   return `${prefix}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 }
 
-function normalizeCart(raw: unknown, bySlug: Map<string, Product>): CartItem[] {
-  if (!Array.isArray(raw)) return [];
-  const merged = new Map<string, CartItem>();
-  for (const row of raw) {
-    if (!row || typeof row !== "object") continue;
-    const item = row as CartItem & { lotId?: string };
-    if (!item.productId || !item.size) continue;
-    const qty = Number(item.qty);
-    if (!Number.isFinite(qty) || qty <= 0) continue;
-    const key = cartLineKey(item);
-    const prev = merged.get(key);
-    merged.set(key, {
-      productId: item.productId,
-      size: item.size,
-      coating: item.coating,
-      qty: (prev?.qty ?? 0) + qty,
-    });
-  }
-  return [...merged.values()]
-    .map((item) => {
-      const product = bySlug.get(item.productId);
-      if (!product) return item; // снят с публикации — остаётся недоступным, см. priceCart
-      const qty = snapOrderQty(item.qty, product, { allowZero: true });
-      if (!qty) return null;
-      return { ...item, qty };
-    })
-    .filter((item): item is CartItem => Boolean(item));
-}
-
 /** Значение v2-ключа или миграция старого ключа прототипа (старый ключ удаляется). */
 function readVersioned(key: string, legacyKey: string, migrate: (raw: unknown) => unknown): unknown {
-  if (localStorage.getItem(key) !== null) return readJson<unknown>(key, null);
-  const migrated = migrate(readJson<unknown>(legacyKey, null));
-  // сразу пишем v2: повторный запуск эффекта (StrictMode, вторая вкладка) не должен прочитать пустоту
-  localStorage.setItem(key, JSON.stringify(migrated));
-  localStorage.removeItem(legacyKey);
-  return migrated;
+  try {
+    if (localStorage.getItem(key) !== null) return readJson<unknown>(key, null);
+    const migrated = migrate(readJson<unknown>(legacyKey, null));
+    // сразу пишем v2: повторный запуск эффекта (StrictMode, вторая вкладка) не должен прочитать пустоту
+    localStorage.setItem(key, JSON.stringify(migrated));
+    localStorage.removeItem(legacyKey);
+    return migrated;
+  } catch {
+    return null; // хранилище недоступно (приватный режим, квота) — начинаем с пустого
+  }
 }
 
 function readJson<T>(key: string, fallback: T): T {
@@ -100,6 +81,8 @@ type Store = {
   catalog: Product[];
   getProduct: (slug: string) => Product | undefined;
   /** false — товара нет в каталоге, ничего не добавлено. */
+  /** Доступные позиции корзины к оформлению (qty после приведения к упаковке). */
+  orderable: CartItem[];
   addToCart: (productId: string, size: string, qty: number, coating?: string) => boolean;
   setQty: (productId: string, size: string, qty: number, coating?: string) => void;
   removeFromCart: (productId: string, size: string, coating?: string) => void;
@@ -121,7 +104,7 @@ type Store = {
     carrier?: string;
     carrierName?: string;
     deliveryCost?: number;
-  }) => Order;
+  }) => Order | null;
   updateOrder: (id: string, patch: Partial<Order>) => void;
   addLead: (type: string, payload: Record<string, string>) => Lead;
   toggleFavorite: (productId: string) => boolean;
@@ -393,6 +376,16 @@ function seedOrders(): Order[] {
   ]);
 }
 
+/** Запись в localStorage без падения (приватный режим, квота); null — удалить ключ. */
+function writeStorage(key: string, value: string | null) {
+  try {
+    if (value === null) localStorage.removeItem(key);
+    else localStorage.setItem(key, value);
+  } catch {
+    // корзина останется в памяти до перезагрузки
+  }
+}
+
 export function StoreProvider({ children, catalog }: { children: ReactNode; catalog: Product[] }) {
   const bySlug = useMemo(() => new Map(catalog.map((p) => [p.slug, p])), [catalog]);
   const getProduct = useCallback((slug: string) => bySlug.get(slug), [bySlug]);
@@ -405,15 +398,18 @@ export function StoreProvider({ children, catalog }: { children: ReactNode; cata
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const nextCart = normalizeCart(readVersioned(CART_KEY, LEGACY_CART_KEY, migrateLegacyCart), bySlug);
+    const nextCart = normalizeCart(readVersioned(CART_KEY, LEGACY_CART_KEY, migrateLegacyCart), catalog);
     const nextUser = readJson<UserProfile | null>(USER_KEY, null);
     const nextLastUser =
       readJson<UserProfile | null>(LAST_USER_KEY, null) ?? demoAccount;
     // история заказов: старые id → slug (идемпотентно), неизвестные оставляем как есть
-    const nextOrders = readJson<Order[]>(ORDERS_KEY, []).map((o) => ({
-      ...o,
-      items: o.items.map((i) => ({ ...i, productId: legacySlug(i.productId) ?? i.productId })),
-    }));
+    const storedOrders = readJson<unknown>(ORDERS_KEY, []);
+    const nextOrders = (Array.isArray(storedOrders) ? (storedOrders as Order[]) : [])
+      .filter((o) => o && typeof o === "object" && Array.isArray(o.items)) // битый заказ пропускаем
+      .map((o) => ({
+        ...o,
+        items: o.items.map((i) => ({ ...i, productId: legacySlug(i?.productId) ?? i?.productId })),
+      }));
     const nextLeads = readJson<Lead[]>(LEADS_KEY, []);
     const nextFavorites = readVersioned(FAVORITES_KEY, LEGACY_FAVORITES_KEY, migrateLegacyFavorites);
     /* eslint-disable react-hooks/set-state-in-effect -- гидратация из localStorage только на клиенте (SSR-безопасно) */
@@ -451,39 +447,39 @@ export function StoreProvider({ children, catalog }: { children: ReactNode; cata
 
   useEffect(() => {
     if (!ready) return;
-    localStorage.setItem(CART_KEY, JSON.stringify(cart));
+    writeStorage(CART_KEY, JSON.stringify(cart));
   }, [cart, ready]);
 
   useEffect(() => {
     if (!ready) return;
     if (user) {
-      localStorage.setItem(USER_KEY, JSON.stringify(user));
+      writeStorage(USER_KEY, JSON.stringify(user));
       if (user.authProvider !== "password") {
-        localStorage.setItem(LAST_USER_KEY, JSON.stringify(user));
+        writeStorage(LAST_USER_KEY, JSON.stringify(user));
       }
     } else {
-      localStorage.removeItem(USER_KEY);
+      writeStorage(USER_KEY, null);
     }
   }, [user, ready]);
 
   useEffect(() => {
     if (!ready) return;
-    if (lastUser) localStorage.setItem(LAST_USER_KEY, JSON.stringify(lastUser));
+    if (lastUser) writeStorage(LAST_USER_KEY, JSON.stringify(lastUser));
   }, [lastUser, ready]);
 
   useEffect(() => {
     if (!ready) return;
-    localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
+    writeStorage(ORDERS_KEY, JSON.stringify(orders));
   }, [orders, ready]);
 
   useEffect(() => {
     if (!ready) return;
-    localStorage.setItem(LEADS_KEY, JSON.stringify(leads));
+    writeStorage(LEADS_KEY, JSON.stringify(leads));
   }, [leads, ready]);
 
   useEffect(() => {
     if (!ready) return;
-    localStorage.setItem(FAVORITES_KEY, JSON.stringify(favoriteIds));
+    writeStorage(FAVORITES_KEY, JSON.stringify(favoriteIds));
   }, [favoriteIds, ready]);
 
   const addToCart = useCallback((productId: string, size: string, qty: number, coating?: string) => {
@@ -633,12 +629,14 @@ export function StoreProvider({ children, catalog }: { children: ReactNode; cata
       carrierName?: string;
       deliveryCost?: number;
     }) => {
-      const { goods } = priceCart(cart, catalog);
+      const { goods, lines } = priceCart(cart, catalog);
+      const items = orderableItems(lines);
+      if (!items.length) return null; // нет доступных позиций — заказ не создаём
       const deliveryCost = input.deliveryCost ?? 0;
       const order: Order = {
         id: uid("ZP"),
         createdAt: new Date().toISOString(),
-        items: cart.filter((item) => bySlug.has(item.productId)),
+        items,
         profile: input.profile,
         comment: input.comment,
         payment: input.payment,
@@ -660,7 +658,7 @@ export function StoreProvider({ children, catalog }: { children: ReactNode; cata
       setCart([]);
       return order;
     },
-    [cart, catalog, bySlug]
+    [cart, catalog]
   );
 
   const updateOrder = useCallback((id: string, patch: Partial<Order>) => {
@@ -693,13 +691,16 @@ export function StoreProvider({ children, catalog }: { children: ReactNode; cata
     [favoriteIds]
   );
 
-  const cartCount = cart.length;
-  const cartTotal = useMemo(() => priceCart(cart, catalog).goods, [cart, catalog]);
+  const priced = useMemo(() => priceCart(cart, catalog), [cart, catalog]);
+  const orderable = useMemo(() => orderableItems(priced.lines), [priced]);
+  const cartCount = orderable.length;
+  const cartTotal = priced.goods;
 
   const value = useMemo(
     () => ({
       catalog,
       getProduct,
+      orderable,
       cart,
       user,
       lastUser,
@@ -730,6 +731,7 @@ export function StoreProvider({ children, catalog }: { children: ReactNode; cata
     [
       catalog,
       getProduct,
+      orderable,
       cart,
       user,
       lastUser,

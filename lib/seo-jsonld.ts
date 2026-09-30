@@ -6,6 +6,9 @@ export const abs = (path: string) => (/^https?:\/\//.test(path) ? path : `${site
 
 /** Organization + WebSite для главной. Только реквизиты из lib/brand. */
 export function organizationJsonLd() {
+  // brand.address: «Город, улица, дом»
+  const [city, ...rest] = brand.address.split(", ");
+  const street = rest.join(", ");
   return {
     "@context": "https://schema.org",
     "@graph": [
@@ -18,7 +21,7 @@ export function organizationJsonLd() {
         email: brand.email,
         telephone: brand.phone,
         taxID: brand.inn,
-        address: { "@type": "PostalAddress", streetAddress: "Поляковское шоссе, 17", addressLocality: "Таганрог", addressCountry: "RU" },
+        address: { "@type": "PostalAddress", streetAddress: street, addressLocality: city, addressCountry: "RU" },
       },
       { "@type": "WebSite", "@id": `${siteOrigin}/#website`, url: siteOrigin, name: brand.mark, inLanguage: "ru", publisher: { "@id": `${siteOrigin}/#organization` } },
     ],
@@ -35,12 +38,18 @@ export function breadcrumbJsonLd(items: [name: string, path: string][]) {
 }
 
 /** Metadata страницы: title/description/canonical + OG (openGraph в Next не наследуется по полям, поэтому задаём целиком). */
-export function pageMeta(title: string, description: string, path: string, image?: string) {
+export function pageMeta(
+  title: string,
+  description: string,
+  path: string,
+  image?: string,
+  type: "website" | "article" = "website",
+) {
   return {
     title,
     description,
     alternates: { canonical: path },
-    openGraph: { title, description, url: path, siteName: brand.mark, locale: "ru_RU", type: "website" as const, ...(image ? { images: [abs(image)] } : {}) },
+    openGraph: { title, description, url: path, siteName: brand.mark, locale: "ru_RU", type, ...(image ? { images: [abs(image)] } : {}) },
   };
 }
 

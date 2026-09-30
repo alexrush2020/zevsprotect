@@ -29,7 +29,11 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const catalog = await getClientCatalog();
+  // Payload недоступен — сайт работает, позиции корзины сохраняются недоступными, оформление блокируется
+  const catalog = await getClientCatalog().catch((err: unknown) => {
+    console.error("[layout] каталог Payload недоступен", err);
+    return [];
+  });
   return (
     <html
       lang="ru"

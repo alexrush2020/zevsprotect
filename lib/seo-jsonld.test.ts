@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { articleJsonLd, breadcrumbJsonLd, organizationJsonLd } from "./seo-jsonld";
+import { articleJsonLd, breadcrumbJsonLd, organizationJsonLd, pageMeta } from "./seo-jsonld";
 
 describe("seo-jsonld", () => {
   it("BreadcrumbList: позиции с 1, абсолютные URL", () => {
@@ -15,5 +15,12 @@ describe("seo-jsonld", () => {
   });
   it("Organization + WebSite в одном графе", () => {
     expect(organizationJsonLd()["@graph"].map((n) => n["@type"])).toEqual(["Organization", "WebSite"]);
+    expect(organizationJsonLd()["@graph"][0]).toMatchObject({
+      address: { streetAddress: "Поляковское шоссе, 17", addressLocality: "Таганрог" },
+    });
+  });
+  it("pageMeta: og:type website по умолчанию, article для статьи", () => {
+    expect(pageMeta("T", "D", "/a").openGraph.type).toBe("website");
+    expect(pageMeta("T", "D", "/blog/a", undefined, "article").openGraph.type).toBe("article");
   });
 });
