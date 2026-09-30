@@ -65,19 +65,18 @@ scripts/               shoot.mjs, seed из мок-данных прототип
 
 ## Реестр моков (регресс 2026-09-30)
 
-Живое на Payload: каталог и категории на страницах товаров/каталога, заявки (`submitLead`, включая быстрый заказ), заказы и трекинг (`createOrder`, `trackOrder`), вход/регистрация/профиль клиента, отзывы, блог, глобалы Home/About/Delivery/Settings, прайс, метки карточек (`products.badges`), Яндекс.Метрика.
+Живое на Payload: каталог, категории (шапка, футер, меню, фильтры — из стора, наполняется в `layout`), заявки (`submitLead`, включая быстрый заказ), заказы и трекинг (`createOrder`, `trackOrder`), вход/регистрация/профиль клиента, отзывы, блог, глобалы Home/About/Delivery/Settings, прайс, метки карточек (`products.badges`), Яндекс.Метрика.
 
 Что ещё **мок или localStorage** (в коде помечено `MOCK`/комментарием; при переводе на бэкенд — убирать из этого списка):
 
 | Место | Что | Состояние / блокер |
 |---|---|---|
-| `lib/data/catalog.ts` → шапка, футер, `catalog-menu`, фильтры `catalog-browser`, `manager-chat-context` | статическое дерево категорий и фильтры из прототипа | не управляется из админки; перевод на пропсы из `lib/server/catalog.ts` — отдельная задача |
 | `/pay/[id]*`, `lib/integrations.ts`, `IntegrationLog` | мок ЮKassa и журнал обмена (только для демо-заказов localStorage) | SH-PAY, BIZ-4 |
 | `lib/delivery.ts` | выдуманные тарифы ТК, ориентир на витрине; в заказ не входят | BIZ-9, CONTRA-5 |
 | `components/manager-chat/`, `lib/manager-chat*.ts` | сценарный чат с шаблонными ответами | SH-CHAT: открытые линии Б24 |
 | `lib/account-notices.ts`, `/account/notifications` | уведомления и настройки в localStorage | нет коллекции; CONTRA-1 |
-| `lib/store.tsx`: избранное, `zp-orders`, `zp-leads`, `demoAccount`, `loginDemo`, `loginYandex` | локальное состояние и демо-вход; из UI живыми не вызываются | избранное → поле клиента; остальное удалить (см. AGENT-REFERENCE) |
-| `lib/account-reviews.ts`, `sampleProductReviews` | демо-отзывы как фильтр/дефолт | заменить серверным списком `myPendingReviews` |
+| `lib/store.tsx`: избранное, `zp-orders`, `zp-leads` | локальное состояние (гостевая корзина — норма) | избранное → поле клиента; `zp-orders` — только для старых заказов прототипа |
+| `/account/orders`: отзывы | показываются только свои отзывы на модерации; одобренные свои с сервера не подгружаются | добавить серверный запрос «мои отзывы» |
 | `lib/data/purchase-guide.ts`, `brand.ts`, массивы в `about-view`, `site-header`, `site-footer` | тексты и реквизиты в коде | подключить `settings`/globals по мере надобности |
 | `lib/b24/config.ts` | ID воронки/стадий Б24 | ждём портал заказчика (BIZ-5) |
 

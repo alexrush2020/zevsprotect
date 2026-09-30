@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Reveal } from "@/components/home/motion";
-import { formatRuPhone } from "@/lib/demo-account";
+import { formatRuPhone } from "@/lib/format";
 import { forgotRequest, loginRequest, registerRequest } from "@/lib/auth-client";
 import { track } from "@/lib/analytics";
 import { useStore } from "@/lib/store";

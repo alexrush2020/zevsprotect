@@ -6,7 +6,6 @@ import { AccountOrderCard, useAccountOrders } from "@/components/account/account
 import { AccountScroll } from "@/components/account/account-scroll";
 import { StarRating } from "@/components/product-reviews/star-rating";
 import { useStore } from "@/lib/store";
-import { reviewsForAccount } from "@/lib/account-reviews";
 import { REVIEWS_UPDATED_EVENT, listPendingReviews, setPendingReviews, type ProductReview } from "@/lib/data/product-reviews";
 import { myPendingReviews } from "@/lib/server/review-action";
 import { formatDate, formatPrice } from "@/lib/format";
@@ -28,7 +27,7 @@ export default function AccountOrdersPage() {
 
   useEffect(() => {
     if (!user) return;
-    const load = () => setReviews(reviewsForAccount(user, listPendingReviews()));
+    const load = () => setReviews(listPendingReviews());
     load();
     void myPendingReviews().then(setPendingReviews, () => undefined); // → REVIEWS_UPDATED_EVENT → load
     window.addEventListener(REVIEWS_UPDATED_EVENT, load);

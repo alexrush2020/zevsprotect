@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AccountScroll } from "@/components/account/account-scroll";
-import { formatRuPhone } from "@/lib/demo-account";
+import { formatRuPhone } from "@/lib/format";
 import { addressesOf, formatAddressLine } from "@/lib/addresses";
 import { useStore } from "@/lib/store";
 import type { DeliveryAddress } from "@/lib/types";

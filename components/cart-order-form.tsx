@@ -11,7 +11,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { DeliveryAddressPicker } from "@/components/delivery-address-picker";
 import { useStore } from "@/lib/store";
 import { formatPrice } from "@/lib/format";
-import { formatRuPhone } from "@/lib/demo-account";
+import { formatRuPhone } from "@/lib/format";
 import {
   addressesOf,
   defaultAddress,

@@ -15,10 +15,9 @@
 | `app/api/pricelist` | Прайс CSV (статический сегмент приоритетнее `/api/[...slug]` Payload) |
 | `components/` | UI витрины; `components/ui/` — примитивы shadcn |
 | `lib/types.ts` | Контракт данных компонентов — сохранять при переводе на Payload |
-| `lib/data/catalog.ts` | **Мок** каталога, статей, отзывов → переезжает в Payload (сид S-6) |
+| `lib/data/catalog.ts` | Сид-источник и справочные функции (`buildSpecFilters`, `productSeo`); рантайм-данные — из Payload, актуальный список моков — в ARCHITECTURE «Реестр моков» |
 | `lib/store.tsx` | **Мок** корзины/пользователя/заказов/заявок в localStorage → корзина остаётся клиентской, остальное — Payload |
 | `lib/integrations.ts`, `components/integration-log.tsx` | **Мок** журнала обмена 1С/Б24/ЮKassa → реальные интеграции |
-| `lib/demo-account.ts` | Демо-кабинет прототипа → удалить после SH-AUTH |
 | `public/` | Фото, видео цеха, бренд, документы (22 МБ) — не терять при worktree/деплое |
 
 ## Локальный стенд

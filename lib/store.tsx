@@ -20,7 +20,6 @@ import {
 import { legacySlug } from "@/lib/legacy-product-ids";
 import { cartLineKey } from "@/lib/lots";
 import { snapOrderQty } from "@/lib/order-qty";
-import { demoAccount, yandexStubAccount } from "@/lib/demo-account";
 import type { CatalogCategory } from "@/lib/server/map";
 import { toast } from "sonner";
 import { logoutRequest, meRequest, updateRequest } from "@/lib/auth-client";
@@ -94,11 +93,7 @@ type Store = {
   removeFromCart: (productId: string, size: string, coating?: string) => void;
   removeProductFromCart: (productId: string) => void;
   clearCart: () => void;
-  login: (email: string, password: string) => boolean;
   register: (profile: UserProfile, password?: string) => boolean;
-  loginYandex: () => boolean;
-  loginDemo: () => boolean;
-  resumeSession: () => boolean;
   logout: () => void | Promise<void>;
   updateProfile: (profile: UserProfile) => void;
   /** Заказ в Payload (server action): позиции — доступные строки корзины, цены считает сервер. Успех очищает корзину. */
@@ -114,264 +109,10 @@ type Store = {
 
 const StoreContext = createContext<Store | null>(null);
 
-function seedGuestOrders(): Order[] {
-  return [
-    {
-      id: "ZP-10990",
-      createdAt: "2026-09-12T11:20:00.000Z",
-      items: [{ productId: "atlant", size: "L", qty: 50 }],
-      profile: {
-        email: "gost@example.ru",
-        name: "Алексей Гость",
-        phone: "+7 (863) 111-22-33",
-        company: "",
-        inn: "",
-        kpp: "",
-        address: "г. Краснодар, ул. Красная, 10",
-      },
-      comment: "Гостевой заказ для проверки трека.",
-      payment: "invoice_auto",
-      paymentStatus: "invoiced",
-      status: "shipped",
-      total: 28.9 * 50 + 640,
-      guest: true,
-      city: "Краснодар",
-      carrier: "cdek",
-      carrierName: "СДЭК",
-      deliveryCost: 640,
-    },
-  ];
-}
-
 function sortOrders(orders: Order[]) {
   return [...orders].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
-}
-
-function mergeSeedOrders(existing: Order[]) {
-  const ids = new Set(existing.map((o) => o.id));
-  const extra = seedOrders().filter((o) => !ids.has(o.id));
-  if (!existing.length) return seedOrders();
-  return extra.length ? sortOrders([...existing, ...extra]) : sortOrders(existing);
-}
-
-function seedOrders(): Order[] {
-  return sortOrders([
-    {
-      id: "ZP-10588",
-      createdAt: "2026-09-17T09:10:00.000Z",
-      items: [
-        { productId: "antiporez-pu-1-2", size: "XL", qty: 80 },
-        { productId: "hvat-hb-rl-1-2", size: "L", qty: 200 },
-      ],
-      profile: demoAccount,
-      comment: "На склад Ростов, XL для резки арматуры.",
-      payment: "invoice_manager",
-      paymentStatus: "invoiced",
-      status: "accepted",
-      total: 96 * 80 + 39 * 200 + 1280,
-      guest: false,
-      city: "Ростов-на-Дону",
-      carrier: "cdek",
-      carrierName: "СДЭК",
-      deliveryCost: 1280,
-    },
-    {
-      id: "ZP-10562",
-      createdAt: "2026-09-15T14:05:00.000Z",
-      items: [{ productId: "feniks", size: "XL", qty: 40 }],
-      profile: demoAccount,
-      comment: "Жар на объекте Таганрог, самовывоз.",
-      payment: "invoice_auto",
-      paymentStatus: "invoiced",
-      status: "accepted",
-      total: 710 * 40,
-      guest: false,
-      city: "Таганрог",
-      carrier: "pickup",
-      carrierName: "Самовывоз, Таганрог",
-      deliveryCost: 0,
-    },
-    {
-      id: "ZP-10540",
-      createdAt: "2026-09-11T07:50:00.000Z",
-      items: [{ productId: "zevs-trk-lyuks", size: "L", qty: 60 }],
-      profile: demoAccount,
-      comment: "Сварка, Волгоград. Декларацию вложить в короб.",
-      payment: "invoice_auto",
-      paymentStatus: "paid",
-      status: "shipped",
-      total: 310 * 60 + 2180,
-      guest: false,
-      city: "Волгоград",
-      carrier: "dl",
-      carrierName: "Деловые линии",
-      deliveryCost: 2180,
-    },
-    {
-      id: "ZP-10501",
-      createdAt: "2026-09-08T08:40:00.000Z",
-      items: [{ productId: "zevs-shchit-sk", size: "L", qty: 100 }],
-      profile: demoAccount,
-      comment: "",
-      payment: "invoice_manager",
-      paymentStatus: "invoiced",
-      status: "picking",
-      total: 64 * 100,
-      guest: false,
-      city: "Таганрог",
-      carrier: "pickup",
-      carrierName: "Самовывоз, Таганрог",
-      deliveryCost: 0,
-    },
-    {
-      id: "ZP-10520",
-      createdAt: "2026-09-05T11:25:00.000Z",
-      items: [
-        { productId: "frostlyuks-vl-3-4", size: "L", qty: 80 },
-        { productId: "frost-flis", size: "XL", qty: 40 },
-      ],
-      profile: demoAccount,
-      comment: "Холод, ночная смена. Нужны XL отдельно подписать.",
-      payment: "invoice_auto",
-      paymentStatus: "paid",
-      status: "delivery",
-      total: 104 * 80 + 115 * 40 + 1460,
-      guest: false,
-      city: "Краснодар",
-      carrier: "energy",
-      carrierName: "Энергия",
-      deliveryCost: 1460,
-    },
-    {
-      id: "ZP-10480",
-      createdAt: "2026-08-28T13:00:00.000Z",
-      items: [{ productId: "oilresist-maks", size: "L", qty: 150 }],
-      profile: demoAccount,
-      comment: "МБС на площадку Воронеж.",
-      payment: "invoice_manager",
-      paymentStatus: "paid",
-      status: "delivered",
-      total: 78 * 150 + 980,
-      guest: false,
-      city: "Воронеж",
-      carrier: "pek",
-      carrierName: "ПЭК",
-      deliveryCost: 980,
-    },
-    {
-      id: "ZP-10428",
-      createdAt: "2026-08-21T10:15:00.000Z",
-      items: [
-        { productId: "atlant", size: "L", qty: 200 },
-        { productId: "frost-strong-vl-3-4", size: "L", qty: 40 },
-      ],
-      profile: demoAccount,
-      comment: "Отгрузка на склад Ростов, нужны сертификаты в комплекте.",
-      payment: "invoice_auto",
-      paymentStatus: "paid",
-      status: "delivered",
-      total: 28.9 * 200 + 89 * 40 + 890,
-      guest: false,
-      city: "Ростов-на-Дону",
-      carrier: "cdek",
-      carrierName: "СДЭК",
-      deliveryCost: 890,
-    },
-    {
-      id: "ZP-10450",
-      createdAt: "2026-08-14T09:40:00.000Z",
-      items: [
-        { productId: "malahit", size: "L", qty: 250 },
-        { productId: "profi-vl-3-4", size: "L", qty: 100 },
-      ],
-      profile: demoAccount,
-      comment: "",
-      payment: "invoice_auto",
-      paymentStatus: "paid",
-      status: "delivered",
-      total: 42 * 250 + 48 * 100 + 1100,
-      guest: false,
-      city: "Ростов-на-Дону",
-      carrier: "cdek",
-      carrierName: "СДЭК",
-      deliveryCost: 1100,
-    },
-    {
-      id: "ZP-10402",
-      createdAt: "2026-08-04T16:20:00.000Z",
-      items: [{ productId: "universal", size: "L", qty: 500 }],
-      profile: demoAccount,
-      comment: "Отменили: позиция ушла в другую заявку.",
-      payment: "online",
-      paymentStatus: "failed",
-      status: "cancelled",
-      total: 19.2 * 500,
-      guest: false,
-      city: "Ростов-на-Дону",
-      carrier: "cdek",
-      carrierName: "СДЭК",
-      deliveryCost: 0,
-    },
-    {
-      id: "ZP-10390",
-      createdAt: "2026-07-22T08:15:00.000Z",
-      items: [
-        { productId: "optima", size: "L", qty: 1000 },
-        { productId: "standart", size: "L", qty: 400 },
-      ],
-      profile: demoAccount,
-      comment: "Расходники на сезон, склад Ростов.",
-      payment: "invoice_auto",
-      paymentStatus: "paid",
-      status: "delivered",
-      total: 18.4 * 1000 + 21.5 * 400 + 1680,
-      guest: false,
-      city: "Ростов-на-Дону",
-      carrier: "cdek",
-      carrierName: "СДЭК",
-      deliveryCost: 1680,
-    },
-    {
-      id: "ZP-10355",
-      createdAt: "2026-06-18T10:00:00.000Z",
-      items: [
-        { productId: "zevs-sb", size: "L", qty: 40 },
-        { productId: "zevs-drv", size: "L", qty: 30 },
-      ],
-      profile: demoAccount,
-      comment: "Сварочный участок, самовывоз.",
-      payment: "invoice_manager",
-      paymentStatus: "paid",
-      status: "delivered",
-      total: 420 * 40 + 265 * 30,
-      guest: false,
-      city: "Таганрог",
-      carrier: "pickup",
-      carrierName: "Самовывоз, Таганрог",
-      deliveryCost: 0,
-    },
-    {
-      id: "ZP-10012",
-      createdAt: "2025-12-11T12:30:00.000Z",
-      items: [
-        { productId: "atlant", size: "L", qty: 300 },
-        { productId: "ruk-dv-br", size: "L", qty: 80 },
-      ],
-      profile: demoAccount,
-      comment: "Первая партия на склад Ростов.",
-      payment: "invoice_auto",
-      paymentStatus: "paid",
-      status: "delivered",
-      total: 28.9 * 300 + 72 * 80 + 820,
-      guest: false,
-      city: "Ростов-на-Дону",
-      carrier: "cdek",
-      carrierName: "СДЭК",
-      deliveryCost: 820,
-    },
-  ]);
 }
 
 /** Запись в localStorage без падения (приватный режим, квота); null — удалить ключ. */
@@ -407,7 +148,7 @@ export function StoreProvider({
     const nextCart = normalizeCart(readVersioned(CART_KEY, LEGACY_CART_KEY, migrateLegacyCart), catalog);
     const nextUser = readJson<UserProfile | null>(USER_KEY, null);
     const nextLastUser =
-      readJson<UserProfile | null>(LAST_USER_KEY, null) ?? demoAccount;
+      readJson<UserProfile | null>(LAST_USER_KEY, null);
     // история заказов: старые id → slug (идемпотентно), неизвестные оставляем как есть
     const storedOrders = readJson<unknown>(ORDERS_KEY, []);
     const nextOrders = (Array.isArray(storedOrders) ? (storedOrders as Order[]) : [])
@@ -422,15 +163,7 @@ export function StoreProvider({
     setCart(nextCart);
     setUser(nextUser);
     setLastUser(nextLastUser);
-    setOrders(
-      nextOrders.length
-        ? nextUser?.email === demoAccount.email
-          ? mergeSeedOrders(nextOrders)
-          : nextOrders
-        : nextUser
-          ? seedOrders()
-          : seedGuestOrders(),
-    );
+    setOrders(sortOrders(nextOrders));
     setLeads(nextLeads);
     setFavoriteIds(
       Array.isArray(nextFavorites) ? nextFavorites.filter((id): id is string => typeof id === "string") : [],
@@ -538,69 +271,20 @@ export function StoreProvider({
 
   const clearCart = useCallback(() => setCart([]), []);
 
-  const attachDemoOrders = useCallback(() => {
-    setOrders((prev) => mergeSeedOrders(prev));
+  const enterAccount = useCallback((profile: UserProfile) => {
+    setUser(profile);
+    setLastUser(profile);
   }, []);
-
-  const enterAccount = useCallback(
-    (profile: UserProfile, withDemoOrders = false) => {
-      setUser(profile);
-      setLastUser(profile);
-      if (withDemoOrders || profile.email === demoAccount.email) {
-        attachDemoOrders();
-        setFavoriteIds((prev) =>
-          prev.length ? prev : ["atlant", "feniks", "zevs-shchit-sk"],
-        );
-      }
-    },
-    [attachDemoOrders],
-  );
-
-  const login = useCallback(
-    (email: string, password: string) => {
-      if (!password.trim()) return false;
-      const existing = readJson<UserProfile | null>(USER_KEY, null);
-      const remembered = readJson<UserProfile | null>(LAST_USER_KEY, null);
-      const profile =
-        existing && existing.email === email
-          ? existing
-          : remembered && remembered.email === email
-            ? remembered
-            : email === demoAccount.email
-              ? demoAccount
-              : { ...demoAccount, email };
-      enterAccount(profile, profile.email === demoAccount.email);
-      return true;
-    },
-    [enterAccount],
-  );
 
   const register = useCallback(
     (profile: UserProfile, password?: string) => {
       if (password !== undefined && !password.trim()) return false;
       if (!profile.email && !profile.phone) return false;
-      enterAccount(profile, false);
+      enterAccount(profile);
       return true;
     },
     [enterAccount],
   );
-
-  const loginYandex = useCallback(() => {
-    const remembered = lastUser?.authProvider === "yandex" ? lastUser : null;
-    enterAccount(remembered ?? yandexStubAccount, false);
-    return true;
-  }, [enterAccount, lastUser]);
-
-  const loginDemo = useCallback(() => {
-    enterAccount(demoAccount, true);
-    return true;
-  }, [enterAccount]);
-
-  const resumeSession = useCallback(() => {
-    const remembered = lastUser ?? demoAccount;
-    enterAccount(remembered, remembered.email === demoAccount.email);
-    return true;
-  }, [enterAccount, lastUser]);
 
   const logout = useCallback(async () => {
     if (user?.authProvider === "password") {
@@ -711,11 +395,7 @@ export function StoreProvider({
       removeFromCart,
       removeProductFromCart,
       clearCart,
-      login,
       register,
-      loginYandex,
-      loginDemo,
-      resumeSession,
       logout,
       updateProfile,
       placeOrder,
@@ -743,11 +423,7 @@ export function StoreProvider({
       removeFromCart,
       removeProductFromCart,
       clearCart,
-      login,
       register,
-      loginYandex,
-      loginDemo,
-      resumeSession,
       logout,
       updateProfile,
       placeOrder,

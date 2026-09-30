@@ -14,7 +14,7 @@ import { useStore } from "@/lib/store";
 import { submitLead } from "@/lib/server/lead-action";
 import { formEvent, track } from "@/lib/analytics";
 import { formatPrice } from "@/lib/format";
-import { formatRuPhone } from "@/lib/demo-account";
+import { formatRuPhone } from "@/lib/format";
 import {
   addressesOf,
   defaultAddress,
