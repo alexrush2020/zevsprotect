@@ -27,7 +27,10 @@ export function ProductBuy({ product }: { product: Product }) {
 
   function add() {
     if (!inStock) return false;
-    addToCart(product.id, size, snapOrderQty(qty, product), coating);
+    if (!addToCart(product.slug, size, snapOrderQty(qty, product), coating)) {
+      toast.error("Модель сейчас недоступна для заказа");
+      return false;
+    }
     toast.success("Добавлено в корзину");
     return true;
   }

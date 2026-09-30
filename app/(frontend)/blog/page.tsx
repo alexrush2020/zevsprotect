@@ -3,7 +3,9 @@ import { getArticles } from "@/lib/server/catalog";
 import { formatDate } from "@/lib/format";
 import { brand } from "@/lib/brand";
 
-export const metadata = { title: "Статьи" };
+import { pageMeta } from "@/lib/seo-jsonld";
+
+export const metadata = pageMeta("Статьи", `Материалы ${brand.markRu} для закупщиков: подбор, покрытия, производство.`, "/blog");
 
 export default async function BlogPage() {
   const articles = await getArticles();

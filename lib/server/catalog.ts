@@ -37,12 +37,21 @@ export const getCategories = cached(
 export const getProducts = cached(
   async (): Promise<Product[]> => {
     const payload = await getPayload({ config });
-    const { docs } = await payload.find({ collection: "products", ...read, sort: "title" });
+    // порядок заведения (сид — в порядке мока): «Сначала рекомендуемые» в каталоге, как в прототипе
+    const { docs } = await payload.find({ collection: "products", ...read, sort: "id" });
     return docs.map(mapProduct);
   },
   "products",
   "catalog",
 );
+
+/**
+ * Каталог для клиента (корзина, избранное, быстрый заказ): все опубликованные товары без тяжёлых
+ * полей — описание, галерея и документы нужны только карточке товара. Передаётся из layout в StoreProvider.
+ */
+export async function getClientCatalog(): Promise<Product[]> {
+  return (await getProducts()).map((p) => ({ ...p, description: "", images: [], documents: undefined }));
+}
 
 export const getProduct = cached(
   async (slug: string): Promise<Product | null> => {

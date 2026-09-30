@@ -5,12 +5,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { AccountOrderCard, ordersForUser } from "@/components/account/account-order-card";
 import { useStore } from "@/lib/store";
-import { getProductById } from "@/lib/data/catalog";
 import { formatDate, formatPrice, STATUS_LABEL } from "@/lib/format";
 import { NOTICE_KIND_LABEL, readNotices, type AccountNotice } from "@/lib/account-notices";
 
 export default function AccountHomePage() {
-  const { user, orders, favoriteIds } = useStore();
+  const { user, orders, favoriteIds, getProduct } = useStore();
   const [notices, setNotices] = useState<AccountNotice[]>([]);
 
   useEffect(() => {
@@ -27,7 +26,7 @@ export default function AccountHomePage() {
   const delivered = mine.filter((o) => o.status === "delivered");
   const spent = mine.reduce((sum, o) => sum + o.total, 0);
   const favs = favoriteIds
-    .map((id) => getProductById(id))
+    .map((id) => getProduct(id))
     .filter((p): p is NonNullable<typeof p> => Boolean(p))
     .slice(0, 3);
 

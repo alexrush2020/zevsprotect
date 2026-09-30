@@ -84,10 +84,12 @@ describe("mapArticle / mapCategory / mapProductReview", () => {
       publishedAt: "2026-09-17T00:00:00.000Z", createdAt: "2026-01-01T00:00:00.000Z",
       cover: media(1, "/c.png"), content: lex("П1", "П2"),
       slides: [{ image: media(2, "/s.png"), title: "Слайд" }], home: true,
+      updatedAt: "2026-09-18T00:00:00.000Z", meta: { title: "SEO", image: media(3, "/o.png") },
     } as unknown as Post);
     expect(a).toEqual({
       slug: "guide", title: "Гид", excerpt: "Анонс", date: "2026-09-17", category: "Закупка",
       image: "/c.png", content: ["П1", "П2"], slides: [{ src: "/s.png", title: "Слайд", alt: "" }], home: true,
+      updatedAt: "2026-09-18T00:00:00.000Z", seo: { title: "SEO", image: "/o.png" },
     });
   });
   it("обложка по умолчанию — первый слайд; дата — createdAt", () => {

@@ -92,6 +92,12 @@ export function mapArticle(doc: Post): Article {
     content: lexicalToParagraphs(doc.content),
     ...(slides.length ? { slides } : {}),
     home: !!doc.home,
+    updatedAt: doc.updatedAt,
+    seo: {
+      ...(doc.meta?.title ? { title: doc.meta.title } : {}),
+      ...(doc.meta?.description ? { description: doc.meta.description } : {}),
+      ...(mediaUrl(doc.meta?.image) ? { image: mediaUrl(doc.meta?.image) } : {}),
+    },
   };
 }
 

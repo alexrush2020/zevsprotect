@@ -2,7 +2,9 @@ import { LeadForm } from "@/components/lead-form";
 import { PurchaseGuideCarousel } from "@/components/purchase-guide-carousel";
 import { brand } from "@/lib/brand";
 
-export const metadata = { title: "Образцы" };
+import { pageMeta } from "@/lib/seo-jsonld";
+
+export const metadata = pageMeta("Образцы", "Пришлём пары, чтобы сравнить хват, размер и износ до закупки коробов.", "/samples");
 
 export default function SamplesPage() {
   return (

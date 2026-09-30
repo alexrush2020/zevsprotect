@@ -1,6 +1,7 @@
-import { products } from "@/lib/data/catalog";
+import { getProducts } from "@/lib/server/catalog";
 
 export async function GET() {
+  const products = await getProducts();
   const header = ["sku", "name", "category", "base", "coating", "price_rub_vat20", "unit", "pack", "stock"];
   const lines = [
     header.join(";"),

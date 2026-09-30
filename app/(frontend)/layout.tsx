@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { Inter, Unbounded } from "next/font/google";
 import { brand, brandTitle } from "@/lib/brand";
+import { siteOrigin } from "@/lib/seo-jsonld";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { getClientCatalog } from "@/lib/server/catalog";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -18,6 +20,7 @@ const unbounded = Unbounded({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteOrigin),
   title: {
     default: brandTitle,
     template: `%s · ${brand.mark}`,
@@ -25,7 +28,12 @@ export const metadata: Metadata = {
   description: `${brand.markRu} — ${brand.tagline.toLowerCase()}. Собственное производство защитных перчаток в Таганроге. Каталог, опт, доставка по России.`,
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // Payload недоступен — сайт работает, позиции корзины сохраняются недоступными, оформление блокируется
+  const catalog = await getClientCatalog().catch((err: unknown) => {
+    console.error("[layout] каталог Payload недоступен", err);
+    return [];
+  });
   return (
     <html
       lang="ru"
@@ -33,7 +41,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${inter.variable} ${unbounded.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-background text-foreground">
-        <Providers>
+        <Providers catalog={catalog}>
           <SiteHeader />
           <main className="flex-1">{children}</main>
           <SiteFooter />

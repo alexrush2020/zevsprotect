@@ -10,7 +10,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { DeliveryAddressPicker } from "@/components/delivery-address-picker";
 import { useStore } from "@/lib/store";
-import { products } from "@/lib/data/catalog";
 import { formatPrice } from "@/lib/format";
 import { formatRuPhone } from "@/lib/demo-account";
 import {
@@ -43,7 +42,7 @@ const DELIVERY: {
 ];
 
 export function CartOrderForm({ formId }: { formId: string }) {
-  const { cart, user, lastUser, ready, placeOrder } = useStore();
+  const { orderable, user, lastUser, ready, placeOrder, catalog } = useStore();
   const router = useRouter();
   const addresses = addressesOf(user);
   const fallback = defaultAddress(user);
@@ -85,7 +84,7 @@ export function CartOrderForm({ formId }: { formId: string }) {
     : selected && !manual
       ? selected.city
       : fallback?.city || "Ростов-на-Дону";
-  const weight = useMemo(() => cartWeightKg(cart, products), [cart]);
+  const weight = useMemo(() => cartWeightKg(orderable, catalog), [orderable, catalog]);
   const quotes = useMemo(() => quoteCarriers(city, weight), [city, weight]);
   const method = DELIVERY.find((d) => d.id === delivery) ?? DELIVERY[0];
   const quote = quotes.find((q) => q.id === method.carrier);
@@ -123,6 +122,10 @@ export function CartOrderForm({ formId }: { formId: string }) {
         address,
       },
     });
+    if (!order) {
+      toast.error("В корзине нет доступных для заказа позиций");
+      return;
+    }
     toast.success(
       !user
         ? `Заказ ${order.id} принят. В Битрикс24 уходит лид, компания не создаётся.`

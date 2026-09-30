@@ -7,7 +7,7 @@ import { CartInquiryForm } from "@/components/cart-inquiry-form";
 import { CartOrderForm } from "@/components/cart-order-form";
 import { CartProductCard } from "@/components/cart-product-card";
 import { useStore } from "@/lib/store";
-import { getProductById } from "@/lib/data/catalog";
+import { NoOrderable } from "@/components/cart-no-orderable";
 import { formatPrice } from "@/lib/format";
 import { groupCartByProduct } from "@/lib/lots";
 import { cn } from "@/lib/utils";
@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 const ORDER_FORM_ID = "cart-order-form";
 
 export default function CartPage() {
-  const { cart, cartTotal } = useStore();
+  const { cart, orderable, cartTotal, getProduct, removeProductFromCart, clearCart } = useStore();
   const [tab, setTab] = useState<"order" | "request">("order");
   const groups = groupCartByProduct(cart);
 
@@ -34,14 +34,33 @@ export default function CartPage() {
     );
   }
 
+  if (!orderable.length) return <NoOrderable onClear={clearCart} />;
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
       <h1 className="font-heading text-4xl">Корзина</h1>
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_minmax(280px,22rem)]">
         <div className="space-y-4">
           {groups.map(({ productId, items }) => {
-            const product = getProductById(productId);
-            if (!product) return null;
+            const product = getProduct(productId);
+            if (!product) {
+              // снят с публикации: в сумму не входит (priceCart), к заказу не уходит
+              return (
+                <div
+                  key={productId}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-card p-4 text-sm text-steel"
+                >
+                  <span>Модель больше недоступна для заказа и не учтена в сумме.</span>
+                  <button
+                    type="button"
+                    className="text-xs underline"
+                    onClick={() => removeProductFromCart(productId)}
+                  >
+                    Удалить
+                  </button>
+                </div>
+              );
+            }
             return (
               <CartProductCard
                 key={productId}

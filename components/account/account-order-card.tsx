@@ -6,13 +6,12 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { StatusTimeline } from "@/components/status-timeline";
 import { useStore } from "@/lib/store";
-import { getProductById } from "@/lib/data/catalog";
 import { formatDate, formatPrice, PAYMENT_LABEL, STATUS_LABEL } from "@/lib/format";
 import { cartLineKey, cartLineOfferLabel } from "@/lib/lots";
 import type { Order } from "@/lib/types";
 
 export function AccountOrderCard({ order }: { order: Order }) {
-  const { addToCart, clearCart } = useStore();
+  const { addToCart, clearCart, getProduct } = useStore();
   const router = useRouter();
 
   function repeat() {
@@ -44,7 +43,7 @@ export function AccountOrderCard({ order }: { order: Order }) {
       </div>
       <ul className="mt-2 text-sm text-steel">
         {order.items.map((item) => {
-          const p = getProductById(item.productId);
+          const p = getProduct(item.productId);
           return (
             <li key={cartLineKey(item)}>
               {p?.name} {p ? cartLineOfferLabel(p, item) : `× ${item.qty}`}

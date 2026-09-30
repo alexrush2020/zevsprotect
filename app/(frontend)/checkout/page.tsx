@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { DeliveryAddressPicker } from "@/components/delivery-address-picker";
 import { useStore } from "@/lib/store";
-import { getProductById, products } from "@/lib/data/catalog";
+import { NoOrderable } from "@/components/cart-no-orderable";
 import { formatPrice } from "@/lib/format";
 import { cartLineKey, cartLineOfferLabel, cartLineTotal, cartProductQty } from "@/lib/lots";
 import { cartWeightKg, quoteCarriers, type CarrierId } from "@/lib/delivery";
@@ -26,7 +26,7 @@ import { splitVat } from "@/lib/vat";
 import type { PaymentMethod } from "@/lib/types";
 
 export default function CheckoutPage() {
-  const { cart, cartTotal, user, placeOrder } = useStore();
+  const { cart, orderable, cartTotal, user, placeOrder, catalog, getProduct, clearCart } = useStore();
   const router = useRouter();
   const addresses = addressesOf(user);
   const [payment, setPayment] = useState<PaymentMethod>("invoice_auto");
@@ -65,7 +65,7 @@ export default function CheckoutPage() {
       ? manualValue.trim()
       : formatAddressLine(selectedAddr);
 
-  const weight = useMemo(() => cartWeightKg(cart, products), [cart]);
+  const weight = useMemo(() => cartWeightKg(orderable, catalog), [orderable, catalog]);
   const quotes = useMemo(() => quoteCarriers(city, weight), [city, weight]);
   const selected = quotes.find((q) => q.id === carrierId) ?? quotes[0];
   const deliveryCost = selected?.price ?? 0;
@@ -83,6 +83,8 @@ export default function CheckoutPage() {
       </div>
     );
   }
+
+  if (!orderable.length) return <NoOrderable onClear={clearCart} />;
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -109,6 +111,10 @@ export default function CheckoutPage() {
         address: resolvedAddress,
       },
     });
+    if (!order) {
+      toast.error("В корзине нет доступных для заказа позиций");
+      return;
+    }
     toast.success(
       guest
         ? `Заказ ${order.id} принят. В Битрикс24 уходит лид, компания не создаётся.`
@@ -287,7 +293,7 @@ export default function CheckoutPage() {
         <p className="font-heading text-lg">Состав</p>
         <ul className="mt-3 space-y-2 text-sm">
           {cart.map((item) => {
-            const p = getProductById(item.productId);
+            const p = getProduct(item.productId);
             if (!p) return null;
             return (
               <li key={cartLineKey(item)} className="flex justify-between gap-3">

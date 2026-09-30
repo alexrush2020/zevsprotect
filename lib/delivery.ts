@@ -45,10 +45,10 @@ export function quoteCarriers(city: string, weightKg: number) {
 
 export function cartWeightKg(
   items: { productId: string; qty: number }[],
-  products: { id: string; weight?: string }[]
+  products: { slug: string; weight?: string }[]
 ) {
   return items.reduce((s, i) => {
-    const p = products.find((x) => x.id === i.productId);
+    const p = products.find((x) => x.slug === i.productId);
     const grams = p?.weight ? parseInt(p.weight, 10) || 50 : 50;
     return s + (grams / 1000) * i.qty;
   }, 0);

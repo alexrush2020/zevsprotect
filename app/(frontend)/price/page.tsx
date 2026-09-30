@@ -3,7 +3,9 @@ import { PriceTable } from "@/components/price-table";
 import { PurchaseGuideTeaser } from "@/components/purchase-guide-teaser";
 import { brand } from "@/lib/brand";
 
-export const metadata = { title: "Прайс-лист" };
+import { pageMeta } from "@/lib/seo-jsonld";
+
+export const metadata = pageMeta("Прайс-лист", "Актуальные цены на защитные перчатки, НДС 20% включён. Скачайте CSV или запросите PDF на почту.", "/price");
 
 export default function PricePage() {
   return (

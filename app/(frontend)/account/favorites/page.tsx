@@ -8,13 +8,13 @@ import { AccountScroll } from "@/components/account/account-scroll";
 import { ProductCardAddToCart } from "@/components/product-card-add-to-cart";
 import { ProductVolumePrice } from "@/components/product-volume-price";
 import { useStore } from "@/lib/store";
-import { getProductById } from "@/lib/data/catalog";
 import { defaultVolumeQty } from "@/lib/volume-quote";
+import type { Product } from "@/lib/types";
 
 export default function AccountFavoritesPage() {
-  const { favoriteIds, toggleFavorite } = useStore();
+  const { favoriteIds, toggleFavorite, getProduct } = useStore();
   const products = favoriteIds
-    .map((id) => getProductById(id))
+    .map((id) => getProduct(id))
     .filter((p): p is NonNullable<typeof p> => Boolean(p));
 
   return (
@@ -34,8 +34,8 @@ export default function AccountFavoritesPage() {
       ) : (
         <AccountScroll className="mt-4">
           {products.map((p) => (
-            <FavoriteRow key={p.id} product={p} onRemove={() => {
-              toggleFavorite(p.id);
+            <FavoriteRow key={p.slug} product={p} onRemove={() => {
+              toggleFavorite(p.slug);
               toast.success("Удалено из избранного");
             }} />
           ))}
@@ -49,7 +49,7 @@ function FavoriteRow({
   product,
   onRemove,
 }: {
-  product: NonNullable<ReturnType<typeof getProductById>>;
+  product: Product;
   onRemove: () => void;
 }) {
   const [qty, setQty] = useState(() => defaultVolumeQty(product));

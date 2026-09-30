@@ -1,6 +1,8 @@
 import { brand } from "@/lib/brand";
 
-export const metadata = { title: "Политика обработки персональных данных" };
+import { pageMeta } from "@/lib/seo-jsonld";
+
+export const metadata = pageMeta("Политика обработки персональных данных", "Политика обработки персональных данных ООО «ЗЕВС».", "/privacy");
 
 export default function PrivacyPage() {
   return (

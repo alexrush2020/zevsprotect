@@ -217,8 +217,8 @@ export function ProductCardAddToCart({
           e.preventDefault();
           e.stopPropagation();
           if (!inStock) return;
-          addToCart(product.id, size, qty, coating);
-          toast.success("Добавлено в корзину");
+          if (addToCart(product.slug, size, qty, coating)) toast.success("Добавлено в корзину");
+          else toast.error("Модель сейчас недоступна для заказа");
         }}
       >
         {inStock ? "В корзину" : "Под заказ"}

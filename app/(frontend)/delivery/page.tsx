@@ -7,13 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { InquiryDialog } from "@/components/inquiry-dialog";
 import { useStore } from "@/lib/store";
-import { products } from "@/lib/data/catalog";
 import { formatPrice } from "@/lib/format";
 import { cartWeightKg, quoteCarriers } from "@/lib/delivery";
 
 export default function DeliveryPage() {
-  const { cart } = useStore();
-  const cartWeight = cartWeightKg(cart, products);
+  const { orderable, catalog } = useStore();
+  const cartWeight = cartWeightKg(orderable, catalog);
 
   const [city, setCity] = useState("Ростов-на-Дону");
   const [weight, setWeight] = useState(cartWeight ? String(cartWeight.toFixed(1)) : "12");

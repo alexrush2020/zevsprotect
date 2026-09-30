@@ -1563,28 +1563,6 @@ export function buildSpecFilters(list: Product[]) {
 
 export const specFilters = buildSpecFilters(products);
 
-/**
- * Мост Payload → мок: корзина, избранное и LIFE_SHIFTS (lib/store.tsx, lib/volume-quote.ts) ещё
- * ищут товар по id мока ("p-atlant"), а у Payload id числовой. Подменяем id на моковый по slug
- * и сохраняем порядок мока («Сначала рекомендуемые» — порядок массива; поля порядка в Payload нет).
- * Товар без пары в моке остаётся с id Payload и уходит в конец — в корзину его store не добавит.
- * Денежные поля (цена, минимум, кратность, остаток, единица) тоже берём из мока: корзина и карточка товара
- * считают по нему, и каталог не должен показывать иную цену (AGENTS §4). Переводится вместе с SH-CART/F-PDP.
- * ponytail: удалить вместе с мок-слоем, когда корзина/избранное перейдут на Payload.
- */
-const mockMoney = ({ id, price, minQty, packSizes, stock, unit }: Product) => ({ id, price, minQty, packSizes, stock, unit });
-
-export function withMockIds(list: Product[]): Product[] {
-  const index = new Map(products.map((p, i) => [p.slug, i]));
-  return list
-    .map((p) => {
-      const i = index.get(p.slug);
-      return { p: i === undefined ? p : { ...p, ...mockMoney(products[i]) }, i: i ?? Infinity };
-    })
-    .sort((a, b) => a.i - b.i)
-    .map(({ p }) => p);
-}
-
 export const articles: Article[] = [
   {
     slug: PURCHASE_GUIDE_SLUG,
@@ -1714,10 +1692,6 @@ export const passageStamps: PassageStamp[] = [
 
 export function getProduct(slug: string) {
   return products.find((p) => p.slug === slug);
-}
-
-export function getProductById(id: string) {
-  return products.find((p) => p.id === id);
 }
 
 export function relatedProducts(product: Product, limit = 4) {

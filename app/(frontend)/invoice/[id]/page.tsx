@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store";
-import { getProductById } from "@/lib/data/catalog";
 import { brand } from "@/lib/brand";
 import { formatDate, formatPrice } from "@/lib/format";
 import { cartLineKey, cartLineTotal, cartProductQty } from "@/lib/lots";
@@ -12,7 +11,7 @@ import { splitVat } from "@/lib/vat";
 
 export default function InvoicePage() {
   const { id } = useParams<{ id: string }>();
-  const { orders } = useStore();
+  const { orders, getProduct } = useStore();
   const order = orders.find((o) => o.id === id);
 
   if (!order) {
@@ -90,7 +89,7 @@ export default function InvoicePage() {
           </thead>
           <tbody>
             {order.items.map((item, index) => {
-              const p = getProductById(item.productId);
+              const p = getProduct(item.productId);
               if (!p) return null;
               const productQty = cartProductQty(order.items, item.productId);
               const lineTotal = cartLineTotal(p, item, productQty);

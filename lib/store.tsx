@@ -9,8 +9,15 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { products } from "@/lib/data/catalog";
-import { cartGoodsTotal, cartLineKey } from "@/lib/lots";
+import {
+  migrateLegacyCart,
+  migrateLegacyFavorites,
+  normalizeCart,
+  orderableItems,
+  priceCart,
+} from "@/lib/cart-pricing";
+import { legacySlug } from "@/lib/legacy-product-ids";
+import { cartLineKey } from "@/lib/lots";
 import { snapOrderQty } from "@/lib/order-qty";
 import { demoAccount, yandexStubAccount } from "@/lib/demo-account";
 import { toast } from "sonner";
@@ -20,47 +27,36 @@ import type {
   Lead,
   Order,
   PaymentMethod,
+  Product,
   UserProfile,
 } from "@/lib/types";
 
-const CART_KEY = "zp-cart";
+// v2: productId — slug товара Payload; ключи без версии — формат прототипа ("p-atlant"), мигрируются при чтении.
+const CART_KEY = "zp-cart:v2";
+const LEGACY_CART_KEY = "zp-cart";
 const USER_KEY = "zp-user";
 const LAST_USER_KEY = "zp-last-user";
 const ORDERS_KEY = "zp-orders";
 const LEADS_KEY = "zp-leads";
-const FAVORITES_KEY = "zp-favorites";
+const FAVORITES_KEY = "zp-favorites:v2";
+const LEGACY_FAVORITES_KEY = "zp-favorites";
 
 function uid(prefix: string) {
   return `${prefix}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 }
 
-function normalizeCart(raw: unknown): CartItem[] {
-  if (!Array.isArray(raw)) return [];
-  const merged = new Map<string, CartItem>();
-  for (const row of raw) {
-    if (!row || typeof row !== "object") continue;
-    const item = row as CartItem & { lotId?: string };
-    if (!item.productId || !item.size) continue;
-    const qty = Number(item.qty);
-    if (!Number.isFinite(qty) || qty <= 0) continue;
-    const key = cartLineKey(item);
-    const prev = merged.get(key);
-    merged.set(key, {
-      productId: item.productId,
-      size: item.size,
-      coating: item.coating,
-      qty: (prev?.qty ?? 0) + qty,
-    });
+/** Значение v2-ключа или миграция старого ключа прототипа (старый ключ удаляется). */
+function readVersioned(key: string, legacyKey: string, migrate: (raw: unknown) => unknown): unknown {
+  try {
+    if (localStorage.getItem(key) !== null) return readJson<unknown>(key, null);
+    const migrated = migrate(readJson<unknown>(legacyKey, null));
+    // сразу пишем v2: повторный запуск эффекта (StrictMode, вторая вкладка) не должен прочитать пустоту
+    localStorage.setItem(key, JSON.stringify(migrated));
+    localStorage.removeItem(legacyKey);
+    return migrated;
+  } catch {
+    return null; // хранилище недоступно (приватный режим, квота) — начинаем с пустого
   }
-  return [...merged.values()]
-    .map((item) => {
-      const product = products.find((x) => x.id === item.productId);
-      if (!product) return item;
-      const qty = snapOrderQty(item.qty, product, { allowZero: true });
-      if (!qty) return null;
-      return { ...item, qty };
-    })
-    .filter((item): item is CartItem => Boolean(item));
 }
 
 function readJson<T>(key: string, fallback: T): T {
@@ -81,7 +77,13 @@ type Store = {
   orders: Order[];
   leads: Lead[];
   favoriteIds: string[];
-  addToCart: (productId: string, size: string, qty: number, coating?: string) => void;
+  /** Товары каталога Payload (лёгкая проекция из layout); productId позиций — slug. */
+  catalog: Product[];
+  getProduct: (slug: string) => Product | undefined;
+  /** false — товара нет в каталоге, ничего не добавлено. */
+  /** Доступные позиции корзины к оформлению (qty после приведения к упаковке). */
+  orderable: CartItem[];
+  addToCart: (productId: string, size: string, qty: number, coating?: string) => boolean;
   setQty: (productId: string, size: string, qty: number, coating?: string) => void;
   removeFromCart: (productId: string, size: string, coating?: string) => void;
   removeProductFromCart: (productId: string) => void;
@@ -102,12 +104,13 @@ type Store = {
     carrier?: string;
     carrierName?: string;
     deliveryCost?: number;
-  }) => Order;
+  }) => Order | null;
   updateOrder: (id: string, patch: Partial<Order>) => void;
   addLead: (type: string, payload: Record<string, string>) => Lead;
   toggleFavorite: (productId: string) => boolean;
   isFavorite: (productId: string) => boolean;
   cartCount: number;
+  /** Сумма доступных позиций по ценам каталога, НДС внутри. */
   cartTotal: number;
 };
 
@@ -118,7 +121,7 @@ function seedGuestOrders(): Order[] {
     {
       id: "ZP-10990",
       createdAt: "2026-09-12T11:20:00.000Z",
-      items: [{ productId: "p-atlant", size: "L", qty: 50 }],
+      items: [{ productId: "atlant", size: "L", qty: 50 }],
       profile: {
         email: "gost@example.ru",
         name: "Алексей Гость",
@@ -161,8 +164,8 @@ function seedOrders(): Order[] {
       id: "ZP-10588",
       createdAt: "2026-09-17T09:10:00.000Z",
       items: [
-        { productId: "p-cut", size: "XL", qty: 80 },
-        { productId: "p-hvat", size: "L", qty: 200 },
+        { productId: "antiporez-pu-1-2", size: "XL", qty: 80 },
+        { productId: "hvat-hb-rl-1-2", size: "L", qty: 200 },
       ],
       profile: demoAccount,
       comment: "На склад Ростов, XL для резки арматуры.",
@@ -179,7 +182,7 @@ function seedOrders(): Order[] {
     {
       id: "ZP-10562",
       createdAt: "2026-09-15T14:05:00.000Z",
-      items: [{ productId: "p-fenix", size: "XL", qty: 40 }],
+      items: [{ productId: "feniks", size: "XL", qty: 40 }],
       profile: demoAccount,
       comment: "Жар на объекте Таганрог, самовывоз.",
       payment: "invoice_auto",
@@ -195,7 +198,7 @@ function seedOrders(): Order[] {
     {
       id: "ZP-10540",
       createdAt: "2026-09-11T07:50:00.000Z",
-      items: [{ productId: "p-kragi-lux", size: "L", qty: 60 }],
+      items: [{ productId: "zevs-trk-lyuks", size: "L", qty: 60 }],
       profile: demoAccount,
       comment: "Сварка, Волгоград. Декларацию вложить в короб.",
       payment: "invoice_auto",
@@ -211,7 +214,7 @@ function seedOrders(): Order[] {
     {
       id: "ZP-10501",
       createdAt: "2026-09-08T08:40:00.000Z",
-      items: [{ productId: "p-shield", size: "L", qty: 100 }],
+      items: [{ productId: "zevs-shchit-sk", size: "L", qty: 100 }],
       profile: demoAccount,
       comment: "",
       payment: "invoice_manager",
@@ -228,8 +231,8 @@ function seedOrders(): Order[] {
       id: "ZP-10520",
       createdAt: "2026-09-05T11:25:00.000Z",
       items: [
-        { productId: "p-frost-lux", size: "L", qty: 80 },
-        { productId: "p-fleece", size: "XL", qty: 40 },
+        { productId: "frostlyuks-vl-3-4", size: "L", qty: 80 },
+        { productId: "frost-flis", size: "XL", qty: 40 },
       ],
       profile: demoAccount,
       comment: "Холод, ночная смена. Нужны XL отдельно подписать.",
@@ -246,7 +249,7 @@ function seedOrders(): Order[] {
     {
       id: "ZP-10480",
       createdAt: "2026-08-28T13:00:00.000Z",
-      items: [{ productId: "p-oilmax", size: "L", qty: 150 }],
+      items: [{ productId: "oilresist-maks", size: "L", qty: 150 }],
       profile: demoAccount,
       comment: "МБС на площадку Воронеж.",
       payment: "invoice_manager",
@@ -263,8 +266,8 @@ function seedOrders(): Order[] {
       id: "ZP-10428",
       createdAt: "2026-08-21T10:15:00.000Z",
       items: [
-        { productId: "p-atlant", size: "L", qty: 200 },
-        { productId: "p-frost", size: "L", qty: 40 },
+        { productId: "atlant", size: "L", qty: 200 },
+        { productId: "frost-strong-vl-3-4", size: "L", qty: 40 },
       ],
       profile: demoAccount,
       comment: "Отгрузка на склад Ростов, нужны сертификаты в комплекте.",
@@ -282,8 +285,8 @@ function seedOrders(): Order[] {
       id: "ZP-10450",
       createdAt: "2026-08-14T09:40:00.000Z",
       items: [
-        { productId: "p-malahit", size: "L", qty: 250 },
-        { productId: "p-profi-vl", size: "L", qty: 100 },
+        { productId: "malahit", size: "L", qty: 250 },
+        { productId: "profi-vl-3-4", size: "L", qty: 100 },
       ],
       profile: demoAccount,
       comment: "",
@@ -300,7 +303,7 @@ function seedOrders(): Order[] {
     {
       id: "ZP-10402",
       createdAt: "2026-08-04T16:20:00.000Z",
-      items: [{ productId: "p-universal", size: "L", qty: 500 }],
+      items: [{ productId: "universal", size: "L", qty: 500 }],
       profile: demoAccount,
       comment: "Отменили: позиция ушла в другую заявку.",
       payment: "online",
@@ -317,8 +320,8 @@ function seedOrders(): Order[] {
       id: "ZP-10390",
       createdAt: "2026-07-22T08:15:00.000Z",
       items: [
-        { productId: "p-optima", size: "L", qty: 1000 },
-        { productId: "p-standart", size: "L", qty: 400 },
+        { productId: "optima", size: "L", qty: 1000 },
+        { productId: "standart", size: "L", qty: 400 },
       ],
       profile: demoAccount,
       comment: "Расходники на сезон, склад Ростов.",
@@ -336,8 +339,8 @@ function seedOrders(): Order[] {
       id: "ZP-10355",
       createdAt: "2026-06-18T10:00:00.000Z",
       items: [
-        { productId: "p-kragi-kevlar", size: "L", qty: 40 },
-        { productId: "p-driver", size: "L", qty: 30 },
+        { productId: "zevs-sb", size: "L", qty: 40 },
+        { productId: "zevs-drv", size: "L", qty: 30 },
       ],
       profile: demoAccount,
       comment: "Сварочный участок, самовывоз.",
@@ -355,8 +358,8 @@ function seedOrders(): Order[] {
       id: "ZP-10012",
       createdAt: "2025-12-11T12:30:00.000Z",
       items: [
-        { productId: "p-atlant", size: "L", qty: 300 },
-        { productId: "p-ruk-brez", size: "L", qty: 80 },
+        { productId: "atlant", size: "L", qty: 300 },
+        { productId: "ruk-dv-br", size: "L", qty: 80 },
       ],
       profile: demoAccount,
       comment: "Первая партия на склад Ростов.",
@@ -373,7 +376,19 @@ function seedOrders(): Order[] {
   ]);
 }
 
-export function StoreProvider({ children }: { children: ReactNode }) {
+/** Запись в localStorage без падения (приватный режим, квота); null — удалить ключ. */
+function writeStorage(key: string, value: string | null) {
+  try {
+    if (value === null) localStorage.removeItem(key);
+    else localStorage.setItem(key, value);
+  } catch {
+    // корзина останется в памяти до перезагрузки
+  }
+}
+
+export function StoreProvider({ children, catalog }: { children: ReactNode; catalog: Product[] }) {
+  const bySlug = useMemo(() => new Map(catalog.map((p) => [p.slug, p])), [catalog]);
+  const getProduct = useCallback((slug: string) => bySlug.get(slug), [bySlug]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [lastUser, setLastUser] = useState<UserProfile | null>(null);
@@ -383,13 +398,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const nextCart = normalizeCart(readJson<unknown>(CART_KEY, []));
+    const nextCart = normalizeCart(readVersioned(CART_KEY, LEGACY_CART_KEY, migrateLegacyCart), catalog);
     const nextUser = readJson<UserProfile | null>(USER_KEY, null);
     const nextLastUser =
       readJson<UserProfile | null>(LAST_USER_KEY, null) ?? demoAccount;
-    const nextOrders = readJson<Order[]>(ORDERS_KEY, []);
+    // история заказов: старые id → slug (идемпотентно), неизвестные оставляем как есть
+    const storedOrders = readJson<unknown>(ORDERS_KEY, []);
+    const nextOrders = (Array.isArray(storedOrders) ? (storedOrders as Order[]) : [])
+      .filter((o) => o && typeof o === "object" && Array.isArray(o.items)) // битый заказ пропускаем
+      .map((o) => ({
+        ...o,
+        items: o.items.map((i) => ({ ...i, productId: legacySlug(i?.productId) ?? i?.productId })),
+      }));
     const nextLeads = readJson<Lead[]>(LEADS_KEY, []);
-    const nextFavorites = readJson<string[]>(FAVORITES_KEY, []);
+    const nextFavorites = readVersioned(FAVORITES_KEY, LEGACY_FAVORITES_KEY, migrateLegacyFavorites);
     /* eslint-disable react-hooks/set-state-in-effect -- гидратация из localStorage только на клиенте (SSR-безопасно) */
     setCart(nextCart);
     setUser(nextUser);
@@ -404,7 +426,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           : seedGuestOrders(),
     );
     setLeads(nextLeads);
-    setFavoriteIds(Array.isArray(nextFavorites) ? nextFavorites : []);
+    setFavoriteIds(
+      Array.isArray(nextFavorites) ? nextFavorites.filter((id): id is string => typeof id === "string") : [],
+    );
     setReady(true);
     /* eslint-enable react-hooks/set-state-in-effect */
     // серверная сессия Payload — источник истины для реальных аккаунтов
@@ -412,6 +436,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (me) setUser(me);
       else setUser((cur) => (cur?.authProvider === "password" ? null : cur));
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- гидратация один раз; каталог из layout стабилен
   }, []);
 
   const [prevUser, setPrevUser] = useState(user);
@@ -422,44 +447,44 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!ready) return;
-    localStorage.setItem(CART_KEY, JSON.stringify(cart));
+    writeStorage(CART_KEY, JSON.stringify(cart));
   }, [cart, ready]);
 
   useEffect(() => {
     if (!ready) return;
     if (user) {
-      localStorage.setItem(USER_KEY, JSON.stringify(user));
+      writeStorage(USER_KEY, JSON.stringify(user));
       if (user.authProvider !== "password") {
-        localStorage.setItem(LAST_USER_KEY, JSON.stringify(user));
+        writeStorage(LAST_USER_KEY, JSON.stringify(user));
       }
     } else {
-      localStorage.removeItem(USER_KEY);
+      writeStorage(USER_KEY, null);
     }
   }, [user, ready]);
 
   useEffect(() => {
     if (!ready) return;
-    if (lastUser) localStorage.setItem(LAST_USER_KEY, JSON.stringify(lastUser));
+    if (lastUser) writeStorage(LAST_USER_KEY, JSON.stringify(lastUser));
   }, [lastUser, ready]);
 
   useEffect(() => {
     if (!ready) return;
-    localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
+    writeStorage(ORDERS_KEY, JSON.stringify(orders));
   }, [orders, ready]);
 
   useEffect(() => {
     if (!ready) return;
-    localStorage.setItem(LEADS_KEY, JSON.stringify(leads));
+    writeStorage(LEADS_KEY, JSON.stringify(leads));
   }, [leads, ready]);
 
   useEffect(() => {
     if (!ready) return;
-    localStorage.setItem(FAVORITES_KEY, JSON.stringify(favoriteIds));
+    writeStorage(FAVORITES_KEY, JSON.stringify(favoriteIds));
   }, [favoriteIds, ready]);
 
   const addToCart = useCallback((productId: string, size: string, qty: number, coating?: string) => {
-    const product = products.find((x) => x.id === productId);
-    if (!product) return;
+    const product = bySlug.get(productId);
+    if (!product) return false;
     const snapped = snapOrderQty(qty, product);
     setCart((prev) => {
       const i = prev.findIndex((x) => cartLineKey(x) === cartLineKey({ productId, size, coating }));
@@ -471,10 +496,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       };
       return copy;
     });
-  }, []);
+    return true;
+  }, [bySlug]);
 
   const setQty = useCallback((productId: string, size: string, qty: number, coating?: string) => {
-    const product = products.find((x) => x.id === productId);
+    const product = bySlug.get(productId);
     if (!product) return;
     const snapped = snapOrderQty(qty, product, { allowZero: true });
     setCart((prev) => {
@@ -488,7 +514,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       copy[i] = next;
       return copy;
     });
-  }, []);
+  }, [bySlug]);
 
   const removeFromCart = useCallback((productId: string, size: string, coating?: string) => {
     setCart((prev) =>
@@ -513,7 +539,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (withDemoOrders || profile.email === demoAccount.email) {
         attachDemoOrders();
         setFavoriteIds((prev) =>
-          prev.length ? prev : ["p-atlant", "p-fenix", "p-shield"],
+          prev.length ? prev : ["atlant", "feniks", "zevs-shchit-sk"],
         );
       }
     },
@@ -603,12 +629,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       carrierName?: string;
       deliveryCost?: number;
     }) => {
-      const goods = cartGoodsTotal(cart, products);
+      const { goods, lines } = priceCart(cart, catalog);
+      const items = orderableItems(lines);
+      if (!items.length) return null; // нет доступных позиций — заказ не создаём
       const deliveryCost = input.deliveryCost ?? 0;
       const order: Order = {
         id: uid("ZP"),
         createdAt: new Date().toISOString(),
-        items: cart,
+        items,
         profile: input.profile,
         comment: input.comment,
         payment: input.payment,
@@ -630,7 +658,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setCart([]);
       return order;
     },
-    [cart]
+    [cart, catalog]
   );
 
   const updateOrder = useCallback((id: string, patch: Partial<Order>) => {
@@ -663,11 +691,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [favoriteIds]
   );
 
-  const cartCount = cart.length;
-  const cartTotal = cartGoodsTotal(cart, products);
+  const priced = useMemo(() => priceCart(cart, catalog), [cart, catalog]);
+  const orderable = useMemo(() => orderableItems(priced.lines), [priced]);
+  const cartCount = orderable.length;
+  const cartTotal = priced.goods;
 
   const value = useMemo(
     () => ({
+      catalog,
+      getProduct,
+      orderable,
       cart,
       user,
       lastUser,
@@ -696,6 +729,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       cartTotal,
     }),
     [
+      catalog,
+      getProduct,
+      orderable,
       cart,
       user,
       lastUser,
