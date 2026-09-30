@@ -4,6 +4,9 @@
  *   SEED_UPDATE=1       — обновлять уже существующие документы (иначе они пропускаются)
  *   SEED_FORCE=1        — обновлять и товары с manualOverride (только вместе с SEED_UPDATE)
  *   SEED_FETCH_IMAGES=1 — скачивать картинки с zevsprotect.ru в Media (иначе пропускаются и перечисляются)
+ * Картинки к уже засеянным документам привязываются только так: SEED_UPDATE=1 SEED_FETCH_IMAGES=1.
+ * Известные пределы: ключи upsert (slug, sku, текст отзыва) изменяемы — правка в админке даёт дубль при повторе;
+ * SEED_UPDATE заменяет документ целиком (badges, gallery, публикация); фото отзывов не сидятся.
  * Перед запуском — бэкап БД.
  */
 process.env.SEED_RUN = "1"; // хуки revalidate вне запроса Next не шумят
@@ -32,7 +35,7 @@ type Coll = "categories" | "products" | "posts" | "post-categories" | "reviews";
 /** find → update|create. Существующий документ трогаем только при SEED_UPDATE (и manualOverride — только при SEED_FORCE). */
 async function upsert(collection: Coll, where: Record<string, unknown>, data: Record<string, unknown>): Promise<number> {
   const found = await payload.find({ collection, where, limit: 1, depth: 0, draft: true, overrideAccess: true } as never);
-  const doc = found.docs[0] as { id: number; manualOverride?: boolean } | undefined;
+  const doc = found.docs[0] as { id: number; manualOverride?: boolean; guid1c?: string } | undefined;
   if (!doc) {
     const created = await payload.create({ collection, data, draft: false, overrideAccess: true } as never);
     bump(collection, "created");
@@ -42,6 +45,8 @@ async function upsert(collection: Coll, where: Record<string, unknown>, data: Re
     bump(collection, "kept");
     return doc.id;
   }
+  // товар из 1С: цену, остаток и единицу ведёт обмен, сид их не трогает
+  if (collection === "products" && doc.guid1c) for (const k of ["price", "stock", "unit"]) delete data[k];
   await payload.update({ collection, id: doc.id, data, draft: false, overrideAccess: true } as never);
   bump(collection, "updated");
   return doc.id;
@@ -56,7 +61,7 @@ async function media(src: string, alt: string): Promise<number | undefined> {
   try {
     if (isRemote(src)) {
       if (!FETCH) throw new Error("remote");
-      const res = await fetch(src);
+      const res = await fetch(src, { signal: AbortSignal.timeout(20_000) });
       if (!res.ok) throw new Error(String(res.status));
       data = Buffer.from(await res.arrayBuffer());
     } else {
