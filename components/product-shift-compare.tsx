@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { products } from "@/lib/data/catalog";
 import { formatPrice } from "@/lib/format";
 import {
   formatShiftCount,
@@ -8,8 +7,9 @@ import {
 import type { Product } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-export function ProductShiftCompare({ product }: { product: Product }) {
-  const rows = shiftCompareRows(product, products);
+/** catalog — товары витрины (Payload через withMockIds, id и деньги как в корзине). */
+export function ProductShiftCompare({ product, catalog }: { product: Product; catalog: Product[] }) {
+  const rows = shiftCompareRows(product, catalog);
   if (rows.length < 2) return null;
 
   const winner = rows.find((row) => row.bestShift) ?? rows[0];

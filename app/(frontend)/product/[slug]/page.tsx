@@ -7,20 +7,36 @@ import { ProductCard } from "@/components/product-card";
 import { ProductGallery } from "@/components/product-gallery";
 import { ProductReviewsSection } from "@/components/product-reviews/product-reviews-section";
 import { Badge } from "@/components/ui/badge";
-import {
-  getCategory,
-  getProduct,
-  productDocuments,
-  productGallery,
-  productSeo,
-  relatedProducts,
-} from "@/lib/data/catalog";
+import { productDocuments, productGallery, productSeo, withMockIds } from "@/lib/data/catalog";
 import { reviewCountLabel, reviewStats } from "@/lib/data/product-reviews";
+import {
+  getCategories,
+  getOtherProductReviews,
+  getProduct,
+  getProductReviews,
+  getProducts,
+  getRelatedProducts,
+} from "@/lib/server/catalog";
 import { formatPrice } from "@/lib/format";
 import { brand } from "@/lib/brand";
 import { catalogPrice } from "@/lib/lots";
 import { productMinQty } from "@/lib/order-qty";
+import { jsonLdScript, productJsonLd } from "@/lib/product-jsonld";
 import { formatVolumeQty } from "@/lib/volume-quote";
+
+// Опубликованные товары пререндерятся; новые — по запросу, снятые с публикации — 404 после сброса тега catalog.
+export async function generateStaticParams() {
+  return (await getProducts()).map((p) => ({ slug: p.slug }));
+}
+
+/** Товар из Payload; id и деньги — из мока (withMockIds), как в корзине, до SH-CART. */
+async function loadProduct(slug: string) {
+  const raw = await getProduct(slug);
+  if (!raw) return null;
+  const [product] = withMockIds([raw]);
+  const category = (await getCategories()).find((c) => c.slug === product.category);
+  return { product, category };
+}
 
 export async function generateMetadata({
   params,
@@ -28,13 +44,15 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const product = getProduct(slug);
-  if (!product) return {};
-  const seo = productSeo(product);
+  const data = await loadProduct(slug);
+  if (!data) return {};
+  const { product, category } = data;
+  const seo = productSeo(product, category?.short);
+  const image = productGallery(product, category?.image)[0];
   return {
     title: { absolute: seo.title },
     description: seo.description,
-    openGraph: { title: seo.title, description: seo.description },
+    openGraph: { title: seo.title, description: seo.description, ...(image ? { images: [image] } : {}) },
   };
 }
 
@@ -44,49 +62,28 @@ export default async function ProductPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const product = getProduct(slug);
-  if (!product) notFound();
-  const category = getCategory(product.category);
-  const related = relatedProducts(product);
+  const data = await loadProduct(slug);
+  if (!data) notFound();
+  const { product, category } = data;
+  const [relatedRaw, catalog, approved] = await Promise.all([
+    getRelatedProducts(slug, 4),
+    getProducts(),
+    getProductReviews(slug),
+  ]);
+  const others = approved.length ? [] : await getOtherProductReviews(slug, 3);
+  const related = withMockIds(relatedRaw);
   const docs = productDocuments(product);
-  const gallery = productGallery(product);
-  const seo = productSeo(product);
+  const gallery = productGallery(product, category?.image);
+  const seo = productSeo(product, category?.short);
   const inStock = product.stock > 0;
-  const stats = reviewStats(product.slug);
-
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: product.name,
-    sku: product.sku,
-    description: product.description,
-    image: gallery,
-    brand: { "@type": "Brand", name: brand.mark },
-    offers: {
-      "@type": "Offer",
-      price: catalogPrice(product),
-      priceCurrency: "RUB",
-      availability: inStock
-        ? "https://schema.org/InStock"
-        : "https://schema.org/PreOrder",
-      url: `https://${brand.domain}/product/${product.slug}`,
-    },
-    ...(stats.count > 0
-      ? {
-          aggregateRating: {
-            "@type": "AggregateRating",
-            ratingValue: stats.average,
-            reviewCount: stats.count,
-          },
-        }
-      : {}),
-  };
+  const stats = reviewStats(product.slug, approved);
+  const jsonLd = productJsonLd(product, gallery, stats);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }}
       />
       <p className="text-sm text-steel">
         <Link href="/catalog">Каталог</Link> /{" "}
@@ -126,7 +123,7 @@ export default async function ProductPage({
               ? `Остаток: ${product.stock} ${product.unit} · мин. заказ ${formatVolumeQty(productMinQty(product), product.unit)}`
               : `Нет на складе. Можно запросить срок партии. Мин. заказ ${formatVolumeQty(productMinQty(product), product.unit)}.`}
           </p>
-          <ProductShiftCompare product={product} />
+          <ProductShiftCompare product={product} catalog={withMockIds(catalog)} />
           <p className="mt-4 text-steel">{product.description}</p>
           <div className="mt-6">
             <ProductBuy product={product} />
@@ -167,7 +164,7 @@ export default async function ProductPage({
         </div>
       </div>
 
-      <ProductReviewsSection product={product} />
+      <ProductReviewsSection product={product} approved={approved} others={others} />
 
       <section className="mt-12 rounded-2xl border bg-card p-6">
         <h2 className="font-heading text-2xl">Для поисковых систем</h2>

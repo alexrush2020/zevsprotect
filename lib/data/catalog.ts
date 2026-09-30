@@ -1739,20 +1739,19 @@ export function productDocuments(product: Product) {
   return product.documents?.length ? product.documents : DEFAULT_DOCS;
 }
 
-export function productGallery(product: Product) {
-  const category = getCategory(product.category);
+/** categoryImage — картинка категории из Payload; по умолчанию — из мока. */
+export function productGallery(product: Product, categoryImage = getCategory(product.category)?.image) {
   const factory = img("2026/05/glovefactory-10-05-20211787.jpg");
   return [
     ...new Set(
-      [product.image, ...product.images, category?.image, factory].filter(Boolean)
+      [product.image, ...product.images, categoryImage, factory].filter(Boolean)
     ),
   ] as string[];
 }
 
-export function productSeo(product: Product) {
-  const category = getCategory(product.category);
+export function productSeo(product: Product, categoryShort = getCategory(product.category)?.short) {
   return {
-    title: `${product.name} ${product.sku} — ${category?.short ?? "каталог"} | zevsprotect®`,
+    title: `${product.name} ${product.sku} — ${categoryShort ?? "каталог"} | zevsprotect®`,
     description: `${product.description} Основа: ${product.base}. Покрытие: ${product.coating}. Цена от производителя.`,
     h1: product.name,
   };
