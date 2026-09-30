@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 import { docTitle, statusCell } from '../admin-ui'
 import { hasRole, isAdmin } from '../access'
+import { enqueueB24Sync } from '../../lib/b24/sync'
 
 const manager = hasRole('admin', 'manager')
 
@@ -11,6 +12,15 @@ export const Leads: CollectionConfig = {
   defaultSort: '-createdAt',
   // create закрыт: витрина пишет через server action (lib/server/lead-action.ts) после валидации, спам-защиты и согласия ПДн
   access: { read: manager, create: manager, update: manager, delete: isAdmin },
+  hooks: {
+    // лид в Б24 (I-B24-LEAD); enqueueB24Sync не бросает — заявка сохраняется при любом сбое очереди
+    afterChange: [
+      async ({ doc, operation, req }) => {
+        if (operation === 'create') await enqueueB24Sync(req.payload, 'lead', doc.id)
+        return doc
+      },
+    ],
+  },
   fields: [
     {
       name: 'type',

@@ -2,8 +2,10 @@ import { JobCancelledError, type Endpoint, type TaskConfig } from 'payload'
 import { hasRole } from '../access'
 import { B24Error, getB24Client } from '@/lib/b24/client'
 import { B24_TARGET, B24_TASK, isB24Kind, retryB24Sync, runB24Sync } from '@/lib/b24/sync'
-// Исполнители регистрируются импортом модуля здесь (не в lib/b24/sync.ts — там был бы цикл импортов), например:
-// import '@/lib/b24/deal'
+// Исполнители регистрируются импортом модуля здесь (не в lib/b24/sync.ts — там был бы цикл импортов)
+import '@/lib/b24/company'
+import '@/lib/b24/deal'
+import '@/lib/b24/lead'
 
 /** 30 с · 2^n, 8 повторов: последний ~через 64 мин, всего ~2 ч; дальше — кнопка «Отправить в Б24 повторно». */
 export const B24_RETRIES = { attempts: 8, backoff: { type: 'exponential' as const, delay: 30_000 } }

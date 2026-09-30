@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 import { docTitle } from '../admin-ui'
 import { hasRole, isAdmin } from '../access'
 import { validateInn } from '../validators'
+import { enqueueB24Sync } from '../../lib/b24/sync'
 import { registrationMail, resetPasswordMail } from '../../lib/mail/templates'
 
 const SESSION_SECONDS = 3 * 24 * 60 * 60 // сессия «2–3 дня»
@@ -27,6 +28,7 @@ export const Customers: CollectionConfig = {
     afterChange: [
       async ({ doc, operation, req }) => {
         if (operation !== 'create') return
+        await enqueueB24Sync(req.payload, 'company', doc.id) // компания/контакт в Б24 (I-B24-COMP); не бросает
         const m = registrationMail({ name: doc.name })
         try {
           await req.payload.sendEmail({ to: doc.email, subject: m.subject, text: m.text, html: m.html })
