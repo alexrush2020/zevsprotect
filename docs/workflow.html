@@ -373,7 +373,7 @@ const TRACKS = [
     deps:['S-1'],
     links:[['ARCHITECTURE.md', 'Архитектура'], ['CONTRADICTIONS.md', 'Противоречия']],
     acc:'Админка на русском; manager не правит каталог; content не видит заказы (тест access).' },
-  { id:'S-6', t:'Сид Payload из мок-данных прототипа', d:'Скрипт: categories, products (все поля Product, фильтры, лоты/упаковка), articles → posts, reviews (доска), картинки → Media (с zevsprotect.ru и public/).', pr:'P1', st:'todo', own:'agent',
+  { id:'S-6', t:'Сид Payload из мок-данных прототипа', d:'Скрипт: categories, products (все поля Product, фильтры, лоты/упаковка), articles → posts, reviews (доска), картинки → Media (с zevsprotect.ru и public/).', pr:'P1', st:'done', anchors:['scripts/seed.ts','lib/seed/map.ts','lib/seed/map.test.ts'], res:'<b>Коммиты 204eaa8, 6522574.</b> scripts/seed.ts (npm run seed; SEED_UPDATE/SEED_FORCE/SEED_FETCH_IMAGES), lib/seed/map.ts + раундтрип-тест. Запущен локально после логического бэкапа: 7 категорий, 65 товаров, 5 рубрик, 5 статей, 7 отзывов, 51 картинка в Media; повтор не плодит дубли. Ревью opus: цену/остаток товаров с guid1c сид не затирает; таймаут загрузки. Пределы: ключи upsert изменяемы (правка slug/текста в админке даст дубль), SEED_UPDATE заменяет документ целиком, фото отзывов (photos) не сидятся (нет поля), дубли Media при откате БД без очистки media/. Схема: categories.short/description, reviews.colorLabel/sizeLabel/orderDate/shipped/shippedAt/recommends/tags — нужна миграция перед деплоем. Класс вязки 7.5 не сидится (CONTRA-10/BIZ-12). test 82/82, typecheck.', own:'agent',
     req:['Источник — lib/data/catalog.ts, lib/data/product-reviews.ts, lib/data/purchase-guide.ts.', 'Идемпотентно (upsert по slug); картинки не хотлинкать — WordPress выключат.'],
     deps:['C-CAT', 'C-BLOG', 'C-CONTENT'],
     links:[['ARCHITECTURE.md', 'Архитектура']],
@@ -403,7 +403,7 @@ const TRACKS = [
     deps:['C-CONTENT'],
     links:[['TZ.md', 'ТЗ: сводка'], ['meetings/2026-09-19-prototype-demo-followup.md', 'Встреча 19.09']],
     acc:'Тексты меняются из админки, вёрстка не изменилась.' },
-  { id:'F-CAT', t:'Каталог на Payload', d:'catalog-browser: категории, фильтры (основа, покрытие, цвет, размер, длина, вес пары, tex, класс вязки), поиск, сортировка — по данным Payload.', pr:'P0', st:'todo', own:'agent',
+  { id:'F-CAT', t:'Каталог на Payload', d:'catalog-browser: категории, фильтры (основа, покрытие, цвет, размер, длина, вес пары, tex, класс вязки), поиск, сортировка — по данным Payload.', pr:'P0', st:'done', anchors:['withMockIds','buildSpecFilters','app/(frontend)/catalog/page.tsx'], res:'<b>Коммиты 719bc98 + правка моста.</b> /catalog на Payload (getProducts/getCategories, Suspense, ISR 5 мин): 65 моделей в порядке прототипа, фильтры/поиск/URL как раньше, скриншоты 1440/768/375 сверены с прототипом (высоты совпали), сценарии category/q/нитрил/empty/В корзину. test 85/85, typecheck, next build --webpack ок, ревью opus. Ограничения (до SH-CART/F-PDP): id и деньги (price/minQty/packSizes/stock/unit) берутся из мока через withMockIds; товар без пары в моке добавить в корзину нельзя (ложный тост); filterOptions статичны; ошибка Payload роняет /catalog (нет error.tsx, сборка требует БД); класс вязки 7.5 отсутствует (BIZ-12).', own:'agent',
     req:['T-CAT; Learned: трекер объёма на карточке, чипы размеров, покрытие dropdown, hover-спеки.'],
     deps:['S-7'],
     links:[['TZ.md', 'ТЗ: сводка']],
@@ -554,6 +554,10 @@ const TRACKS = [
   { id:'SH-CONSENT', t:'Согласие на обработку ПДн при регистрации клиента', d:'В форме регистрации нет чекбокса согласия, customers.consentPdAt не заполняется (в заявках чекбокс есть). Нужно решение: чекбокс + текст согласия, момент фиксации.', pr:'P1', st:'todo', own:'business', deps:['SH-AUTH'],
     req:['152-ФЗ: не подменять требование предположением; поле consentPdAt защищено (только admin), ставить его — через хук при регистрации.'],
     acc:'Решение владельца о тексте и обязательности согласия; после — чекбокс и запись consentPdAt на сервере.' },
+
+  { id:'BIZ-12', t:'Класс вязки 7.5: допускать дробные классы?', d:'У 5 товаров прототипа класс вязки 7.5 (реальная полуклассная вязка), валидатор Payload допускает только целые 5–18. Решить: разрешить 0.5-шаг или вести иначе; до решения сид оставляет поле пустым.', pr:'P2', st:'todo', own:'business',
+    req:['CONTRA-10'],
+    acc:'Решение владельца; затем правка validateKnitClass и повторный сид (SEED_UPDATE=1).' },
   ]
 },
 {

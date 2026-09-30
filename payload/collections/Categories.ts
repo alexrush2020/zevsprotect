@@ -18,6 +18,8 @@ export const Categories: CollectionConfig = {
   fields: [
     { name: 'title', type: 'text', label: 'Название', required: true },
     slugField(),
+    { name: 'short', type: 'text', label: 'Короткое название' },
+    { name: 'description', type: 'textarea', label: 'Описание' },
     { name: 'parent', type: 'relationship', relationTo: 'categories', label: 'Родитель' },
     { name: 'icon', type: 'text', label: 'Иконка (имя из прототипа)' },
     { name: 'image', type: 'upload', relationTo: 'media', label: 'Картинка' },

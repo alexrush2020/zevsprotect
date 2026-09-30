@@ -337,6 +337,8 @@ export interface Category {
    * Латиница, цифры и дефис, например feniks-nitril.
    */
   slug: string;
+  short?: string | null;
+  description?: string | null;
   parent?: (number | null) | Category;
   icon?: string | null;
   image?: (number | null) | Media;
@@ -411,6 +413,13 @@ export interface Review {
   city?: string | null;
   rating: number;
   text: string;
+  colorLabel?: string | null;
+  sizeLabel?: string | null;
+  orderDate?: string | null;
+  shipped?: boolean | null;
+  shippedAt?: string | null;
+  recommends?: boolean | null;
+  tags?: ('quality' | 'shipment' | 'grip' | 'size' | 'pack')[] | null;
   customer?: (number | null) | Customer;
   approved?: boolean | null;
   updatedAt: string;
@@ -811,6 +820,8 @@ export interface CustomersSelect<T extends boolean = true> {
 export interface CategoriesSelect<T extends boolean = true> {
   title?: T;
   slug?: T;
+  short?: T;
+  description?: T;
   parent?: T;
   icon?: T;
   image?: T;
@@ -949,6 +960,13 @@ export interface ReviewsSelect<T extends boolean = true> {
   city?: T;
   rating?: T;
   text?: T;
+  colorLabel?: T;
+  sizeLabel?: T;
+  orderDate?: T;
+  shipped?: T;
+  shippedAt?: T;
+  recommends?: T;
+  tags?: T;
   customer?: T;
   approved?: T;
   updatedAt?: T;
