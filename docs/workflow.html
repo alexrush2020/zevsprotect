@@ -453,7 +453,7 @@ const TRACKS = [
   id:'cms', name:'Этап 4 — CMS и админка (Payload)',
   desc:'Схема данных и админка. Модель — ARCHITECTURE «Модель данных».',
   items:[
-  { id:'C-CAT', t:'Коллекции categories и products', d:'Дерево категорий, товары со всеми полями карточки, характеристики-фильтры, guid1c, manualOverride, черновики/публикация, SEO.', pr:'P0', st:'doing', anchors:['payload/collections/Products.ts','payload/hooks/products.ts','payload/hooks/products.test.ts'], res:'<b>Модель готова (13bd570, 1f591dd, 4dae5b7), приёмка не закрыта.</b> categories/products/media: поля карточки, guid1c, manualOverride (protectFromImport — unit-тесты), блокировка цены из 1С по doc, черновики и версии, SEO. На стенде создание и публикация товара через REST, content не меняет цену товара из 1С. Осталось: «виден на витрине» — F-CAT/F-PDP; unit-тест импортёра — I-1C-CAT.', own:'agent',
+  { id:'C-CAT', t:'Коллекции categories и products', d:'Дерево категорий, товары со всеми полями карточки, характеристики-фильтры, guid1c, manualOverride, черновики/публикация, SEO.', pr:'P0', st:'done', anchors:['payload/collections/Products.ts','payload/hooks/products.ts','payload/hooks/products.test.ts'], res:'<b>Коллекции categories/products готовы; приёмка закрыта.</b> Публикация товара видна на витрине (F-CAT, F-PDP: getProducts/getProduct, 65 товаров), manualOverride защищает поля от импорта — unit-тесты lib/onec/import.test.ts и payload/hooks (protectFromImport). Создание товара в админке вживую не проверялось.', own:'agent',
     req:['T-ADM «Управление каталогом», T-1C (ручная правка при ошибках 1С).', 'Фильтры: основа, покрытие, цвет, размер (ответ заказчика).'],
     deps:['S-5'],
     links:[['ARCHITECTURE.md', 'Архитектура'], ['TZ.md', 'ТЗ: сводка']],
@@ -478,7 +478,7 @@ const TRACKS = [
     deps:['S-5'],
     links:[['TZ.md', 'ТЗ: сводка']],
     acc:'Заявка с любой формы видна в админке с типом.' },
-  { id:'C-REV', t:'Отзывы с модерацией', d:'reviews: товар, автор, оценка, текст, approved; на витрине только одобренные.', pr:'P2', st:'doing', anchors:['payload/collections/Reviews.ts'], res:'<b>Модель готова (13bd570), приёмка не закрыта.</b> reviews: approved=false по умолчанию, чтение анониму только approved=true, approved правят admin/manager, клиент подставляется из req.user. Проверено по коду и access-тестам, на стенде отзывы не создавались. Осталось: витрина показывает только одобренные — F-PDP.', own:'agent',
+  { id:'C-REV', t:'Отзывы с модерацией', d:'reviews: товар, автор, оценка, текст, approved; на витрине только одобренные.', pr:'P2', st:'done', anchors:['lib/server/review-action.ts','lib/server/reviews.ts','payload/collections/Reviews.test.ts'], res:'<b>Коммиты 2f7fbb8, 55d70ea.</b> submitReview (lib/server/review-action.ts, reviews.ts): отзыв с витрины → reviews approved=false (сервер принудительно), клиент из сессии, honeypot, лимит IP+товар и общий на IP, дедуп; create/update/delete в REST только admin/manager, customer читают только модераторы; свой неодобренный отзыв виден автору по сессии/подписанной cookie; кэш catalog сбрасывается только для одобренных. test 273/273, build, ревью opus. Не проверено вживую: успешная отправка, модерация в админке. Отклонённый отзыв остаётся у автора «на модерации» (нет статуса). Город в карточке отзыва товара не выводится (нет поля в ProductReview) — отдельная задача. Модалка не прокручивается на 375 при длинном тексте (было раньше).', own:'agent',
     req:['CONTRA-1.'],
     deps:['C-CAT'],
     links:[['CONTRADICTIONS.md', 'Противоречия']],
@@ -573,7 +573,7 @@ const TRACKS = [
   id:'int', name:'Этапы 7–8 — Интеграции 1С КА 2 и Битрикс24',
   desc:'1С — CommerceML «Обмен с сайтом»; Б24 — REST вебхуки + Payload Jobs. Live-проверка только на тестовых стендах заказчика (BIZ-5).',
   items:[
-  { id:'I-1C-CAT', t:'1С → сайт: каталог, характеристики, цены, остатки (CommerceML)', d:'/api/1c-exchange: checkauth/init/file/import; парсер import.xml/offers.xml; upsert по guid1c; картинки; manualOverride.', pr:'P0', st:'todo', own:'agent',
+  { id:'I-1C-CAT', t:'1С → сайт: каталог, характеристики, цены, остатки (CommerceML)', d:'/api/1c-exchange: checkauth/init/file/import; парсер import.xml/offers.xml; upsert по guid1c; картинки; manualOverride.', pr:'P0', st:'done', anchors:['lib/onec/commerceml.ts','lib/onec/import.ts','lib/onec/exchange.ts','payload/endpoints/onec.ts'], res:'<b>Коммиты fc1a4d4, 51360c0 + миграция 1c81128.</b> /api/1c-exchange (checkauth/init/file/import, CommerceML): свой безопасный XML-парсер, полный разбор и валидация до записи, одна транзакция на пакет, upsert по guid1c (связывание с seed по артикулу), manualOverride через protectFromImport, повторный импорт идемпотентен, пустые значения из 1С не затирают данные сайта, новые товары — черновик, цена по ONEC_PRICE_TYPE_ID (иначе первая цена — допущение по BIZ-8, НДС не пересчитывается), товар без цены не пишет price (CONTRA-9). test 273/273, build, ревью opus. Фикстуры синтетические (CommerceML 2.09), реальный файл и живая 1С не проверялись — I-TEST. Пределы: весь XML в памяти (лимит 50 МБ), картинки вне транзакции, deactivate не снимает товары, замена картинки с тем же именем не подхватывается. Вопросы заказчику: тип цены и НДС, черновик/публикация новых, сопоставление групп, имена свойств, единица «пар»/«пара», снятие отсутствующих товаров.', own:'agent',
     req:['T-1C. Источник цен и остатков — 1С (ответ заказчика).', 'Невалидный пакет не должен частично затирать каталог.'],
     deps:['C-CAT'],
     links:[['ARCHITECTURE.md', 'Архитектура'], ['TZ.md', 'ТЗ: сводка']],
@@ -632,7 +632,7 @@ const TRACKS = [
   id:'launch', name:'Этап 10 — Тестирование, запуск, передача',
   desc:'',
   items:[
-  { id:'L-QA', t:'E2E основных сценариев и функциональное тестирование', d:'Playwright: каталог → корзина → заказ гостем/клиентом, регистрация/вход, формы, ЛК, повтор заказа; протокол.', pr:'P1', st:'todo', own:'agent',
+  { id:'L-QA', t:'E2E основных сценариев и функциональное тестирование', d:'Playwright: каталог → корзина → заказ гостем/клиентом, регистрация/вход, формы, ЛК, повтор заказа; протокол.', pr:'P1', st:'doing', own:'agent',
     req:['КП 10.1, 10.3.'],
     deps:['SH-CHK', 'SH-LK', 'SH-FORMS'],
     acc:'E2E зелёные на чистой БД с сидом; протокол тестирования.' },

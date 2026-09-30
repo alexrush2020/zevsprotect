@@ -1,5 +1,7 @@
 export const PROTECTED_FIELDS = [
   'title',
+  'sku',
+  'category',
   'description',
   'base',
   'coating',

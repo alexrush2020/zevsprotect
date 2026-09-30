@@ -1,6 +1,5 @@
 import { demoAccount } from "@/lib/demo-account";
 import { sampleProductReviews, type ProductReview } from "@/lib/data/product-reviews";
-import { listUserReviews } from "@/lib/reviews/review-store";
 import type { UserProfile } from "@/lib/types";
 
 const demoReviews: ProductReview[] = [
@@ -37,9 +36,9 @@ const demoReviews: ProductReview[] = [
   },
 ];
 
-export function reviewsForAccount(user: UserProfile): ProductReview[] {
+/** submitted — свои отзывы на модерации с сервера (myPendingReviews). */
+export function reviewsForAccount(user: UserProfile, submitted: ProductReview[] = []): ProductReview[] {
   const names = [user.company, user.name].filter(Boolean);
-  const submitted = listUserReviews().filter((r) => names.includes(r.author));
   const catalog = sampleProductReviews.filter((r) => names.includes(r.author));
   const demo = user.email === demoAccount.email ? demoReviews : [];
   const seen = new Set<string>();

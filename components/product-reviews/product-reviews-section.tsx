@@ -10,10 +10,12 @@ import { ReviewSummary } from "@/components/product-reviews/review-summary";
 import {
   REVIEWS_UPDATED_EVENT,
   reviewsForOtherProducts,
+  setPendingReviews,
   reviewsForProduct,
   reviewStats,
   type ProductReview,
 } from "@/lib/data/product-reviews";
+import { myPendingReviews } from "@/lib/server/review-action";
 import { useStore } from "@/lib/store";
 import type { Product } from "@/lib/types";
 
@@ -35,10 +37,16 @@ export function ProductReviewsSection({
   const stats = reviewStats(product.slug, approved);
   const otherReviews = reviewsForOtherProducts(product.slug, 3, others);
   const author = user?.company || user?.name || "Закупщик";
+  const city = (user?.addresses?.find((a) => a.isDefault) ?? user?.addresses?.[0])?.city;
   const sizeLabel = product.sizes[0];
   const leave = (
     <LeaveReviewButton productTitle={product.name} onClick={() => setLeaveOpen(true)} />
   );
+
+  useEffect(() => {
+    // свои отзывы на модерации (сессия/подписанная cookie) — сверху списка, видны только автору
+    void myPendingReviews().then(setPendingReviews, () => undefined);
+  }, []);
 
   useEffect(() => {
     function refresh() {
@@ -132,6 +140,7 @@ export function ProductReviewsSection({
         productSlug={product.slug}
         productTitle={product.name}
         author={author}
+        city={city}
         colorLabel={product.color}
         sizeLabel={sizeLabel}
       />

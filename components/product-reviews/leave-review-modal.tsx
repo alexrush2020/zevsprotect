@@ -12,8 +12,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { topicLabels, type ReviewTopic } from "@/lib/data/product-reviews";
-import { submitUserReview } from "@/lib/reviews/review-store";
+import { setPendingReviews, topicLabels, type ReviewTopic } from "@/lib/data/product-reviews";
+import { myPendingReviews, submitReview } from "@/lib/server/review-action";
 import { cn } from "@/lib/utils";
 
 const topics = Object.keys(topicLabels) as ReviewTopic[];
@@ -24,6 +24,7 @@ export function LeaveReviewModal({
   productSlug,
   productTitle,
   author,
+  city,
   colorLabel,
   sizeLabel,
 }: {
@@ -32,6 +33,7 @@ export function LeaveReviewModal({
   productSlug: string;
   productTitle: string;
   author: string;
+  city?: string;
   colorLabel?: string;
   sizeLabel?: string;
 }) {
@@ -42,6 +44,7 @@ export function LeaveReviewModal({
   const [recommends, setRecommends] = useState(true);
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -63,8 +66,9 @@ export function LeaveReviewModal({
     );
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (sending) return;
     setError("");
     if (!text.trim()) {
       setError("Напишите несколько слов о партии или модели.");
@@ -74,18 +78,32 @@ export function LeaveReviewModal({
       setError("Выберите хотя бы одну тему отзыва.");
       return;
     }
-    submitUserReview({
-      productSlug,
-      productTitle,
-      author: company,
-      rating,
-      text,
-      tags,
-      recommends,
-      colorLabel,
-      sizeLabel,
-    });
-    setDone(true);
+    const website = new FormData(e.currentTarget).get("website");
+    setSending(true);
+    try {
+      const res = await submitReview(productSlug, {
+        authorName: company,
+        city,
+        rating,
+        text,
+        tags,
+        recommends,
+        colorLabel,
+        sizeLabel,
+        website,
+      });
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      setDone(true);
+      // свой отзыв на модерации — с сервера (сессия/подписанная cookie), виден только автору
+      void myPendingReviews().then(setPendingReviews, () => undefined);
+    } catch {
+      setError("Не удалось отправить отзыв. Попробуйте ещё раз.");
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
@@ -97,7 +115,7 @@ export function LeaveReviewModal({
               <DialogTitle className="text-xl">Спасибо за отзыв!</DialogTitle>
               <DialogDescription>
                 Отзыв отправлен на модерацию и появится на странице товара после
-                проверки. В прототипе он уже виден локально.
+                проверки. До проверки его видите только вы.
               </DialogDescription>
             </DialogHeader>
             <Button className="mt-5 h-10" onClick={() => onOpenChange(false)}>
@@ -106,6 +124,7 @@ export function LeaveReviewModal({
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
+            <input name="website" tabIndex={-1} autoComplete="off" aria-hidden className="hidden" />
             <DialogHeader>
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-steel">
                 Отзыв о товаре
@@ -206,7 +225,7 @@ export function LeaveReviewModal({
             ) : null}
 
             <div className="mt-5 flex flex-wrap gap-2">
-              <Button type="submit" className="h-10">
+              <Button type="submit" className="h-10" disabled={sending}>
                 Отправить отзыв
               </Button>
               <Button type="button" variant="outline" className="h-10" onClick={() => onOpenChange(false)}>

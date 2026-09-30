@@ -103,6 +103,7 @@ export function mapArticle(doc: Post): Article {
 
 export function mapProductReview(doc: Review): ProductReview {
   const product = populated(doc.product);
+  const date = new Date(doc.createdAt).toLocaleDateString('sv-SE', { timeZone: 'Europe/Moscow' });
   return {
     id: String(doc.id),
     productSlug: product?.slug ?? "",
@@ -110,10 +111,10 @@ export function mapProductReview(doc: Review): ProductReview {
     author: doc.authorName,
     rating: doc.rating,
     text: doc.text,
-    date: new Date(doc.createdAt).toLocaleDateString('sv-SE', { timeZone: 'Europe/Moscow' }),
+    date,
     ...(doc.colorLabel ? { colorLabel: doc.colorLabel } : {}),
     ...(doc.sizeLabel ? { sizeLabel: doc.sizeLabel } : {}),
-    orderDate: doc.orderDate?.slice(0, 10) ?? "",
+    orderDate: doc.orderDate?.slice(0, 10) || date, // отзыв с витрины без даты партии — не «Invalid Date»
     shipped: !!doc.shipped,
     ...(doc.shippedAt ? { shippedAt: doc.shippedAt.slice(0, 10) } : {}),
     ...(doc.recommends != null ? { recommends: doc.recommends } : {}),

@@ -27,6 +27,7 @@ import { Navigation } from './payload/globals/Navigation'
 import { Settings } from './payload/globals/Settings'
 import { b24RetryEndpoint, b24SyncTask, b24WebhookEndpoint } from './payload/jobs/b24'
 import { hasRole, isAdmin } from './payload/access'
+import { onecExchangeEndpoints } from './payload/endpoints/onec'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -50,7 +51,7 @@ export default buildConfig({
   i18n: { supportedLanguages: { ru }, fallbackLanguage: 'ru', translations: { ru: ruOverrides } },
   collections: [Users, Customers, Categories, Products, Media, Reviews, Orders, Leads, PostCategories, Posts, Pages],
   globals: [Home, About, Delivery, Navigation, Settings],
-  endpoints: [b24RetryEndpoint, b24WebhookEndpoint],
+  endpoints: [b24RetryEndpoint, b24WebhookEndpoint, ...onecExchangeEndpoints],
   jobs: {
     tasks: [b24SyncTask],
     enableConcurrencyControl: true,
