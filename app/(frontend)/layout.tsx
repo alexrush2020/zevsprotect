@@ -6,7 +6,8 @@ import "./globals.css";
 import { Providers } from "@/components/providers";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { getClientCatalog } from "@/lib/server/catalog";
+import { getClientCatalog, getMetrikaId } from "@/lib/server/catalog";
+import { Analytics } from "@/components/analytics";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -34,6 +35,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     console.error("[layout] каталог Payload недоступен", err);
     return [];
   });
+  const metrikaId = await getMetrikaId();
   return (
     <html
       lang="ru"
@@ -41,6 +43,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       className={`${inter.variable} ${unbounded.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-background text-foreground">
+        <Analytics metrikaId={metrikaId} />
         <Providers catalog={catalog}>
           <SiteHeader />
           <main className="flex-1">{children}</main>

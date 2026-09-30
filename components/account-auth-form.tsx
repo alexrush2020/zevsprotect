@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Reveal } from "@/components/home/motion";
 import { formatRuPhone } from "@/lib/demo-account";
 import { forgotRequest, loginRequest, registerRequest } from "@/lib/auth-client";
+import { track } from "@/lib/analytics";
 import { useStore } from "@/lib/store";
 import type { AccountKind, UserProfile } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -115,6 +116,7 @@ export function AccountAuthForm({ yandexEnabled = false, authError }: { yandexEn
     setBusy(true);
     try {
       register(await loginRequest(email.trim(), password));
+      track("login_success", { method: "password" });
       toast.success("Вход выполнен");
       goToCabinet();
     } catch {
@@ -146,6 +148,7 @@ export function AccountAuthForm({ yandexEnabled = false, authError }: { yandexEn
     setBusy(true);
     try {
       register(await registerRequest(profile, password));
+      track("register_success", { kind });
       toast.success(isLegal ? "Кабинет юрлица создан" : "Кабинет создан");
       goToCabinet();
     } catch {

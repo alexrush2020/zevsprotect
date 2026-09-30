@@ -12,6 +12,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { DeliveryAddressPicker } from "@/components/delivery-address-picker";
 import { useStore } from "@/lib/store";
 import { submitLead } from "@/lib/server/lead-action";
+import { formEvent, track } from "@/lib/analytics";
 import { formatPrice } from "@/lib/format";
 import { formatRuPhone } from "@/lib/demo-account";
 import {
@@ -123,6 +124,7 @@ export function CartInquiryForm() {
       toast.error(res?.error ?? "Не удалось отправить заявку. Попробуйте ещё раз или позвоните нам.");
       return;
     }
+    track(formEvent("cart"), { order_price: cartTotal, currency: "RUB" });
     // ponytail: история заявок в ЛК пока из локального стора — пишем копию, пока кабинет не на Payload
     const lead = addLead("cart", fields);
     if (remember) writeInquiryContacts({ name, phone, company });

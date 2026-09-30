@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { DeliveryAddressPicker } from "@/components/delivery-address-picker";
 import { useStore } from "@/lib/store";
+import { track } from "@/lib/analytics";
 import { NoOrderable } from "@/components/cart-no-orderable";
 import { formatPrice } from "@/lib/format";
 import { cartLineKey, cartLineOfferLabel, cartLineTotal, cartProductQty } from "@/lib/lots";
@@ -28,6 +29,7 @@ import type { PaymentMethod } from "@/lib/types";
 export default function CheckoutPage() {
   const { cart, orderable, cartTotal, user, placeOrder, catalog, getProduct, clearCart } = useStore();
   const router = useRouter();
+  useEffect(() => track("checkout_start"), []);
   const addresses = addressesOf(user);
   const [payment, setPayment] = useState<PaymentMethod>("invoice_auto");
   const [pending, setPending] = useState(false);

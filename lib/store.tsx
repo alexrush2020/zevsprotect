@@ -24,6 +24,7 @@ import { demoAccount, yandexStubAccount } from "@/lib/demo-account";
 import { toast } from "sonner";
 import { logoutRequest, meRequest, updateRequest } from "@/lib/auth-client";
 import { createOrder } from "@/lib/server/order-action";
+import { track } from "@/lib/analytics";
 import type { OrderInput, OrderResult } from "@/lib/server/orders";
 import type {
   CartItem,
@@ -493,6 +494,7 @@ export function StoreProvider({ children, catalog }: { children: ReactNode; cata
       };
       return copy;
     });
+    track("add_to_cart", { slug: productId, qty: snapped });
     return true;
   }, [bySlug]);
 
@@ -637,10 +639,14 @@ export function StoreProvider({ children, catalog }: { children: ReactNode; cata
       const res = await createOrder({ ...input, items: orderable }).catch(
         (): OrderResult => ({ ok: false, error: "Не удалось оформить заказ. Проверьте связь и попробуйте ещё раз." }),
       );
-      if (res.ok) setCart([]);
+      if (res.ok) {
+        setCart([]);
+        // order_price/currency — доход цели в Метрике; сумма клиентская (сервер пересчитывает цену сам)
+        track("order_success", { order_price: priced.goods, currency: "RUB", lines: orderable.length, payment: input.payment });
+      }
       return res;
     },
-    [orderable]
+    [orderable, priced.goods]
   );
 
   const updateOrder = useCallback((id: string, patch: Partial<Order>) => {
