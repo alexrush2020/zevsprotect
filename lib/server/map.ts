@@ -104,7 +104,7 @@ export function mapProductReview(doc: Review): ProductReview {
     author: doc.authorName,
     rating: doc.rating,
     text: doc.text,
-    date: doc.createdAt.slice(0, 10),
+    date: new Date(doc.createdAt).toLocaleDateString('sv-SE', { timeZone: 'Europe/Moscow' }),
     // нет в коллекции reviews — см. отчёт S-7
     orderDate: "",
     shipped: false,

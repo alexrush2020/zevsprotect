@@ -20,7 +20,7 @@ import {
  */
 
 const cached = <A extends unknown[], R>(fn: (...a: A) => Promise<R>, key: string, tag: string) =>
-  unstable_cache(fn, [key], { tags: [tag] });
+  unstable_cache(fn, [key], { tags: [tag], revalidate: 300 }); // TTL — страховка, если хук сброса не сработал (фоновый импорт 1С вне запроса Next)
 
 const read = { overrideAccess: false, depth: 2, pagination: false } as const;
 
@@ -92,6 +92,7 @@ export const getProductReviews = cached(
     const { docs } = await payload.find({
       collection: "reviews",
       ...read,
+      depth: 1,
       sort: "-createdAt",
       where: { "product.slug": { equals: productSlug } },
     });
