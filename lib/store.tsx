@@ -22,11 +22,12 @@ import { snapOrderQty } from "@/lib/order-qty";
 import { demoAccount, yandexStubAccount } from "@/lib/demo-account";
 import { toast } from "sonner";
 import { logoutRequest, meRequest, updateRequest } from "@/lib/auth-client";
+import { createOrder } from "@/lib/server/order-action";
+import type { OrderInput, OrderResult } from "@/lib/server/orders";
 import type {
   CartItem,
   Lead,
   Order,
-  PaymentMethod,
   Product,
   UserProfile,
 } from "@/lib/types";
@@ -95,16 +96,8 @@ type Store = {
   resumeSession: () => boolean;
   logout: () => void | Promise<void>;
   updateProfile: (profile: UserProfile) => void;
-  placeOrder: (input: {
-    profile: UserProfile;
-    comment: string;
-    payment: PaymentMethod;
-    guest: boolean;
-    city?: string;
-    carrier?: string;
-    carrierName?: string;
-    deliveryCost?: number;
-  }) => Order | null;
+  /** Заказ в Payload (server action): позиции — доступные строки корзины, цены считает сервер. Успех очищает корзину. */
+  placeOrder: (input: Omit<OrderInput, "items">) => Promise<OrderResult>;
   updateOrder: (id: string, patch: Partial<Order>) => void;
   addLead: (type: string, payload: Record<string, string>) => Lead;
   toggleFavorite: (productId: string) => boolean;
@@ -618,47 +611,18 @@ export function StoreProvider({ children, catalog }: { children: ReactNode; cata
     [user],
   );
 
+  const priced = useMemo(() => priceCart(cart, catalog), [cart, catalog]);
+  const orderable = useMemo(() => orderableItems(priced.lines), [priced]);
+
   const placeOrder = useCallback(
-    (input: {
-      profile: UserProfile;
-      comment: string;
-      payment: PaymentMethod;
-      guest: boolean;
-      city?: string;
-      carrier?: string;
-      carrierName?: string;
-      deliveryCost?: number;
-    }) => {
-      const { goods, lines } = priceCart(cart, catalog);
-      const items = orderableItems(lines);
-      if (!items.length) return null; // нет доступных позиций — заказ не создаём
-      const deliveryCost = input.deliveryCost ?? 0;
-      const order: Order = {
-        id: uid("ZP"),
-        createdAt: new Date().toISOString(),
-        items,
-        profile: input.profile,
-        comment: input.comment,
-        payment: input.payment,
-        paymentStatus:
-          input.payment === "online"
-            ? "pending"
-            : input.payment === "invoice_auto"
-              ? "invoiced"
-              : "pending",
-        status: "accepted",
-        total: goods + deliveryCost,
-        guest: input.guest,
-        city: input.city,
-        carrier: input.carrier,
-        carrierName: input.carrierName,
-        deliveryCost,
-      };
-      setOrders((prev) => [order, ...prev]);
-      setCart([]);
-      return order;
+    async (input: Omit<OrderInput, "items">): Promise<OrderResult> => {
+      const res = await createOrder({ ...input, items: orderable }).catch(
+        (): OrderResult => ({ ok: false, error: "Не удалось оформить заказ. Проверьте связь и попробуйте ещё раз." }),
+      );
+      if (res.ok) setCart([]);
+      return res;
     },
-    [cart, catalog]
+    [orderable]
   );
 
   const updateOrder = useCallback((id: string, patch: Partial<Order>) => {
@@ -691,8 +655,6 @@ export function StoreProvider({ children, catalog }: { children: ReactNode; cata
     [favoriteIds]
   );
 
-  const priced = useMemo(() => priceCart(cart, catalog), [cart, catalog]);
-  const orderable = useMemo(() => orderableItems(priced.lines), [priced]);
   const cartCount = orderable.length;
   const cartTotal = priced.goods;
 

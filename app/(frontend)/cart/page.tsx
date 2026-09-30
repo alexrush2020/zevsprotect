@@ -8,6 +8,7 @@ import { CartOrderForm } from "@/components/cart-order-form";
 import { CartProductCard } from "@/components/cart-product-card";
 import { useStore } from "@/lib/store";
 import { NoOrderable } from "@/components/cart-no-orderable";
+import { hasOrderPrice } from "@/lib/cart-pricing";
 import { formatPrice } from "@/lib/format";
 import { groupCartByProduct } from "@/lib/lots";
 import { cn } from "@/lib/utils";
@@ -43,14 +44,18 @@ export default function CartPage() {
         <div className="space-y-4">
           {groups.map(({ productId, items }) => {
             const product = getProduct(productId);
-            if (!product) {
-              // снят с публикации: в сумму не входит (priceCart), к заказу не уходит
+            if (!product || !hasOrderPrice(product)) {
+              // снят с публикации или без цены: в сумму не входит (priceCart), к заказу не уходит
               return (
                 <div
                   key={productId}
                   className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-card p-4 text-sm text-steel"
                 >
-                  <span>Модель больше недоступна для заказа и не учтена в сумме.</span>
+                  <span>
+                    {product
+                      ? `Цену модели «${product.name}» уточнит менеджер — оформите заявку.`
+                      : "Модель больше недоступна для заказа и не учтена в сумме."}
+                  </span>
                   <button
                     type="button"
                     className="text-xs underline"

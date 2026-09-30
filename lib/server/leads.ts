@@ -27,6 +27,9 @@ const SKIP = new Set<string>([...COLUMNS, "consent", HONEYPOT]);
 const MAX_EXTRA_KEYS = 20;
 const MAX_LEN = 10_000;
 
+/** Email, который примет и Payload-валидатор (без двойных точек, латинский домен). */
+export const EMAIL_RE = /^(?!.*\.\.)[\w.!#$%&'*+/=?^`{|}~-]+@[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*\.[a-z]{2,}$/i;
+
 const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
 
 /** Валидация и раскладка полей формы по колонкам leads; остальное — в data. */
@@ -51,7 +54,7 @@ export function buildLead(
   const digits = phone.replace(/\D/g, "").length;
   if (digits < 10 || digits > 15) return { ok: false, error: "Укажите телефон полностью" };
   if (kind !== "cart" && !email) return { ok: false, error: "Укажите email" };
-  if (email && !/^(?!.*\.\.)[\w.!#$%&'*+/=?^`{|}~-]+@[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*\.[a-z]{2,}$/i.test(email)) return { ok: false, error: "Проверьте email" };
+  if (email && !EMAIL_RE.test(email)) return { ok: false, error: "Проверьте email" };
   if (kind === "feedback" && !message) return { ok: false, error: "Напишите сообщение" };
 
   const extraKeys = Object.keys(f).filter((k) => !SKIP.has(k));
