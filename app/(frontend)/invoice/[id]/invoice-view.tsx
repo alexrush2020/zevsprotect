@@ -109,7 +109,8 @@ export function InvoiceView({ id, serverOrder }: { id: string; serverOrder: View
             {order.deliveryCost ? (
               <tr className="border-b">
                 <td className="px-2 py-2" colSpan={5}>
-                  Доставка · {order.carrierName} · {order.city}
+                  Доставка · {order.carrierName}
+                  {order.city ? ` · ${order.city}` : ""}
                 </td>
                 <td className="px-2 py-2">{formatPrice(order.deliveryCost)}</td>
               </tr>

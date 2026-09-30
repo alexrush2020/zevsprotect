@@ -81,13 +81,12 @@ export function CartOrderForm({ formId }: { formId: string }) {
 
   const pickup = delivery === "pickup";
   const selected = addresses.find((a) => a.id === selectedId);
-  const city = pickup
-    ? PICKUP_ADDRESS.city
-    : selected && !manual
-      ? selected.city
-      : fallback?.city || "Ростов-на-Дону";
+  // Город в заказ — только из сохранённого адреса: у ручного адреса поля города нет, фиктивный не пишем (QA-D1)
+  const city = pickup ? PICKUP_ADDRESS.city : selected && !manual ? selected.city : undefined;
   const weight = useMemo(() => cartWeightKg(orderable, catalog), [orderable, catalog]);
-  const quotes = useMemo(() => quoteCarriers(city, weight), [city, weight]);
+  // Моковые тарифы требуют город — для ручного адреса ориентир по умолчанию, в заказ он не уходит
+  const quoteCity = city || fallback?.city || "Ростов-на-Дону";
+  const quotes = useMemo(() => quoteCarriers(quoteCity, weight), [quoteCity, weight]);
 
   function resolvedAddress() {
     if (pickup) return formatAddressLine(PICKUP_ADDRESS);
@@ -110,7 +109,7 @@ export function CartOrderForm({ formId }: { formId: string }) {
       payment,
       comment,
       consent: Boolean(new FormData(e.currentTarget).get("consent")),
-      delivery: { carrier: delivery, city: pickup ? PICKUP_ADDRESS.city : city, address },
+      delivery: { carrier: delivery, city, address },
       contact: {
         name,
         phone,
