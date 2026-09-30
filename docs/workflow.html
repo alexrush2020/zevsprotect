@@ -634,7 +634,7 @@ const TRACKS = [
     req:['Замена сайта без потери позиций (цель ТЗ «SEO-площадка»).'],
     deps:['BIZ-13'],
     acc:'Все URL из sitemap старого сайта отдают 301 на актуальные страницы.' },
-  { id:'AN-1', t:'Яндекс.Метрика, GA и события', d:'Счётчики из settings, события T-AN (просмотр товара, корзина, начало/успех оформления, оплата, формы, регистрация, вход).', pr:'P2', st:'doing', own:'agent',
+  { id:'AN-1', t:'Яндекс.Метрика, GA и события', d:'Счётчики из settings, события T-AN (просмотр товара, корзина, начало/успех оформления, оплата, формы, регистрация, вход).', pr:'P2', st:'done', anchors:['lib/analytics.ts','lib/analytics.test.ts','components/analytics.tsx'], res:'<b>Коммиты 10f0690, 8b59f10.</b> Яндекс.Метрика из Settings → Счётчики (ID только цифры): без ID нет скрипта и запросов; webvisor/clickmap/trackLinks/accurateTrackBounce выключены; lib/analytics.ts (track/hit, типизированные события T-AN: product_view, add_to_cart, checkout_start, order_success, form_submit_<тип>, register_success, login_success, review_submit; payment_success — константа до SH-PAY), components/analytics.tsx; ПДн вырезаются (safeParams), URL очищаются (только путь и category, /order|/invoice|/pay маскируются, /forgot* — счётчик не запускается, токен сброса не уходит). test 319/319, e2e 41/41 на zevs_e2e, ревью opus (серьёзная находка — токен в Метрику — исправлена). GA не подключён (BIZ-3/BIZ-14). Не проверено с реальной Метрикой и в prod-режиме. Предел: reachGoal в tag.js передаёт location.href — цели только на страницах без токенов.', own:'agent',
     req:['T-AN; GA — после BIZ-3.'],
     deps:['SH-CHK', 'SH-FORMS', 'BIZ-3'],
     acc:'События видны в отладке Метрики.' },
@@ -702,6 +702,10 @@ const TRACKS = [
     req:['Встреча 19.09.'],
     links:[['meetings/2026-09-19-prototype-demo-followup.md', 'Встреча 19.09']],
     acc:'Референсы/замечания получены.' },
+
+  { id:'BIZ-14', t:'Метрика: cookie-согласие, вебвизор, GA', d:'AN-1 готов и включается вводом ID в Настройки → Счётчики. Решить: нужно ли явное согласие на cookie до загрузки счётчика (сейчас баннер «продолжая работу, вы соглашаетесь»); включать ли вебвизор/карту кликов (выключены); подключать ли Google Analytics (CONTRA-4/BIZ-3: данные за рубеж); маскировать ли номера заказов в URL (уже маскируются /order/:id).', pr:'P1', st:'todo', own:'business',
+    req:['152-ФЗ, CONTRA-4, BIZ-3'],
+    acc:'Решение владельца/юриста; затем баннер согласия и/или подключение GA.' },
   ]
 },
 ];
