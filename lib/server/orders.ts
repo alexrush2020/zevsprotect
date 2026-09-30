@@ -9,6 +9,7 @@ import { EMAIL_RE, createRateLimiter } from "@/lib/server/leads";
 import { computeTotal } from "@/payload/hooks/orders";
 import { validateInn } from "@/payload/validators";
 import type { Order, PaymentMethod, Product } from "@/lib/types";
+import type { Payload, TypedUser } from "payload";
 import type { Order as OrderDoc, Product as ProductDoc, Customer } from "@/payload/payload-types";
 
 /**
@@ -369,5 +370,94 @@ export function toViewOrder(doc: OrderDoc): ViewOrder {
     carrierName: doc.delivery?.carrierName ?? undefined,
     ...(cost != null ? { deliveryCost: cost } : {}),
     lines,
+  };
+}
+
+/* ---------- история заказов клиента (ЛК) ---------- */
+
+export type CustomerOrdersResult = { ok: true; orders: ViewOrder[] } | { ok: false; reason: "no-session" };
+
+/**
+ * Заказы клиента из сессии customers. Access коллекции (Orders.read: клиент — только свои) +
+ * явный фильтр по клиенту; сотрудник или гость получают no-session, а не чужие заказы.
+ * ponytail: последние 100 без пагинации — пагинация, когда у клиентов появятся сотни заказов.
+ */
+export async function customerOrders(
+  payload: Pick<Payload, "find">,
+  user: TypedUser | null,
+): Promise<CustomerOrdersResult> {
+  // нет сессии клиента (истекла, сотрудник) — явный признак, а не пустая история
+  if (user?.collection !== "customers" || user.id == null) return { ok: false, reason: "no-session" };
+  const { docs } = await payload.find({
+    collection: "orders",
+    where: { customer: { equals: user.id } },
+    sort: "-createdAt",
+    limit: 100,
+    depth: 1,
+    overrideAccess: false,
+    user,
+    disableErrors: true,
+  });
+  return { ok: true, orders: docs.map(toViewOrder) };
+}
+
+/* ---------- отслеживание по номеру + email (CONTRA-1) ---------- */
+
+/** Только статус, дата, состав и суммы — без ФИО, телефона, email, компании и адреса. */
+export type TrackView = {
+  number: string;
+  createdAt: string;
+  status: Order["status"];
+  paymentStatus: Order["paymentStatus"];
+  total: number;
+  lines: { key: string; title: string; size: string; coating?: string; qty: number; unit: string }[];
+};
+
+export type TrackResult = { ok: true; order: TrackView } | { ok: false; error: string };
+
+/** Один ответ на несуществующий номер и на чужой email — существование заказа не раскрывается. */
+export const TRACK_NOT_FOUND = "Заказ с таким номером и email не найден. Проверьте номер из письма и email, указанный при оформлении.";
+
+const orderEmails = (doc: OrderDoc) =>
+  [doc.guest?.email, populated<Customer>(doc.customer)?.email]
+    .filter((e): e is string => typeof e === "string" && !!e)
+    .map((e) => e.trim().toLowerCase());
+
+export function toTrackView(doc: OrderDoc): TrackView {
+  const v = toViewOrder(doc);
+  return {
+    number: v.id,
+    createdAt: v.createdAt,
+    status: v.status,
+    paymentStatus: v.paymentStatus,
+    total: v.total,
+    lines: v.lines.map(({ key, title, size, coating, qty, unit }) => ({ key, title, size, qty, unit, ...(coating ? { coating } : {}) })),
+  };
+}
+
+/**
+ * Поиск заказа по паре номер + email (гостя или клиента), регистр email не важен.
+ * Лимит считает каждую попытку с IP — перебор номеров упирается в него.
+ * ponytail: лимит — Map одного процесса, как у leads/orders; при нескольких инстансах — Redis.
+ */
+export function createOrderTracker(opts = { limit: 10, windowMs: 10 * 60_000 }) {
+  const allow = createRateLimiter(opts.limit, opts.windowMs);
+  return async function track(
+    find: (number: string) => Promise<OrderDoc | null | undefined>,
+    req: { number: unknown; email: unknown; ip: string; now?: Date },
+  ): Promise<TrackResult> {
+    if (!allow(req.ip, (req.now ?? new Date()).getTime()))
+      return fail("Слишком много попыток. Попробуйте через несколько минут.");
+    const number = str(req.number).toUpperCase();
+    const email = str(req.email).toLowerCase();
+    if (!ORDER_NUMBER_RE.test(number) || !email) return fail(TRACK_NOT_FOUND);
+    let doc: OrderDoc | null | undefined;
+    try {
+      doc = await find(number);
+    } catch {
+      return fail("Не удалось проверить заказ. Попробуйте позже.");
+    }
+    if (!doc || doc.number !== number || !orderEmails(doc).includes(email)) return fail(TRACK_NOT_FOUND);
+    return { ok: true, order: toTrackView(doc) };
   };
 }

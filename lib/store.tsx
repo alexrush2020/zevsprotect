@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -426,7 +427,10 @@ export function StoreProvider({ children, catalog }: { children: ReactNode; cata
     /* eslint-enable react-hooks/set-state-in-effect */
     // серверная сессия Payload — источник истины для реальных аккаунтов
     void meRequest().then((me) => {
-      if (me) setUser(me);
+      if (me) {
+        confirmedRef.current = me;
+        setUser(me);
+      }
       else setUser((cur) => (cur?.authProvider === "password" ? null : cur));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- гидратация один раз; каталог из layout стабилен
@@ -600,12 +604,26 @@ export function StoreProvider({ children, catalog }: { children: ReactNode; cata
     });
   }, [user?.authProvider]);
 
+  const confirmedRef = useRef<UserProfile | null>(null);
+  const saveSeqRef = useRef(0);
   const updateProfile = useCallback(
     (profile: UserProfile) => {
       const next = user ? { ...user, ...profile } : profile;
       setUser(next);
       if (next.authProvider === "password") {
-        updateRequest(next).catch(() => toast.error("Не удалось сохранить профиль на сервере"));
+        // источник истины — ответ Payload (email не меняется PATCH-ем профиля); отказ — откат к последнему
+        // подтверждённому профилю. Две быстрые правки: состояние применяет только ответ последней.
+        confirmedRef.current ??= user;
+        const seq = ++saveSeqRef.current;
+        updateRequest(next)
+          .then((saved) => {
+            if (saved) confirmedRef.current = saved;
+            if (saved && seq === saveSeqRef.current) setUser(saved);
+          })
+          .catch((e: unknown) => {
+            if (seq === saveSeqRef.current) setUser(confirmedRef.current);
+            toast.error(`Не удалось сохранить профиль: ${e instanceof Error ? e.message : "ошибка сервера"}`);
+          });
       }
     },
     [user],

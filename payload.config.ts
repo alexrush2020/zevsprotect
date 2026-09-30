@@ -25,6 +25,8 @@ import { About } from './payload/globals/About'
 import { Delivery } from './payload/globals/Delivery'
 import { Navigation } from './payload/globals/Navigation'
 import { Settings } from './payload/globals/Settings'
+import { b24RetryEndpoint, b24SyncTask } from './payload/jobs/b24'
+import { hasRole, isAdmin } from './payload/access'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -48,6 +50,15 @@ export default buildConfig({
   i18n: { supportedLanguages: { ru }, fallbackLanguage: 'ru', translations: { ru: ruOverrides } },
   collections: [Users, Customers, Categories, Products, Media, Reviews, Orders, Leads, PostCategories, Posts, Pages],
   globals: [Home, About, Delivery, Navigation, Settings],
+  endpoints: [b24RetryEndpoint],
+  jobs: {
+    tasks: [b24SyncTask],
+    enableConcurrencyControl: true,
+    // по умолчанию queue/run/cancel доступны любому вошедшему, включая клиентов ЛК
+    access: { queue: hasRole('admin', 'manager'), cancel: hasRole('admin', 'manager'), run: isAdmin },
+    // воркер — в процессе Next (next start/dev), раз в минуту; на serverless не работает — там cron на /api/payload-jobs/run
+    autoRun: [{ cron: '* * * * *', limit: 10, queue: 'default' }],
+  },
   upload: { limits: { fileSize: 25 * 1024 * 1024 } },
   editor: lexicalEditor(),
   serverURL: process.env.NEXT_PUBLIC_SERVER_URL || undefined,
