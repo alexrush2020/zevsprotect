@@ -80,7 +80,7 @@ export async function handleB24DealWebhook(args: {
   b24: B24Client
 }): Promise<WebhookResult> {
   const { payload, b24 } = args
-  if (!args.expectedToken?.trim()) return reply(503, 'disabled', 'Вебхук Б24 не настроен: не задан B24_WEBHOOK_TOKEN')
+  if (!args.expectedToken?.trim()) return reply(503, 'disabled', 'Вебхук Б24 не настроен')
   const evt = parseB24Event(args.contentType, args.raw)
   if (!tokenMatches(args.expectedToken.trim(), evt.token)) return reply(401, 'unauthorized', 'Неверный токен')
   if (evt.event !== 'ONCRMDEALUPDATE') return reply(200, 'ignored', 'Событие не обрабатывается')
