@@ -30,14 +30,13 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import {
-  categories,
+  buildSpecFilters,
   filterOptions,
   productMatchesWeightFilters,
-  products,
-  specFilters,
 } from "@/lib/data/catalog";
 import { catalogPrice } from "@/lib/lots";
-import type { CategorySlug } from "@/lib/types";
+import type { CatalogCategory } from "@/lib/server/map";
+import type { CategorySlug, Product } from "@/lib/types";
 
 const COLOR_SWATCH: Record<string, string> = {
   Белый: "#ffffff",
@@ -147,6 +146,8 @@ function CatalogPager({
 }
 
 function CatalogFilters({
+  categories,
+  specFilters,
   category,
   setCat,
   base,
@@ -170,6 +171,8 @@ function CatalogFilters({
   setPage,
   onReset,
 }: {
+  categories: CatalogCategory[];
+  specFilters: ReturnType<typeof buildSpecFilters>;
   category: string;
   setCat: (next: string) => void;
   base: string[];
@@ -325,7 +328,13 @@ function CatalogFilters({
   );
 }
 
-export function CatalogBrowser() {
+export function CatalogBrowser({
+  products,
+  categories,
+}: {
+  products: Product[];
+  categories: CatalogCategory[];
+}) {
   const params = useSearchParams();
   const router = useRouter();
   const initialCategory = params.get("category") || "all";
@@ -366,7 +375,8 @@ export function CatalogBrowser() {
     if (sort === "price-desc") list = [...list].sort((a, b) => catalogPrice(b) - catalogPrice(a));
     if (sort === "name") list = [...list].sort((a, b) => a.name.localeCompare(b.name, "ru"));
     return list;
-  }, [category, q, base, coating, color, size, length, weight, tex, knitClass, sort, inStockOnly]);
+  }, [products, category, q, base, coating, color, size, length, weight, tex, knitClass, sort, inStockOnly]);
+  const specFilters = useMemo(() => buildSpecFilters(products), [products]);
 
   const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, pages);
@@ -405,6 +415,8 @@ export function CatalogBrowser() {
   }
 
   const filterProps = {
+    categories,
+    specFilters,
     category,
     setCat,
     base,
@@ -471,7 +483,12 @@ export function CatalogBrowser() {
             партию.
           </p>
         </div>
-        <CatalogCategoryTiles active={category} onSelect={setCat} />
+        <CatalogCategoryTiles
+          categories={categories}
+          products={products}
+          active={category}
+          onSelect={setCat}
+        />
         <div id="catalog-models" className="scroll-mt-24 px-4 pb-16 pt-10">
           <div className="flex items-end justify-between gap-3">
             <div>

@@ -1,6 +1,7 @@
 "use client";
 
-import { categories, products } from "@/lib/data/catalog";
+import type { CatalogCategory } from "@/lib/server/map";
+import type { Product } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const tileClass: Record<string, string> = {
@@ -24,9 +25,13 @@ const tileOrder = [
 ] as const;
 
 export function CatalogCategoryTiles({
+  categories,
+  products,
   active,
   onSelect,
 }: {
+  categories: CatalogCategory[];
+  products: Product[];
   active: string;
   onSelect: (slug: string) => void;
 }) {

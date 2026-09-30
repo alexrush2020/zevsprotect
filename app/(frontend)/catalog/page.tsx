@@ -2,10 +2,17 @@ import { Suspense } from "react";
 import { CatalogBrowser } from "@/components/catalog-browser";
 import { PurchaseGuideTeaser } from "@/components/purchase-guide-teaser";
 import { brand } from "@/lib/brand";
+import { withMockIds } from "@/lib/data/catalog";
+import { getCategories, getProducts } from "@/lib/server/catalog";
 
 export const metadata = {
   title: "Каталог рабочих перчаток",
 };
+
+async function CatalogData() {
+  const [products, categories] = await Promise.all([getProducts(), getCategories()]);
+  return <CatalogBrowser products={withMockIds(products)} categories={categories} />;
+}
 
 export default function CatalogPage() {
   return (
@@ -26,7 +33,7 @@ export default function CatalogPage() {
         </div>
       </div>
       <Suspense fallback={<div className="p-10 text-center text-steel">Загрузка каталога…</div>}>
-        <CatalogBrowser />
+        <CatalogData />
       </Suspense>
     </div>
   );
