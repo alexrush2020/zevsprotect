@@ -176,7 +176,7 @@ export function AccountAuthForm({ yandexEnabled = false, authError }: { yandexEn
           <h1 className="mt-2 font-heading text-3xl text-ink sm:text-4xl">Кабинет клиента</h1>
           <p className="mt-2 max-w-2xl text-sm text-steel">
             Каталог смотрите без регистрации. Чтобы оформлять заказы и видеть документы,
-            войдите через Яндекс или по email. Сессия держится 2–3 дня, профиль не нужно
+            войдите {yandexEnabled ? "через Яндекс или " : ""}по email. Сессия держится 2–3 дня, профиль не нужно
             заполнять заново.
           </p>
         </Reveal>
@@ -231,7 +231,7 @@ export function AccountAuthForm({ yandexEnabled = false, authError }: { yandexEn
             <>
               <h2 className="mt-5 font-heading text-2xl text-ink">Вход</h2>
               <p className="mt-1 text-sm text-steel">
-                Яндекс или email и пароль. Сессия живёт 2–3 дня.
+                {yandexEnabled ? "Яндекс или email и пароль." : "Email и пароль."} Сессия живёт 2–3 дня.
               </p>
 
               {yandexEnabled ? (
