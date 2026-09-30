@@ -137,48 +137,101 @@ describe('миграция localStorage прототипа', () => {
 })
 
 describe('repeatOrderItems: «Повторить заказ»', () => {
-  const sized = { ...fabric, sizes: ['L', 'XL'] } as Product
-  const cat = [sized, dipped, { ...base, id: '3', slug: 'bez-ceny', price: 0 } as unknown as Product]
+  const sized = { ...fabric, name: 'Ткань', sizes: ['L', 'XL'], stock: 100000 } as Product
+  const obliv = { ...dipped, name: 'Облив', stock: 100000 } as Product
+  const cat = [sized, obliv, { ...base, id: '3', slug: 'bez-ceny', name: 'Без цены', price: 0 } as unknown as Product]
+  const quiet = { unavailable: [], priceChanges: [], qtyChanges: [], backorder: [] }
 
-  it('цены — по текущему каталогу, а не из снапшота; клиентский пересчёт = серверный', () => {
-    // в снапшоте заказа было 77.77 ₽ — корзина считает по нынешним 100 ₽ и скидке объёма
-    const { items, skipped } = repeatOrderItems(
+  it('ничего не изменилось — предупреждений нет; клиентский пересчёт = серверный', () => {
+    const r = repeatOrderItems(
+      [
+        { productId: 'tkan', size: 'L', qty: 500, title: 'Ткань', price: 95 },
+        { productId: 'tkan', size: 'XL', qty: 500, title: 'Ткань', price: 95 },
+        { productId: 'obliv', size: 'L', qty: 24, title: 'Облив', price: 28.9 },
+      ],
+      cat,
+    )
+    expect(r).toEqual({
+      ...quiet,
+      items: [
+        { productId: 'tkan', size: 'L', qty: 500 },
+        { productId: 'tkan', size: 'XL', qty: 500 },
+        { productId: 'obliv', size: 'L', qty: 24 },
+      ],
+    })
+    const priced = priceCart(r.items, cat)
+    expect(priced.goods).toBe(95000 + 693.6)
+    // повторная нормализация в корзине (addToCart/snapOrderQty) не меняет состав и сумму
+    expect(priceCart(normalizeCart(r.items, cat), cat).goods).toBe(priced.goods)
+  })
+
+  it('изменённая цена: было из снапшота, стало — как посчитает корзина', () => {
+    const r = repeatOrderItems([{ productId: 'obliv', size: 'L', qty: 24, title: 'Облив', price: 27.46 }], cat)
+    expect(r.priceChanges).toEqual([{ title: 'Облив', was: 27.46, now: 28.9 }])
+    expect(priceCart(r.items, cat).lines[0].unitPrice).toBe(28.9)
+  })
+
+  it('частичный набор: снятый размер выпадает, скидка по объёму — от оставшегося состава', () => {
+    const r = repeatOrderItems(
+      [
+        { productId: 'tkan', size: 'L', qty: 500, title: 'Ткань', price: 95 },
+        { productId: 'tkan', size: 'XXL', qty: 500, title: 'Ткань', price: 95 },
+      ],
+      cat,
+    )
+    expect(r.items).toEqual([{ productId: 'tkan', size: 'L', qty: 500 }])
+    expect(r.unavailable).toEqual(['Ткань · XXL'])
+    // 500 пар — уже без скидки 1000+: цена в отчёте совпадает с корзиной
+    expect(r.priceChanges).toEqual([{ title: 'Ткань', was: 95, now: 100 }])
+    expect(priceCart(r.items, cat).lines[0].unitPrice).toBe(100)
+  })
+
+  it('снятая с публикации модель, модель без цены, снятое покрытие, удалённый товар — недоступны по названию', () => {
+    const r = repeatOrderItems(
+      [
+        { productId: 'tkan', size: 'L', qty: 50, title: 'Ткань', price: 100 },
+        { productId: 'tkan', size: 'XL', qty: 50, coating: 'ПВХ', title: 'Ткань', price: 100 },
+        { productId: 'snyata', size: 'L', qty: 50, title: 'Снятая', price: 10 },
+        { productId: 'bez-ceny', size: 'L', qty: 50 },
+        { productId: '', size: 'M', qty: 50, title: 'Удалённая' },
+      ],
+      cat,
+    )
+    expect(r.items).toEqual([{ productId: 'tkan', size: 'L', qty: 50 }])
+    expect(r.unavailable).toEqual(['Ткань · XL · ПВХ', 'Снятая · L', 'Без цены · L', 'Удалённая · M'])
+    expect(r.priceChanges).toEqual([])
+  })
+
+  it('qty округляется вверх до кратности упаковки текущего каталога', () => {
+    const r = repeatOrderItems([{ productId: 'obliv', size: 'L', qty: 200, title: 'Облив', price: 28.9 }], cat)
+    expect(r.items).toEqual([{ productId: 'obliv', size: 'L', qty: 204 }])
+    expect(r.qtyChanges).toEqual([{ title: 'Облив · L', was: 200, now: 204 }])
+  })
+
+  it('остаток меньше суммарного qty или 0 — позиция остаётся (под заказ) и помечается', () => {
+    const low = [{ ...sized, stock: 600 } as Product, { ...obliv, stock: 0 } as Product]
+    const r = repeatOrderItems(
       [
         { productId: 'tkan', size: 'L', qty: 500 },
         { productId: 'tkan', size: 'XL', qty: 500 },
-        { productId: 'obliv', size: 'L', qty: 13 },
+        { productId: 'obliv', size: 'L', qty: 12 },
       ],
-      cat,
+      low,
     )
-    expect(skipped).toBe(0)
-    expect(items).toEqual([
-      { productId: 'tkan', size: 'L', qty: 500 },
-      { productId: 'tkan', size: 'XL', qty: 500 },
-      { productId: 'obliv', size: 'L', qty: 24 }, // упаковка 12 — вверх
-    ])
-    const priced = priceCart(items, cat)
-    expect(priced.lines.map((l) => l.unitPrice)).toEqual([95, 95, 28.9])
-    expect(priced.goods).toBe(95000 + 693.6)
-    // повторная нормализация в корзине (addToCart/snapOrderQty) не меняет состав и сумму
-    expect(priceCart(normalizeCart(items, cat), cat).goods).toBe(priced.goods)
+    expect(r.items).toHaveLength(3)
+    expect(r.backorder).toEqual(['Ткань', 'Облив'])
+    expect(repeatOrderItems([{ productId: 'tkan', size: 'L', qty: 500 }], low).backorder).toEqual([])
   })
 
-  it('снятая модель, модель без цены и снятый размер пропускаются и считаются', () => {
-    const { items, skipped } = repeatOrderItems(
-      [
-        { productId: 'tkan', size: 'L', qty: 50 },
-        { productId: 'tkan', size: 'XXL', qty: 50 },
-        { productId: 'snyata', size: 'L', qty: 50 },
-        { productId: 'bez-ceny', size: 'L', qty: 50 },
-        { productId: '', size: 'L', qty: 50 }, // товар удалён — slug пуст
-      ],
-      cat,
-    )
-    expect(items).toEqual([{ productId: 'tkan', size: 'L', qty: 50 }])
-    expect(skipped).toBe(4)
+  it('демо-заказ без цен в снапшоте — сравнения цен нет', () => {
+    expect(repeatOrderItems([{ productId: 'obliv', size: 'L', qty: 24 }], cat).priceChanges).toEqual([])
   })
 
   it('всё недоступно — пустой состав, корзину не трогаем', () => {
-    expect(repeatOrderItems([{ productId: 'snyata', size: 'L', qty: 50 }], cat)).toEqual({ items: [], skipped: 1 })
+    expect(repeatOrderItems([{ productId: 'snyata', size: 'L', qty: 50, title: 'Снятая' }], cat)).toEqual({
+      ...quiet,
+      items: [],
+      unavailable: ['Снятая · L'],
+    })
   })
 })

@@ -31,19 +31,30 @@ export function AccountOrderCard({ order }: { order: Order | ViewOrder }) {
   const server = "lines" in order;
 
   function repeat() {
-    // позиции — по текущему каталогу; корзина и сервер при оформлении считают цену одним priceCart
-    const { items, skipped } = repeatOrderItems(order.items, catalog);
-    if (!items.length) {
-      toast.error(`${unavailableLabel(skipped)}: модели сняты с продажи или цену уточнит менеджер.`);
+    // позиции — по текущему каталогу; корзина и сервер при оформлении считают цену одним priceCart.
+    // У заказа Payload строки items и lines идут в одном порядке — берём из снапшота название и цену.
+    const snapshot = server
+      ? order.items.map((item, i) => ({ ...item, title: order.lines[i]?.title, price: order.lines[i]?.unitPrice }))
+      : order.items;
+    const r = repeatOrderItems(snapshot, catalog);
+    const unavailable = r.unavailable.length
+      ? `${unavailableLabel(r.unavailable.length)}: ${r.unavailable.join(", ")}`
+      : "";
+    if (!r.items.length) {
+      toast.error(`${unavailable}. Модели сняты с продажи или цену уточнит менеджер.`);
       return;
     }
     clearCart();
-    items.forEach((item) => addToCart(item.productId, item.size, item.qty, item.coating));
-    toast.success(
-      skipped
-        ? `Состав заказа в корзине, ${unavailableLabel(skipped)}. Цены пересчитаны по текущему прайсу 1С.`
-        : "Состав заказа в корзине. Цены пересчитаны по текущему прайсу 1С.",
-    );
+    r.items.forEach((item) => addToCart(item.productId, item.size, item.qty, item.coating));
+    const notes = [
+      ...r.priceChanges.map((c) => `Цена изменилась: ${c.title} было ${formatPrice(c.was)} → стало ${formatPrice(c.now)}`),
+      unavailable,
+      ...r.qtyChanges.map((c) => `Количество изменено до кратности упаковки: ${c.title} ${c.was} → ${c.now}`),
+      r.backorder.length ? `Нет на складе в нужном объёме, под заказ: ${r.backorder.join(", ")}` : "",
+    ].filter(Boolean);
+    toast.success("Состав заказа в корзине. Цены пересчитаны по текущему прайсу 1С.", {
+      ...(notes.length ? { description: notes.map((n) => <p key={n}>{n}</p>), duration: 15000 } : {}),
+    });
     router.push("/cart");
   }
 
