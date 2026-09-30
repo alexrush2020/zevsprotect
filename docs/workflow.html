@@ -573,7 +573,7 @@ const TRACKS = [
   id:'int', name:'Этапы 7–8 — Интеграции 1С КА 2 и Битрикс24',
   desc:'1С — CommerceML «Обмен с сайтом»; Б24 — REST вебхуки + Payload Jobs. Live-проверка только на тестовых стендах заказчика (BIZ-5).',
   items:[
-  { id:'I-1C-CAT', t:'1С → сайт: каталог, характеристики, цены, остатки (CommerceML)', d:'/api/1c-exchange: checkauth/init/file/import; парсер import.xml/offers.xml; upsert по guid1c; картинки; manualOverride.', pr:'P0', st:'todo', own:'agent',
+  { id:'I-1C-CAT', t:'1С → сайт: каталог, характеристики, цены, остатки (CommerceML)', d:'/api/1c-exchange: checkauth/init/file/import; парсер import.xml/offers.xml; upsert по guid1c; картинки; manualOverride.', pr:'P0', st:'doing', own:'agent',
     req:['T-1C. Источник цен и остатков — 1С (ответ заказчика).', 'Невалидный пакет не должен частично затирать каталог.'],
     deps:['C-CAT'],
     links:[['ARCHITECTURE.md', 'Архитектура'], ['TZ.md', 'ТЗ: сводка']],
