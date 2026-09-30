@@ -558,6 +558,10 @@ const TRACKS = [
   { id:'BIZ-12', t:'Класс вязки 7.5: допускать дробные классы?', d:'У 5 товаров прототипа класс вязки 7.5 (реальная полуклассная вязка), валидатор Payload допускает только целые 5–18. Решить: разрешить 0.5-шаг или вести иначе; до решения сид оставляет поле пустым.', pr:'P2', st:'todo', own:'business',
     req:['CONTRA-10'],
     acc:'Решение владельца; затем правка validateKnitClass и повторный сид (SEED_UPDATE=1).' },
+
+  { id:'BIZ-13', t:'301-редиректы: куда вести 5 старых URL без пары', d:'В sitemap старого WordPress 8 URL, пара есть у одного (/privacy-policy → /privacy). Решить: (1) /cookie-policy → /privacy или отдельная страница cookie; (2) статья про зимние перчатки Фрост → написать статью или /catalog; (3) «Как выбрать рабочие перчатки» → /blog/kak-vybrat-perchatki-dlya-sklada или /blog; (4) товар «салатные полиэстровые с ПУ 3/4» → модель или /catalog; (5) /category/без-рубрики → /blog или 410.', pr:'P2', st:'todo', own:'business',
+    req:['SEO-2'],
+    acc:'Решение по каждому URL; затем правила в lib/redirects.ts.' },
   ]
 },
 {
@@ -609,9 +613,9 @@ const TRACKS = [
     req:['T-SEO.'],
     deps:['F-CAT', 'F-PDP', 'F-BLOG'],
     acc:'Валидатор микроразметки без ошибок; sitemap содержит товары/категории/статьи.' },
-  { id:'SEO-2', t:'301-редиректы со старого WordPress', d:'Карта старых URL zevsprotect.ru → новые (товары, категории, статьи), redirects в next.config или коллекция redirects.', pr:'P1', st:'todo', own:'agent',
+  { id:'SEO-2', t:'301-редиректы со старого WordPress', d:'Карта старых URL zevsprotect.ru → новые (товары, категории, статьи), redirects в next.config или коллекция redirects.', pr:'P1', st:'todo', res:'<b>Коммит 884cfd8, приёмка не закрыта.</b> lib/redirects.ts + next.config redirects + тест (нет дублей/цепочек, destination существует): 1 правило /privacy-policy → /privacy. Остальные 5 URL старого sitemap без пары — BIZ-13. Живой 301 не проверялся.', anchors:['lib/redirects.ts'], own:'agent',
     req:['Замена сайта без потери позиций (цель ТЗ «SEO-площадка»).'],
-    deps:['S-6'],
+    deps:['BIZ-13'],
     acc:'Все URL из sitemap старого сайта отдают 301 на актуальные страницы.' },
   { id:'AN-1', t:'Яндекс.Метрика, GA и события', d:'Счётчики из settings, события T-AN (просмотр товара, корзина, начало/успех оформления, оплата, формы, регистрация, вход).', pr:'P2', st:'todo', own:'agent',
     req:['T-AN; GA — после BIZ-3.'],
