@@ -74,6 +74,9 @@ export function mapProduct(doc: ProductDoc): Product {
     image: images[0] ?? "",
     images,
     ...(doc.badges?.includes("home") ? { featured: true } : {}),
+    ...(doc.badges?.some((b) => b !== "home")
+      ? { badges: doc.badges.filter((b): b is "hit" | "new" | "sale" => b !== "home") }
+      : {}),
     ...(documents.length ? { documents } : {}),
   };
 }

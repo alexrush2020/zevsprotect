@@ -1552,8 +1552,20 @@ export function productMatchesWeightFilters(weight: string | undefined, selected
   });
 }
 
+/** Значения, реально встречающиеся в товарах; порядок — по filterOptions (эталон), незнакомые значения из 1С — в конце по алфавиту. */
+function presentOrdered(values: (string | undefined)[], order: string[]) {
+  const set = new Set(values.filter((v): v is string => !!v));
+  const known = order.filter((v) => set.has(v));
+  const extra = [...set].filter((v) => !order.includes(v)).sort((a, b) => a.localeCompare(b, "ru"));
+  return [...known, ...extra];
+}
+
 export function buildSpecFilters(list: Product[]) {
   return {
+    base: presentOrdered(list.map((p) => p.base), filterOptions.base),
+    coating: presentOrdered(list.map((p) => p.coating), filterOptions.coating),
+    color: presentOrdered(list.map((p) => p.color), filterOptions.color),
+    size: presentOrdered(list.flatMap((p) => p.sizes), filterOptions.size),
     length: uniqueByNumber(list.map((p) => p.length)),
     weight: WEIGHT_FILTER_BUCKETS.map((bucket) => bucket.label),
     tex: uniqueByNumber(list.map((p) => p.tex)),

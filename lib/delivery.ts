@@ -1,3 +1,5 @@
+// MOCK (BIZ-9, CONTRA-5): тарифы ТК выдуманные, только ориентир на витрине; в заказ не входят, стоимость доставки считает менеджер.
+// Заменяется реальными API ТК (платная опция КП) либо выпиливается.
 export type CarrierId = "pickup" | "cdek" | "dl" | "pek" | "energy";
 
 export const carriers: {
@@ -9,10 +11,10 @@ export const carriers: {
   note: string;
 }[] = [
   { id: "pickup", name: "Самовывоз, Таганрог", days: [0, 1], base: 0, kg: 0, note: "Поляковское шоссе, 17" },
-  { id: "cdek", name: "СДЭК", days: [2, 5], base: 420, kg: 28, note: "Мок API 2.0 · ПВЗ и курьер" },
-  { id: "dl", name: "Деловые линии", days: [3, 7], base: 380, kg: 22, note: "Мок калькулятора ДЛ" },
-  { id: "pek", name: "ПЭК", days: [3, 8], base: 360, kg: 24, note: "Мок терминал–терминал" },
-  { id: "energy", name: "Энергия", days: [2, 6], base: 450, kg: 26, note: "Мок экспресс / сборные" },
+  { id: "cdek", name: "СДЭК", days: [2, 5], base: 420, kg: 28, note: "ПВЗ и курьер" },
+  { id: "dl", name: "Деловые линии", days: [3, 7], base: 380, kg: 22, note: "Терминал или адрес" },
+  { id: "pek", name: "ПЭК", days: [3, 8], base: 360, kg: 24, note: "Терминал–терминал" },
+  { id: "energy", name: "Энергия", days: [2, 6], base: 450, kg: 26, note: "Экспресс / сборные" },
 ];
 
 const cityFactor: Record<string, number> = {

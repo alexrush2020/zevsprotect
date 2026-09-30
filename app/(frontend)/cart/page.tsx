@@ -102,7 +102,7 @@ export default function CartPage() {
                 <p className="mt-5 text-sm text-steel">Итого к оплате</p>
                 <p className="mt-1 font-heading text-3xl">{formatPrice(cartTotal)}</p>
                 <p className="mt-2 text-xs text-steel">
-                  НДС 20% включён. Доставка считается на оформлении по мокам ТК.
+                  НДС 20% включён. Стоимость доставки рассчитает менеджер.
                 </p>
                 <Button type="submit" form={ORDER_FORM_ID} className="mt-5 h-11 w-full">
                   Оформить заказ

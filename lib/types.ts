@@ -31,6 +31,8 @@ export type Product = {
   image: string;
   images: string[];
   featured?: boolean;
+  /** Метки карточки из админки (Products.badges): hit | new | sale. */
+  badges?: ("hit" | "new" | "sale")[];
   documents?: { title: string; href: string }[];
 };
 

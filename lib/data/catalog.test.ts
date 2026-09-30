@@ -13,4 +13,13 @@ describe("buildSpecFilters", () => {
     expect(f.length).toEqual(["24 см"]);
     expect(buildSpecFilters(products)).toEqual(specFilters);
   });
+
+  it("основа/покрытие/цвет/размер — только из товаров, эталонный порядок, чужие значения в конце", () => {
+    const [p] = products;
+    const mk = (base: string, sizes: string[]) => ({ ...p, base, sizes, coating: "Латекс", color: "Хаки" });
+    const f = buildSpecFilters([mk("Арамид", ["XL", "L"]), mk("Неведомая", ["L"]), mk("Хлопок", ["M"])]);
+    expect(f.base).toEqual(["Хлопок", "Арамид", "Неведомая"]);
+    expect(f.size).toEqual(["M", "L", "XL"]);
+    expect(f.coating).toEqual(["Латекс"]);
+  });
 });

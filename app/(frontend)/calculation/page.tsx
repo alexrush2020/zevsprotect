@@ -29,7 +29,7 @@ export default function CalculationPage() {
       <LeadForm
         type="calculation"
         title="Заявка на расчёт"
-        hint="Лид в Битрикс24, расчёт придёт на почту (в прототипе — только запись заявки)."
+        hint="Лид в Битрикс24, расчёт придёт на почту."
         extra={[
           { name: "city", label: "Город доставки", required: true },
           { name: "volume", label: "Объём", required: true, placeholder: "например 5 000 пар / месяц" },

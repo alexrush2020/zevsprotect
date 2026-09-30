@@ -6,7 +6,6 @@ import { AccountOrderCard, useAccountOrders } from "@/components/account/account
 import { AccountScroll } from "@/components/account/account-scroll";
 import { StarRating } from "@/components/product-reviews/star-rating";
 import { useStore } from "@/lib/store";
-import { reviewsForAccount } from "@/lib/account-reviews";
 import { REVIEWS_UPDATED_EVENT, listPendingReviews, setPendingReviews, type ProductReview } from "@/lib/data/product-reviews";
 import { myPendingReviews } from "@/lib/server/review-action";
 import { formatDate, formatPrice } from "@/lib/format";
@@ -28,7 +27,7 @@ export default function AccountOrdersPage() {
 
   useEffect(() => {
     if (!user) return;
-    const load = () => setReviews(reviewsForAccount(user, listPendingReviews()));
+    const load = () => setReviews(listPendingReviews());
     load();
     void myPendingReviews().then(setPendingReviews, () => undefined); // → REVIEWS_UPDATED_EVENT → load
     window.addEventListener(REVIEWS_UPDATED_EVENT, load);
@@ -45,7 +44,7 @@ export default function AccountOrdersPage() {
       <section>
         <h2 className="font-heading text-xl">Заказы</h2>
         <p className="mt-1 text-sm text-steel">
-          Статусы в прототипе заданы вручную. По ТЗ источник статуса — Битрикс24.
+          Статус заказа обновляется менеджером в Битрикс24.
         </p>
         <AccountScroll className="mt-4">
           {notice ?? (loaded === null ? null : mine.length === 0 ? (

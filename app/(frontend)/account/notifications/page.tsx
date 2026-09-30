@@ -87,7 +87,7 @@ export default function AccountNotificationsPage() {
         <div className="rounded-2xl border bg-card p-5">
           <h2 className="font-heading text-xl">Настройки</h2>
           <p className="mt-1 text-sm text-steel">
-            В прототипе письма не уходят — флажки хранятся локально.
+            Раздел в разработке (SH-CHAT/CONTRA-1): настройки хранятся в этом браузере.
           </p>
           <div className="mt-4 grid gap-3">
             <Toggle

@@ -31,7 +31,6 @@ import {
 } from "@/components/ui/sheet";
 import {
   buildSpecFilters,
-  filterOptions,
   productMatchesWeightFilters,
 } from "@/lib/data/catalog";
 import { catalogPrice } from "@/lib/lots";
@@ -239,10 +238,10 @@ function CatalogFilters({
       >
         {(
           [
-            ["Основа", filterOptions.base, base, setBase],
-            ["Покрытие", filterOptions.coating, coating, setCoating],
-            ["Цвет", filterOptions.color, color, setColor],
-            ["Размер", filterOptions.size, size, setSize],
+            ["Основа", specFilters.base, base, setBase],
+            ["Покрытие", specFilters.coating, coating, setCoating],
+            ["Цвет", specFilters.color, color, setColor],
+            ["Размер", specFilters.size, size, setSize],
             ["Длина модели", specFilters.length, length, setLength],
             ["Вес пары", specFilters.weight, weight, setWeight],
             ["Текс", specFilters.tex, tex, setTex],

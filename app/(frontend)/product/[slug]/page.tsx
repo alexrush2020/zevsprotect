@@ -168,7 +168,7 @@ export default async function ProductPage({
                 <a href={d.href} className="text-sm text-orange underline" target="_blank" rel="noreferrer">
                   {d.title}
                 </a>
-                <span className="text-sm text-steel"> — PDF-мок</span>
+                <span className="text-sm text-steel"></span>
               </li>
             ))}
           </ul>
@@ -183,7 +183,7 @@ export default async function ProductPage({
         <p className="mt-2 text-sm text-steel">
           Купить {product.name} ({product.sku}) оптом от производителя {brand.markRu}{" "}
           в Таганроге. Категория: {category?.name}. Цена указана с НДС, остатки —
-          мок обмена с 1С.
+          по данным 1С.
         </p>
       </section>
 

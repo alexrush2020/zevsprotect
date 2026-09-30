@@ -1,8 +1,10 @@
 import { Badge } from "@/components/ui/badge";
-import { productPromoStub } from "@/lib/product-promo";
 import type { Product } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+const LABELS = { hit: "Хит", new: "Новинка", sale: "Акция" } as const;
+
+/** Метки из админки (Products.badges); без меток — ничего не показываем. */
 export function ProductCardBadges({
   product,
   className,
@@ -10,7 +12,7 @@ export function ProductCardBadges({
   product: Product;
   className?: string;
 }) {
-  const { label } = productPromoStub(product);
+  if (!product.badges?.length) return null;
 
   return (
     <div
@@ -19,7 +21,11 @@ export function ProductCardBadges({
         className,
       )}
     >
-      <Badge className="bg-ink/85 text-paper">{label}</Badge>
+      {product.badges.map((b) => (
+        <Badge key={b} className="bg-ink/85 text-paper">
+          {LABELS[b]}
+        </Badge>
+      ))}
     </div>
   );
 }

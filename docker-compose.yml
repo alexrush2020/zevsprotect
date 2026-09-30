@@ -1,4 +1,4 @@
-# Локальная БД. Приложение запускается на хосте: pnpm dev
+# Локальная БД. Приложение запускается на хосте: npm run dev
 services:
   postgres:
     image: postgres:16-alpine

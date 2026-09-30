@@ -48,3 +48,22 @@ export const PAYMENT_LABEL: Record<string, string> = {
   paid: "Оплачен",
   failed: "Оплата не прошла",
 };
+
+export function formatRuPhone(input: string): string {
+  const digits = input.replace(/\D/g, "").slice(0, 11);
+  if (!digits) return "";
+  const normalized = digits.startsWith("8")
+    ? `7${digits.slice(1)}`
+    : digits.startsWith("7")
+      ? digits
+      : `7${digits}`;
+  const rest = normalized.slice(1);
+  let out = "+7";
+  if (!rest) return out;
+  out += ` (${rest.slice(0, 3)}`;
+  if (rest.length >= 3) out += ")";
+  if (rest.length > 3) out += ` ${rest.slice(3, 6)}`;
+  if (rest.length > 6) out += `-${rest.slice(6, 8)}`;
+  if (rest.length > 8) out += `-${rest.slice(8, 10)}`;
+  return out;
+}

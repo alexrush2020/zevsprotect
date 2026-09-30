@@ -12,13 +12,14 @@ import { ProductCardBadges } from "@/components/product-card-badges";
 import { ProductSpecList } from "@/components/product-spec-list";
 import { ProductVolumePrice } from "@/components/product-volume-price";
 import { toManagerChatProduct } from "@/lib/manager-chat";
-import { categories } from "@/lib/data/catalog";
 import { defaultVolumeQty } from "@/lib/volume-quote";
 import type { Product } from "@/lib/types";
+import { useStore } from "@/lib/store";
 import { MediaImage } from "@/components/media-image";
 
 export function CatalogShopCard({ product }: { product: Product }) {
   const [qty, setQty] = useState(() => defaultVolumeQty(product));
+  const { categories } = useStore();
   const category = categories.find((c) => c.slug === product.category);
 
   return (
