@@ -88,6 +88,7 @@ export const Orders: CollectionConfig = {
         { name: 'email', type: 'email', label: 'Email' },
         { name: 'company', type: 'text', label: 'Компания' },
         { name: 'inn', type: 'text', label: 'ИНН' },
+        { name: 'kpp', type: 'text', label: 'КПП', minLength: 9, maxLength: 9 },
       ],
     },
     {
