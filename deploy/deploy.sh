@@ -14,12 +14,12 @@ dc up -d --wait postgres
 echo "== бэкап перед миграциями"
 "$here/backup.sh"
 
-echo "== образы текущей версии → :prev (для отката)"
-for img in zevs-app zevs-migrate; do
-  if docker image inspect "$img:latest" >/dev/null 2>&1; then
-    docker image tag "$img:latest" "$img:prev"
-  fi
-done
+# :prev — образ ЗАПУЩЕННОГО app, а не :latest: повтор deploy.sh после сбоя сборки не затрёт рабочую версию
+running=$(dc ps -q app)
+if [[ -n $running ]]; then
+  docker image tag "$(docker inspect --format '{{.Image}}' "$running")" zevs-app:prev
+  echo "== откат доступен: zevs-app:prev"
+fi
 
 echo "== миграции Payload (до сборки: next build читает БД уже новой схемы)"
 dc build migrate
@@ -28,10 +28,17 @@ dc run --rm migrate
 echo "== сборка приложения"
 dc build app
 
-echo "== запуск"
-dc up -d --wait app caddy
-
-echo "== smoke"
+echo "== запуск app"
+dc up -d --wait app
 curl -fsS http://127.0.0.1:3000/api/health
 echo
+
+# caddy (вход снаружи) — только когда первый администратор уже создан: иначе /admin предложит его создать любому
+if ! curl -fsS http://127.0.0.1:3000/api/users/init | grep -q '"initialized":true'; then
+  echo "== пользователей нет: создайте администратора (deploy/create-admin.sh) и запустите deploy.sh ещё раз" >&2
+  exit 1
+fi
+
+echo "== запуск caddy"
+dc up -d caddy
 dc ps

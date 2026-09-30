@@ -41,6 +41,8 @@ services:
         - 'postgres:127.0.0.1'
       secrets:
         - app_env
+      args:
+        NEXT_PUBLIC_SERVER_URL: ${NEXT_PUBLIC_SERVER_URL:?NEXT_PUBLIC_SERVER_URL не задан в .env.production}
     image: zevs-app:latest
     restart: unless-stopped
     env_file: .env.production

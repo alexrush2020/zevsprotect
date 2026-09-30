@@ -12,7 +12,10 @@ keep_days=${KEEP_DAYS:-14}
 ts=$(date +%Y%m%d-%H%M%S)
 
 umask 077 # файлы бэкапа — 600, каталог — 700
-mkdir -p "$backup_dir"
+if ! mkdir -p "$backup_dir" 2>/dev/null || [[ ! -w $backup_dir ]]; then
+  echo "каталог бэкапов $backup_dir недоступен для записи: sudo install -d -o \"\$USER\" -m 700 $backup_dir (или задайте BACKUP_DIR)" >&2
+  exit 1
+fi
 
 db_file="$backup_dir/db-$ts.dump"
 # внутри контейнера: локальный сокет, пароль не нужен и не светится в аргументах

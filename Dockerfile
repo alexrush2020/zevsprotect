@@ -28,8 +28,12 @@ CMD ["node_modules/.bin/payload", "migrate"]
 
 FROM source AS builder
 ENV NODE_ENV=production
+# вшивается в клиентский бандл; ARG входит в ключ кэша BuildKit (секрет — нет), смена URL пересобирает слой
+ARG NEXT_PUBLIC_SERVER_URL
 RUN --mount=type=secret,id=app_env,required=true \
-    set -a && . /run/secrets/app_env && set +a && npx next build --webpack
+    test -n "$NEXT_PUBLIC_SERVER_URL" && url="$NEXT_PUBLIC_SERVER_URL" \
+    && set -a && . /run/secrets/app_env && set +a \
+    && NEXT_PUBLIC_SERVER_URL="$url" npx next build --webpack
 
 FROM node:${NODE_VERSION}-bookworm-slim AS runner
 WORKDIR /app
