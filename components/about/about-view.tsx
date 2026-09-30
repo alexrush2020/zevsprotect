@@ -12,7 +12,9 @@ import { CategoryStrip } from "@/components/home/category-strip";
 import { ProcessContour } from "@/components/home/process-contour";
 import { CountUp, Reveal } from "@/components/home/motion";
 import { brand } from "@/lib/brand";
-import { DEFAULT_DOCS, reviews } from "@/lib/data/catalog";
+import type { AboutContent } from "@/lib/server/content";
+import type { CatalogCategory } from "@/lib/server/map";
+import type { PassagePlate } from "@/lib/types";
 
 const marquee = [
   "ПРОМЫШЛЕННОСТЬ",
@@ -25,36 +27,12 @@ const marquee = [
   "ТАГАНРОГ",
 ];
 
-const whyLead = [
-  [
-    "Образцы на вашу смену",
-    "Присылаем пары до закупки партии — сравните хват, размер и износ на реальной работе, а не по фото в каталоге.",
-  ],
-  [
-    "Более 250 моделей",
-    "ХБ, нитрил, жаропрочные, МБС, КЩС, краги и рукавицы. Подбираем покрытие и плотность под нагрузку, а не «что есть на складе».",
-  ],
-  [
-    "Полный цикл в Таганроге",
-    "Вязка, облив, комплектация и отгрузка — один контур. До 60 000 пар в сутки с Поляковского шоссе, 17.",
-  ],
-];
-
 const whyTicker = [
   "85 регионов + ЕАЭС",
   "Контроль сырья, вязки и покрытия",
   "Маркировка и выпуск под бренд",
   "Срочный заказ — если окно на станке есть",
 ];
-
-const geo = [
-  ["Таганрог", "Склад и самовывоз, Поляковское шоссе, 17"],
-  ["ЮФО", "1–3 дня · Ростов, Краснодар, Волгоград"],
-  ["ЦФО и СЗФО", "2–5 дней · Москва, Петербург"],
-  ["Урал и Поволжье", "3–6 дней"],
-  ["Сибирь и Дальний Восток", "5–10 дней · сборные ТК"],
-  ["Беларусь и Казахстан", "Отгрузка по ЕАЭС, срок по согласованию"],
-] as const;
 
 const conditions = [
   ["01", "Маркировка", "Евро-подвесы и ярлыки под сеть или объект."],
@@ -64,7 +42,15 @@ const conditions = [
   ["05", "Опт", "Условия под объём и регулярные закупки."],
 ];
 
-export function AboutView() {
+export function AboutView({
+  content,
+  categories,
+  reviews,
+}: {
+  content: AboutContent;
+  categories: CatalogCategory[];
+  reviews: PassagePlate[];
+}) {
   const { scrollYProgress } = useScroll();
   const progress = useSpring(scrollYProgress, { stiffness: 80, damping: 24, mass: 0.3 });
 
@@ -90,16 +76,10 @@ export function AboutView() {
             <h1 className="mt-3 max-w-xl font-heading text-4xl leading-[0.95] sm:text-6xl">
               Как устроен цех
             </h1>
-            <p className="mt-5 max-w-md text-lg text-paper/75">
-              {brand.legal} выпускает СИЗ для рук на {brand.address}. {brand.markRu}{" "}
-              сменил витрину «Фабрики перчаток», производство осталось здесь же.
-            </p>
-            <p className="mt-3 max-w-md text-sm text-paper/50">
-              Вязка, облив, комплектация и отгрузка — один контур. Срочная партия
-              возможна, если окно на оборудовании реально есть.
-            </p>
+            <p className="mt-5 max-w-md text-lg text-paper/75">{content.lead}</p>
+            {content.note ? <p className="mt-3 max-w-md text-sm text-paper/50">{content.note}</p> : null}
             <p className="mt-10 font-heading text-[clamp(2.75rem,5.4vw,5.25rem)] leading-none tracking-[-0.04em]">
-              <CountUp to={60000} />
+              <CountUp to={content.capacity} />
             </p>
             <p className="mt-3 text-sm uppercase tracking-[0.22em] text-orange">
               пар в сутки с одной площадки
@@ -136,7 +116,7 @@ export function AboutView() {
           className="h-72 w-full object-cover object-[center_28%] lg:h-full lg:min-h-0"
         />
         <div className="flex flex-col justify-center bg-paper px-4 py-12 sm:px-10 lg:px-16 lg:py-10">
-          {whyLead.map(([title, text]) => (
+          {content.whyLead.map(({ title, text }) => (
             <article key={title} className="border-t border-navy/10 py-8 first:border-t-0 first:pt-0 last:pb-0">
               <h2 className="font-heading text-3xl leading-tight text-ink sm:text-4xl">{title}</h2>
               <p className="mt-3 max-w-md text-steel">{text}</p>
@@ -187,7 +167,7 @@ export function AboutView() {
               <p className="text-xs uppercase tracking-[0.22em] text-orange">Ассортимент</p>
               <h2 className="mt-2 font-heading text-4xl sm:text-6xl">Семь видов защиты</h2>
               <p className="mt-3 max-w-xl text-paper/65">
-                Наведите на полосу — раскроется кадр. Более <CountUp to={250} /> моделей
+                Наведите на полосу — раскроется кадр. Более <CountUp to={content.modelsCount} /> моделей
                 под разные условия.
               </p>
             </div>
@@ -202,7 +182,7 @@ export function AboutView() {
           </div>
         </div>
         <div className="mt-10">
-          <CategoryStrip />
+          <CategoryStrip categories={categories} />
         </div>
       </section>
 
@@ -211,7 +191,7 @@ export function AboutView() {
           <div className="flex flex-col justify-center py-6 lg:py-8">
             <p className="text-xs uppercase tracking-[0.22em] text-orange">География</p>
             <p className="font-heading text-[clamp(4.5rem,16vw,9rem)] leading-[0.75] tabular-nums text-navy">
-              <CountUp to={85} duration={1} ease="linear" />
+              <CountUp to={content.regions} duration={1} ease="linear" />
             </p>
             <p className="mt-4 max-w-sm text-steel">
               регионов отгрузки. Плюс Беларусь и Казахстан. Сроки — ориентир по
@@ -226,7 +206,7 @@ export function AboutView() {
               Сравнить ТК
             </Button>
           </div>
-          <GeoBoard rows={geo} />
+          <GeoBoard rows={content.geo} />
         </div>
       </section>
 
@@ -271,7 +251,7 @@ export function AboutView() {
               </p>
             </div>
             <div className="mt-8 space-y-1">
-              {DEFAULT_DOCS.map((d) => (
+              {content.documents.map((d) => (
                 <a
                   key={d.href}
                   href={d.href}

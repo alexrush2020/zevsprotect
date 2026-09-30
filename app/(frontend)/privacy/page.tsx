@@ -1,37 +1,21 @@
-import { brand } from "@/lib/brand";
-
 import { pageMeta } from "@/lib/seo-jsonld";
+import { getPrivacyText } from "@/lib/server/catalog";
 
 export const metadata = pageMeta("Политика обработки персональных данных", "Политика обработки персональных данных ООО «ЗЕВС».", "/privacy");
 
-export default function PrivacyPage() {
+/** Текст — опубликованная страница pages со slug «privacy», иначе текст по умолчанию (lib/server/content.ts). */
+export default async function PrivacyPage() {
+  const paragraphs = await getPrivacyText();
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 text-sm leading-7 text-steel">
       <h1 className="font-heading text-4xl text-ink">
         Политика обработки персональных данных
       </h1>
-      <p className="mt-6">
-        Оператор: {brand.legal}, ИНН {brand.inn}, ОГРН {brand.ogrn}, Ростовская
-        обл., г. Таганрог, ул. Поляковское шоссе, зд. 17. Сайт бренда{" "}
-        {brand.markRu}.
-      </p>
-      <p className="mt-4">
-        Сайт обрабатывает имя, телефон, email, наименование организации и адрес
-        доставки, которые пользователь указывает в формах заказа, регистрации и
-        обратной связи. Цели: обработка заявок, консультации, исполнение
-        договоров поставки, связь по заказу.
-      </p>
-      <p className="mt-4">
-        Правовое основание — согласие субъекта и исполнение договора. Данные
-        могут передаваться в 1С и Битрикс24 как в корпоративные системы
-        оператора. Срок хранения — до достижения целей либо отзыва согласия, если
-        иное не требуется законом.
-      </p>
-      <p className="mt-4">
-        Обращения по персональным данным: zevsdir@yandex.ru. Актуальная редакция
-        публикуется на этой странице. Текст для прототипа сокращён относительно
-        полной политики на {brand.domain}.
-      </p>
+      {paragraphs.map((p, i) => (
+        <p key={i} className={i ? "mt-4" : "mt-6"}>
+          {p}
+        </p>
+      ))}
     </div>
   );
 }

@@ -51,11 +51,13 @@ export const Orders: CollectionConfig = {
       },
     ],
     beforeChange: [
-      ({ data, originalDoc }) => {
+      ({ data, originalDoc, context }) => {
         data.total = computeTotal(data.items ?? originalDoc?.items, resolveDeliveryCost(data, originalDoc))
         const status = data.status ?? originalDoc?.status
+        // statusNote — источник смены (вебхук Б24 передаёт «Битрикс24»)
+        const note = typeof context.statusNote === 'string' ? context.statusNote : undefined
         if (status)
-          data.statusHistory = nextStatusHistory(originalDoc?.statusHistory, originalDoc?.status, status, new Date().toISOString())
+          data.statusHistory = nextStatusHistory(originalDoc?.statusHistory, originalDoc?.status, status, new Date().toISOString(), note)
         return data
       },
     ],

@@ -1,5 +1,6 @@
 import type { GlobalConfig } from 'payload'
 import { hasRole } from '../access'
+import { revalidateGlobal } from '../hooks/revalidate'
 
 const admin = hasRole('admin')
 
@@ -19,6 +20,7 @@ export const Settings: GlobalConfig = {
   label: 'Настройки',
   admin: { group: 'Контент' },
   access: { read: () => true, update: admin }, // публичны только контакты — реквизиты и b24StageMap закрыты полевым read
+  hooks: { afterChange: [revalidateGlobal('content')] },
   fields: [
     {
       name: 'contacts',
@@ -28,7 +30,20 @@ export const Settings: GlobalConfig = {
         { name: 'phone', type: 'text', label: 'Телефон' },
         { name: 'email', type: 'email', label: 'Email' },
         { name: 'address', type: 'text', label: 'Адрес' },
-        { name: 'max', type: 'text', label: 'Ссылка на MAX' },
+        { name: 'max', type: 'text', label: 'Ссылка на MAX', admin: { description: 'Только https://…' } },
+        { name: 'hours', type: 'text', label: 'Часы работы', admin: { placeholder: 'Пн–Пт 8:00–17:00' } },
+        {
+          name: 'desks',
+          type: 'array',
+          labels: { singular: 'Отдел', plural: 'Отделы' },
+          label: 'Отделы (страница «Контакты»)',
+          admin: { description: 'Пусто — отделы по умолчанию.' },
+          fields: [
+            { name: 'title', type: 'text', label: 'Отдел', required: true },
+            { name: 'phone', type: 'text', label: 'Телефон' },
+            { name: 'email', type: 'email', label: 'Email', required: true },
+          ],
+        },
       ],
     },
     {
@@ -52,6 +67,7 @@ export const Settings: GlobalConfig = {
       type: 'array',
       labels: { singular: 'Соответствие', plural: 'Соответствия' },
       label: 'Стадии Б24 → статус заказа',
+      admin: { description: 'ID стадии сделки из Б24 (STAGE_ID). Несопоставленная стадия заказ не меняет.' },
       access: { read: hasRole('admin', 'manager') },
       fields: [
         { name: 'stage', type: 'text', label: 'Стадия сделки Б24', required: true },
@@ -67,6 +83,18 @@ export const Settings: GlobalConfig = {
             { label: 'В доставке', value: 'delivery' },
             { label: 'Доставлен', value: 'delivered' },
             { label: 'Отменён', value: 'cancelled' },
+          ],
+        },
+        {
+          name: 'paymentStatus',
+          type: 'select',
+          label: 'Статус оплаты (необязательно)',
+          admin: { description: 'Пусто — статус оплаты заказа не меняется.' },
+          options: [
+            { label: 'Ожидает', value: 'pending' },
+            { label: 'Счёт выставлен', value: 'invoiced' },
+            { label: 'Оплачен', value: 'paid' },
+            { label: 'Ошибка', value: 'failed' },
           ],
         },
       ],

@@ -11,7 +11,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { InquiryDialog } from "@/components/inquiry-dialog";
 import { ProductCard } from "@/components/product-card";
-import { articles, categories, products } from "@/lib/data/catalog";
 import { formatDate } from "@/lib/format";
 import { brand } from "@/lib/brand";
 import { HomeHero } from "@/components/home/home-hero";
@@ -19,43 +18,27 @@ import { CategoryStrip } from "@/components/home/category-strip";
 import { Reveal, Stagger, StaggerItem } from "@/components/home/motion";
 import { ProcessContour } from "@/components/home/process-contour";
 import { PassageBoard } from "@/components/home/passage-board";
+import type { HomeContent } from "@/lib/server/content";
+import type { CatalogCategory } from "@/lib/server/map";
+import type { Article, Product } from "@/lib/types";
 
-const advantages = [
-  {
-    title: "Образцы для теста",
-    text: "Пришлём пары на вашу смену — сравните хват, износ и размер до закупки партии.",
-  },
-  {
-    title: "Более 100 моделей",
-    text: "Семь видов защиты: от ХБ с ПВХ до жаропрочных, МБС, КЩС, краг и рукавиц.",
-  },
-  {
-    title: "До 60 000 пар в сутки",
-    text: "Собственный цикл в Таганроге: вязка, облив, комплектация и отгрузка.",
-  },
-  {
-    title: "Доставка по России",
-    text: "Сравните СДЭК, ДЛ, ПЭК и «Энергию» или запросите расчёт менеджером.",
-  },
-  {
-    title: "Контроль качества",
-    text: "Проверяем сырьё, вязку и покрытие. Несоответствие — замена или возврат.",
-  },
-  {
-    title: "Маркировка под бренд",
-    text: "Евро-подвесы, ярлыки и упаковка для DIY-сетей и дистрибьюторов.",
-  },
-];
-
-const marquee = [
-  ...categories.map((c) => c.short.toUpperCase()),
-  brand.taglineUpper,
-  "ТАГАНРОГ",
-  "ОПТ",
-];
-
-export function HomeView() {
-  const featured = products.filter((p) => p.featured).slice(0, 8);
+export function HomeView({
+  content,
+  categories,
+  featured,
+  articles,
+}: {
+  content: HomeContent;
+  categories: CatalogCategory[];
+  featured: Product[];
+  articles: Article[];
+}) {
+  const marquee = [
+    ...categories.map((c) => c.short.toUpperCase()),
+    brand.taglineUpper,
+    "ТАГАНРОГ",
+    "ОПТ",
+  ];
   const reduce = useReducedMotion();
   const { scrollYProgress } = useScroll();
   const progress = useSpring(scrollYProgress, { stiffness: 80, damping: 24, mass: 0.3 });
@@ -67,7 +50,7 @@ export function HomeView() {
         style={{ scaleX: progress }}
         aria-hidden
       />
-      <HomeHero />
+      <HomeHero title={content.heroTitle} text={content.heroText} stats={content.stats} />
 
       <div className="relative overflow-hidden border-y border-white/10 bg-[linear-gradient(90deg,#040040_0%,#040040_28%,#f97316_72%,#f97316_100%)] py-3 text-paper">
         <div className="home-marquee flex w-max whitespace-nowrap">
@@ -94,14 +77,9 @@ export function HomeView() {
             <p className="text-xs uppercase tracking-[0.22em] text-orange">О компании</p>
             <span className="mt-3 block h-0.5 w-10 bg-orange" />
             <h2 className="mt-2 font-heading text-3xl sm:text-4xl">
-              Полный цикл: от пряжи до фуры
+              {content.aboutTitle}
             </h2>
-            <p className="mt-4 text-steel">
-              {brand.legal} выпускает линейку {brand.markRu} на Поляковском
-              шоссе, 17. Прямые контракты по сырью, свой объём и сроки — без
-              чужого склада. Продукция идёт на промышленность, логистику,
-              стройку, машиностроение и торговые сети.
-            </p>
+            <p className="mt-4 text-steel">{content.aboutText}</p>
             <Link
               href="/about"
               className="mt-5 inline-flex items-center gap-2 text-sm font-medium hover:text-orange"
@@ -145,7 +123,7 @@ export function HomeView() {
             <h2 className="font-heading text-3xl sm:text-4xl">Почему закупают у нас</h2>
           </Reveal>
           <Stagger className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3" delay={0.05}>
-            {advantages.map((a) => (
+            {content.advantages.map((a) => (
               <StaggerItem key={a.title}>
                 <article className="home-shine group h-full rounded-2xl border border-white/10 p-5 transition duration-500 hover:-translate-y-1 hover:border-white/30 hover:bg-white/5">
                   <h3 className="font-heading text-lg text-white">{a.title}</h3>
@@ -171,7 +149,7 @@ export function HomeView() {
           </div>
         </Reveal>
         <div className="mx-auto mt-10 max-w-6xl px-4">
-          <CategoryStrip />
+          <CategoryStrip categories={categories} />
         </div>
       </section>
 
@@ -197,12 +175,7 @@ export function HomeView() {
           <Reveal>
             <h2 className="font-heading text-3xl sm:text-4xl">Условия покупки</h2>
             <ul className="mt-6 space-y-3 text-steel">
-              {[
-                "Заказ без регистрации — укажите получателя и адрес.",
-                "Личный кабинет подтягивает реквизиты, историю и повтор заказа.",
-                "Оплата: счёт с сайта, счёт от менеджера или онлайн.",
-                "Минимальная фасовка указана в карточке. Опт и сеть — по запросу.",
-              ].map((item, i) => (
+              {content.terms.map((item, i) => (
                 <motion.li
                   key={item}
                   initial={reduce ? false : { opacity: 0, x: -16 }}
@@ -253,7 +226,7 @@ export function HomeView() {
         </div>
       </section>
 
-      <PassageBoard />
+      <PassageBoard title={content.reviewsTitle} reviews={content.reviews} stamps={content.stamps} />
 
       <section className="mx-auto max-w-6xl px-4 pb-20">
         <Reveal>
@@ -265,7 +238,7 @@ export function HomeView() {
           </div>
         </Reveal>
         <Stagger className="mt-8 grid auto-rows-fr items-stretch gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {articles.filter((a) => a.home !== false).slice(0, 3).map((a) => (
+          {articles.map((a) => (
             <StaggerItem key={a.slug} className="h-full min-w-0">
               <Link
                 href={`/blog/${a.slug}`}
@@ -297,11 +270,8 @@ export function HomeView() {
         <div className="home-grain absolute inset-0 opacity-40" />
         <div className="relative mx-auto grid max-w-6xl gap-10 px-4 lg:grid-cols-2 lg:items-center">
           <Reveal>
-            <h2 className="font-heading text-3xl sm:text-5xl">Нужен расчёт партии?</h2>
-            <p className="mt-4 max-w-md text-paper/70">
-              Напишите объём и город. В рабочее время менеджер отвечает за
-              несколько минут. Заявка уходит лидом в Битрикс24.
-            </p>
+            <h2 className="font-heading text-3xl sm:text-5xl">{content.ctaTitle}</h2>
+            <p className="mt-4 max-w-md text-paper/70">{content.ctaText}</p>
             <p className="mt-6 text-sm text-paper/55">
               {brand.address}
               <br />

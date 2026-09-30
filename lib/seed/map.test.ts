@@ -40,7 +40,8 @@ describe("категории, статьи, отзывы", () => {
       ...d, id: 1, createdAt: "", category: { id: 1, title: a.category, slug: "" },
       cover: m(1, a.image), slides: d.slides.map((s, i) => ({ ...s, image: m(s.image, a.slides![i].src) })),
     } as unknown as Post);
-    expect(back).toMatchObject({ slug: a.slug, title: a.title, date: a.date, category: a.category, content: a.content, slides: a.slides, home: !!a.home });
+    expect(back).toMatchObject({ slug: a.slug, title: a.title, date: a.date, category: a.category, content: a.content, slides: a.slides, home: false });
+    expect(postData(articles[1], { categoryId: 1, coverId: 1, slideIds: [] }).home).toBe(true);
   });
   it("отзыв", () => {
     const r = sampleProductReviews[0];

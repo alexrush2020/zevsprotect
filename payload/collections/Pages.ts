@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 import { docTitle, slugField } from '../admin-ui'
 import { hasRole, isStaff, publishedOrStaff } from '../access'
+import { revalidateAfterChange, revalidateAfterDelete } from '../hooks/revalidate'
 
 const editor = hasRole('admin', 'content')
 
@@ -9,6 +10,7 @@ export const Pages: CollectionConfig = {
   labels: { singular: 'Страница', plural: 'Страницы' },
   admin: { group: 'Контент', useAsTitle: 'title', defaultColumns: ['title', 'slug', '_status', 'updatedAt'], listSearchableFields: ['title', 'slug'], components: docTitle('Новая страница') },
   versions: { drafts: true, maxPerDoc: 20 },
+  hooks: { afterChange: [revalidateAfterChange('content')], afterDelete: [revalidateAfterDelete('content')] },
   access: { read: publishedOrStaff, readVersions: isStaff, create: editor, update: editor, delete: hasRole('admin') },
   fields: [
     { name: 'title', type: 'text', label: 'Заголовок', required: true },
