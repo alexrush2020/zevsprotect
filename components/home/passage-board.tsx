@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { passageStamps, reviews } from "@/lib/data/catalog";
 import { canHoverOpenPlate, nextOpenPlate } from "@/lib/passage-board";
 import { Reveal } from "@/components/home/motion";
 import { cn } from "@/lib/utils";
+import type { PassagePlate, PassageStamp } from "@/lib/types";
 
 function useFineHover() {
   const [fine, setFine] = useState(false);
@@ -21,7 +21,15 @@ function useFineHover() {
   return fine;
 }
 
-export function PassageBoard() {
+export function PassageBoard({
+  title,
+  reviews,
+  stamps,
+}: {
+  title: string;
+  reviews: PassagePlate[];
+  stamps: PassageStamp[];
+}) {
   const reduce = useReducedMotion();
   const fineHover = useFineHover();
   const hoverOpens = canHoverOpenPlate(fineHover, fineHover);
@@ -61,7 +69,7 @@ export function PassageBoard() {
           </p>
           <span className="mt-3 block h-0.5 w-10 bg-orange" />
           <h2 className="mt-2 font-heading text-3xl sm:text-4xl">
-            Кто берёт и не уходит
+            {title}
           </h2>
         </Reveal>
 
@@ -147,7 +155,7 @@ export function PassageBoard() {
           >
             {[0, 1].map((copy) => (
               <p key={copy} className="flex items-center gap-10 pr-10">
-                {passageStamps.map((stamp) => (
+                {stamps.map((stamp) => (
                   <span key={`${copy}-${stamp.label}`}>{stamp.label}</span>
                 ))}
               </p>

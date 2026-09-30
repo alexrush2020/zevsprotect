@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { categories } from "@/lib/data/catalog";
+import type { CatalogCategory } from "@/lib/server/map";
 
-export function CategoryStrip() {
+export function CategoryStrip({ categories }: { categories: CatalogCategory[] }) {
   return (
     <div className="cat-strip">
       {categories.map((c) => (

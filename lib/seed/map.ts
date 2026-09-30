@@ -83,7 +83,7 @@ export function postData(a: Article, r: { categoryId?: number; coverId?: number;
     content: toLexical(a.content),
     slides: (a.slides ?? []).flatMap((s, i) => (r.slideIds[i] ? [{ image: r.slideIds[i]!, title: s.title, alt: s.alt }] : [])),
     publishedAt: `${a.date}T09:00:00.000+03:00`,
-    home: !!a.home,
+    home: a.home !== false, // в моке прототипа статья на главной, если home не false
     _status: "published" as const,
   };
 }
