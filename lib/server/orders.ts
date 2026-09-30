@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { normalizeCart, priceCart } from "@/lib/cart-pricing";
 import { PICKUP_ADDRESS, formatAddressLine } from "@/lib/addresses";
 import { carriers } from "@/lib/delivery";
@@ -70,6 +70,7 @@ export function buildOrder(input: unknown, catalog: Product[], ctx: { customerId
   if (!email) return fail("Укажите email");
   if (!EMAIL_RE.test(email)) return fail("Проверьте email");
   if (validateInn()(inn) !== true) return fail("ИНН — 10 или 12 цифр без пробелов");
+  if (kpp && !/^\d{4}[\dA-Z]{2}\d{3}$/.test(kpp)) return fail("КПП — 9 символов без пробелов");
 
   const payment = i.payment as PaymentMethod;
   if (!PAYMENTS.includes(payment)) return fail("Выберите способ оплаты");
@@ -105,7 +106,12 @@ export function buildOrder(input: unknown, catalog: Product[], ctx: { customerId
   // normalizeCart сливает одинаковые строки и приводит qty к минимуму/упаковке; priceCart — цены и скидка по объёму
   const { lines, goods } = priceCart(normalizeCart(rows, catalog), catalog);
   const missing = lines.find((l) => !l.available);
-  if (missing) return fail(`Позиция «${missing.productId}» недоступна — уберите её из корзины`);
+  if (missing)
+    return fail(
+      missing.product
+        ? `Цену модели «${missing.product.name}» уточнит менеджер — оформите заявку`
+        : `Позиция «${missing.productId}» недоступна — уберите её из корзины`,
+    );
   if (!lines.length) return fail("Корзина пуста");
   for (const l of lines) {
     const p = l.product!;
@@ -148,9 +154,23 @@ export type OrderDeps = {
   sendEmail: (m: { to: string; subject: string; text: string; html: string }) => Promise<unknown>;
   managerEmail: () => Promise<string | undefined>;
   log?: (msg: string, err?: unknown) => void;
+  /** Фоновая задача после ответа (в action — after() из next/server). По умолчанию — без ожидания. */
+  defer?: (task: () => Promise<void>) => void;
 };
 
 export type OrderRequest = { input: unknown; ip: string; customerId?: number; now?: Date };
+
+/** Отпечаток состава и оплаты: тот же токен с изменённой корзиной — новый заказ, точный повтор — прежний. */
+function orderFingerprint(input: unknown): string {
+  const i = (input && typeof input === "object" ? input : {}) as { items?: unknown; payment?: unknown };
+  const rows = (Array.isArray(i.items) ? i.items : [])
+    .map((r) => {
+      const x = (r && typeof r === "object" ? r : {}) as Record<string, unknown>;
+      return JSON.stringify([x.productId, x.size, x.coating ?? "", x.qty]);
+    })
+    .sort();
+  return createHash("sha256").update(JSON.stringify([rows, i.payment])).digest("base64url").slice(0, 16);
+}
 
 const isNumberConflict = (e: unknown) =>
   !!(e as { data?: { errors?: { path?: string }[] } })?.data?.errors?.some((x) => x.path === "number");
@@ -171,7 +191,7 @@ export function createOrderReceiver(opts = { limit: 10, windowMs: 10 * 60_000, d
 
     // Повтор той же формы (двойной клик, повторный запрос) — тот же результат, без второго заказа.
     for (const [k, v] of recent) if (v.at <= t - opts.dedupMs) recent.delete(k);
-    const key = `${req.customerId ?? ""}|${token}`;
+    const key = `${req.customerId ?? ""}|${token}|${orderFingerprint(req.input)}`;
     const prev = recent.get(key);
     if (prev) return prev.result;
 
@@ -210,8 +230,13 @@ export function createOrderReceiver(opts = { limit: 10, windowMs: 10 * 60_000, d
         if (attempt >= 3 || !isNumberConflict(e)) throw e;
       }
     }
-    await sendOrderMails(deps, doc.number, doc.total ?? built.goods, built.data);
-    return { ok: true, number: doc.number };
+    // письма не задерживают ответ: SMTP может висеть до таймаута
+    const { number, total } = doc;
+    const mails = () =>
+      sendOrderMails(deps, number, total ?? built.goods, built.data).catch((e) => deps.log?.("orders: письма не отправлены", e));
+    if (deps.defer) deps.defer(mails);
+    else void mails();
+    return { ok: true, number };
   }
 }
 

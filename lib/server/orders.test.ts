@@ -97,6 +97,18 @@ describe("buildOrder: деньги считает сервер", () => {
     expect(buildOrder(input({ items: [{ productId: "tkan", size: "L", qty: 50, coating: "Золото" }] }), catalog, { now }).ok).toBe(false);
   });
 
+  it("модель без цены не оформляется за 0 ₽ — только заявкой", () => {
+    const free = { ...fabric, id: "13", slug: "bez-ceny", name: "Без цены", price: 0 } as Product;
+    const r = buildOrder(input({ items: [{ productId: "tkan", size: "L", qty: 50 }, { productId: "bez-ceny", size: "L", qty: 50 }] }), [...catalog, free], { now });
+    expect(r).toEqual({ ok: false, error: "Цену модели «Без цены» уточнит менеджер — оформите заявку" });
+  });
+
+  it("КПП: если заполнен — 9 символов", () => {
+    expect(buildOrder(input({ contact: { ...input().contact, kpp: "12345" } }), catalog, { now })).toMatchObject({ ok: false, error: expect.stringContaining("КПП") });
+    expect(buildOrder(input({ contact: { ...input().contact, kpp: "7707AB001" } }), catalog, { now }).ok).toBe(true);
+    expect(buildOrder(input({ contact: { ...input().contact, kpp: "" } }), catalog, { now }).ok).toBe(true);
+  });
+
   it("пустая корзина и мусорные позиции — отказ", () => {
     expect(buildOrder(input({ items: [] }), catalog, { now })).toEqual({ ok: false, error: "Корзина пуста" });
     expect(buildOrder(input({ items: undefined }), catalog, { now }).ok).toBe(false);
@@ -162,7 +174,7 @@ describe("createOrderReceiver", () => {
     expect(r).toEqual({ ok: true, number: "ZP-2026-0001" });
     expect(d.create).toHaveBeenCalledOnce();
     const calls = vi.mocked(d.sendEmail).mock.calls;
-    expect(calls.map(([m]) => m.to)).toEqual(["ivan@firm.ru", "sales@zevsprotect.ru"]);
+    await vi.waitFor(() => expect(calls.map(([m]) => m.to)).toEqual(["ivan@firm.ru", "sales@zevsprotect.ru"]));
     const [client] = calls[0];
     expect(client.text).toContain("Итого: 5");
     expect(client.text).toContain("Ткань · L — 50 × 100 ₽");
@@ -178,6 +190,18 @@ describe("createOrderReceiver", () => {
     expect(d.create).toHaveBeenCalledOnce();
     // новая форма (новый токен) — новый заказ
     expect(await receive(d, { input: input({ token: "tok-other-123" }), ip: "1.1.1.1", now })).toEqual({ ok: true, number: "ZP-2026-0002" });
+  });
+
+  it("тот же токен с изменённой корзиной или оплатой — новый заказ, точный повтор — прежний", async () => {
+    const d = deps();
+    const receive = createOrderReceiver();
+    const first = await receive(d, { input: input(), ip: "1.1.1.1", now });
+    const changed = await receive(d, { input: input({ items: [{ productId: "tkan", size: "L", qty: 100 }] }), ip: "1.1.1.1", now });
+    const payment = await receive(d, { input: input({ payment: "invoice_manager" }), ip: "1.1.1.1", now });
+    const again = await receive(d, { input: input(), ip: "1.1.1.1", now });
+    expect([first, changed, payment].map((r) => (r.ok ? r.number : ""))).toEqual(["ZP-2026-0001", "ZP-2026-0002", "ZP-2026-0003"]);
+    expect(again).toEqual(first);
+    expect(d.create).toHaveBeenCalledTimes(3);
   });
 
   it("ошибка валидации не кэшируется: после исправления тот же токен оформляет заказ", async () => {
@@ -197,7 +221,20 @@ describe("createOrderReceiver", () => {
     const d = deps({ sendEmail: vi.fn(async () => { throw new Error("SMTP down"); }), managerEmail: async () => { throw new Error("settings down"); } });
     const r = await createOrderReceiver()(d, { input: input(), ip: "1.1.1.1", now });
     expect(r).toEqual({ ok: true, number: "ZP-2026-0001" });
-    expect(d.log).toHaveBeenCalledWith("orders: письмо клиенту не отправлено", expect.any(Error));
+    await vi.waitFor(() => expect(d.log).toHaveBeenCalledWith("orders: письмо клиенту не отправлено", expect.any(Error)));
+  });
+
+  it("ответ не ждёт SMTP: письма уходят фоном (defer)", async () => {
+    const tasks: (() => Promise<void>)[] = [];
+    const sendEmail = vi.fn(() => new Promise<never>(() => {})); // SMTP завис
+    const d = deps({ sendEmail, defer: (t) => void tasks.push(t) });
+    expect(await createOrderReceiver()(d, { input: input(), ip: "1.1.1.1", now })).toEqual({ ok: true, number: "ZP-2026-0001" });
+    expect(sendEmail).not.toHaveBeenCalled();
+    expect(tasks).toHaveLength(1);
+    void tasks[0]();
+    await vi.waitFor(() => expect(sendEmail).toHaveBeenCalledOnce());
+    // и без defer ответ не ждёт зависшее письмо
+    expect(await createOrderReceiver()(deps({ sendEmail }), { input: input(), ip: "1.1.1.1", now })).toMatchObject({ ok: true });
   });
 
   it("сбой записи — понятная ошибка, повтор того же токена пробует снова", async () => {

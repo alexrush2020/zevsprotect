@@ -1,6 +1,7 @@
 "use server";
 
 import { cookies, headers } from "next/headers";
+import { after } from "next/server";
 import { getPayload } from "payload";
 import config from "@payload-config";
 import { getProducts } from "@/lib/server/catalog";
@@ -36,6 +37,7 @@ export async function createOrder(input: OrderInput): Promise<OrderResult> {
         (await payload.findGlobal({ slug: "settings", depth: 0 })).contacts?.email ||
         undefined,
       log: (msg, err) => console.error(msg, err),
+      defer: (task) => after(task), // письма — после ответа клиенту
     },
     { input, ip, customerId },
   );

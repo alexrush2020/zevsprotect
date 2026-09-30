@@ -15,7 +15,7 @@ export async function loadOrder(number: string): Promise<ViewOrder | null> {
   const where = { number: { equals: number } };
   const { user } = await payload.auth({ headers: h });
   if (user) {
-    const { docs } = await payload.find({ collection: "orders", where, limit: 1, depth: 1, overrideAccess: false, user });
+    const { docs } = await payload.find({ collection: "orders", where, limit: 1, depth: 1, overrideAccess: false, user, disableErrors: true }); // нет доступа (роль content) — не 403, а запасной путь по cookie
     if (docs[0]) return toViewOrder(docs[0]);
   }
   const cookie = (await cookies()).get(ORDER_ACCESS_COOKIE)?.value;

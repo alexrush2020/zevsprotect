@@ -288,7 +288,7 @@ export default function CheckoutPage() {
       <aside className="h-fit rounded-2xl border bg-card p-5">
         <p className="font-heading text-lg">Состав</p>
         <ul className="mt-3 space-y-2 text-sm">
-          {cart.map((item) => {
+          {orderable.map((item) => {
             const p = getProduct(item.productId);
             if (!p) return null;
             return (
@@ -296,7 +296,7 @@ export default function CheckoutPage() {
                 <span>
                   {p.name} · {item.size} · {cartLineOfferLabel(p, item)}
                 </span>
-                <span>{formatPrice(cartLineTotal(p, item, cartProductQty(cart, item.productId)))}</span>
+                <span>{formatPrice(cartLineTotal(p, item, cartProductQty(orderable, item.productId)))}</span>
               </li>
             );
           })}

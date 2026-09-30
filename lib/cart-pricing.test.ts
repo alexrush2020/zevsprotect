@@ -45,6 +45,20 @@ describe('priceCart', () => {
     expect(r.goods).toBe(27679.68)
   })
 
+  it('модель без цены (price 0) — недоступна для заказа, не в сумме и не в orderable', () => {
+    const free = { ...fabric, id: '3', slug: 'bez-ceny', price: 0 } as Product
+    const r = priceCart(
+      [
+        { productId: 'bez-ceny', size: 'L', qty: 50 },
+        { productId: 'tkan', size: 'L', qty: 50 },
+      ],
+      [...catalog, free],
+    )
+    expect(r.lines[0]).toMatchObject({ available: false, unitPrice: 0, total: 0 })
+    expect(r.goods).toBe(5000)
+    expect(orderableItems(r.lines).map((i) => i.productId)).toEqual(['tkan'])
+  })
+
   it('товара нет в каталоге — недоступен, не в сумме, не падает', () => {
     const r = priceCart(
       [
