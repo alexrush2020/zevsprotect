@@ -22,8 +22,7 @@ export function OrderView({ id, serverOrder }: { id: string; serverOrder: ViewOr
       <div className="mx-auto max-w-xl px-4 py-20 text-center">
         <h1 className="font-heading text-3xl">Заказ не найден</h1>
         <p className="mt-2 text-steel">
-          В прототипе заказы хранятся в этом браузере. Гость может найти заказ
-          по номеру на странице отслеживания.
+          Проверьте номер. Гость может найти заказ по номеру и email на странице отслеживания.
         </p>
         <div className="mt-6 flex justify-center gap-3">
           <Button nativeButton={false} render={<Link href="/track" />} variant="outline">
@@ -95,7 +94,7 @@ export function OrderView({ id, serverOrder }: { id: string; serverOrder: ViewOr
             нет регистрации. Сохраните номер {order.id} для отслеживания.
           </p>
         ) : (
-          <p className="mt-2">Сделка создана в Битрикс24. Статус заказа ведёт CRM (мок).</p>
+          <p className="mt-2">Сделка создана в Битрикс24. Статус заказа ведёт менеджер в CRM.</p>
         )}
       </div>
 

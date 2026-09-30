@@ -53,14 +53,13 @@ export function LeadForm({
     track(formEvent(type));
     setLeadId(res.id);
     setSent(true);
-    toast.success(`Лид ${res.id} · мок Битрикс24`);
+    toast.success(`Заявка ${res.id} принята`);
   }
 
   if (sent) {
     return (
       <p className="rounded-2xl border bg-navy/10 p-5 text-sm">
-        Заявка {leadId} принята. В моке Битрикс24 создан лид, менеджер свяжется в
-        рабочее время. Письмо на почту в прототипе не уходит.
+        Заявка {leadId} принята. Менеджер свяжется в рабочее время.
       </p>
     );
   }

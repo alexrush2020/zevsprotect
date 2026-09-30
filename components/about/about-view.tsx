@@ -194,8 +194,8 @@ export function AboutView({
               <CountUp to={content.regions} duration={1} ease="linear" />
             </p>
             <p className="mt-4 max-w-sm text-steel">
-              регионов отгрузки. Плюс Беларусь и Казахстан. Сроки — ориентир по
-              мокам ТК, не оферта перевозчика.
+              регионов отгрузки. Плюс Беларусь и Казахстан. Сроки — ориентир, не
+              оферта перевозчика.
             </p>
             <Button
               nativeButton={false}
@@ -247,7 +247,7 @@ export function AboutView({
             <div>
               <p className="font-heading text-2xl">Документы к партии</p>
               <p className="mt-3 text-sm text-paper/55">
-                Сканы для прототипа. В бою файлы подгружаются к модели из CMS / 1С.
+                Документы подгружаются к модели из CMS / 1С.
               </p>
             </div>
             <div className="mt-8 space-y-1">

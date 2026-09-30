@@ -45,7 +45,7 @@ export default function AccountOrdersPage() {
       <section>
         <h2 className="font-heading text-xl">Заказы</h2>
         <p className="mt-1 text-sm text-steel">
-          Статусы в прототипе заданы вручную. По ТЗ источник статуса — Битрикс24.
+          Статус заказа обновляется менеджером в Битрикс24.
         </p>
         <AccountScroll className="mt-4">
           {notice ?? (loaded === null ? null : mine.length === 0 ? (

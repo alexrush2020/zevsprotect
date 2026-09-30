@@ -99,7 +99,7 @@ export function InquiryDialog({
     }
     track(formEvent(copy.lead));
     setSent(true);
-    toast.success(`Лид ${res.id} отправлен в Битрикс24`);
+    toast.success(`Заявка ${res.id} принята`);
   }
 
   return (
@@ -113,8 +113,7 @@ export function InquiryDialog({
         {sent ? (
           <div className="rounded-xl border border-orange/20 bg-orange/5 p-4 text-sm">
             Заявка принята. Менеджер ответит в рабочее время, обычно в течение
-            нескольких минут. В прототипе лид сохранён локально и «ушёл» в
-            Битрикс24.
+            нескольких минут.
           </div>
         ) : (
           <form className="grid gap-3" onSubmit={onSubmit}>

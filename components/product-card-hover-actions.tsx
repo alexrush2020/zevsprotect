@@ -13,11 +13,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatPrice } from "@/lib/format";
 import { productMinQty, snapOrderQty } from "@/lib/order-qty";
 import { defaultVolumeQty, quoteVolume } from "@/lib/volume-quote";
+import { submitLead } from "@/lib/server/lead-action";
 import { useStore } from "@/lib/store";
 import type { Product } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -38,7 +40,7 @@ export function ProductCardHoverActions({
   variant?: "desktop" | "shop";
   volumeQty?: number;
 }) {
-  const { toggleFavorite, isFavorite, addToCart, addLead, user } = useStore();
+  const { toggleFavorite, isFavorite, addToCart, user } = useStore();
   const liked = isFavorite(product.slug);
   const [quickOpen, setQuickOpen] = useState(false);
   const [samplesOpen, setSamplesOpen] = useState(false);
@@ -123,7 +125,8 @@ export function ProductCardHoverActions({
         open={quickOpen}
         onOpenChange={setQuickOpen}
         addToCart={addToCart}
-        addLead={addLead}
+        defaultName={user?.name ?? ""}
+        defaultEmail={user?.email ?? ""}
         defaultPhone={user?.phone ?? ""}
         volumeQty={volumeQty ?? defaultVolumeQty(product)}
       />
@@ -190,7 +193,8 @@ function QuickOrderModal({
   open,
   onOpenChange,
   addToCart,
-  addLead,
+  defaultName,
+  defaultEmail,
   defaultPhone,
   volumeQty,
 }: {
@@ -198,7 +202,8 @@ function QuickOrderModal({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   addToCart: (productId: string, size: string, qty: number, coating?: string) => boolean;
-  addLead: (type: string, payload: Record<string, string>) => { id: string };
+  defaultName: string;
+  defaultEmail: string;
   defaultPhone: string;
   volumeQty: number;
 }) {
@@ -209,6 +214,7 @@ function QuickOrderModal({
   const [qty, setQty] = useState(volumeQty);
   const [phone, setPhone] = useState(defaultPhone);
   const [sentId, setSentId] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
   const min = productMinQty(product);
 
@@ -243,19 +249,31 @@ function QuickOrderModal({
     window.setTimeout(() => handleOpenChange(false), 700);
   }
 
-  function handleLead(e: React.FormEvent) {
+  async function handleLead(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const snapped = snapOrderQty(qty, product);
-    const lead = addLead("quick-order", {
+    if (pending) return;
+    const data = new FormData(e.currentTarget);
+    setPending(true);
+    const res = await submitLead("product-request", {
+      consent: String(data.get("consent") || ""),
+      website: String(data.get("website") || ""),
+      name: String(data.get("name") || ""),
+      phone,
+      email: String(data.get("email") || ""),
       product: product.name,
       sku: product.sku,
       size,
       coating,
-      qty: String(snapped),
-      phone,
-    });
-    setSentId(lead.id);
-    toast.success(`Заявка ${lead.id} принята`);
+      qty: String(snapOrderQty(qty, product)),
+      via: "quick-order",
+    }).catch(() => null);
+    setPending(false);
+    if (!res?.ok) {
+      toast.error(res?.error ?? "Не удалось отправить заявку. Попробуйте ещё раз или позвоните нам.");
+      return;
+    }
+    setSentId(res.id);
+    toast.success(`Заявка ${res.id} принята`);
   }
 
   return (
@@ -271,7 +289,6 @@ function QuickOrderModal({
         {sentId ? (
           <p className="rounded-xl border border-orange/20 bg-orange/5 p-4 text-sm">
             Заявка {sentId} принята. Менеджер подтвердит объём и срок отгрузки.
-            В прототипе лид сохранён локально.
           </p>
         ) : (
           <form className="grid gap-3" onSubmit={handleLead}>
@@ -297,6 +314,14 @@ function QuickOrderModal({
               <QtyStepper product={product} qty={qty} onQtyChange={setQty} />
             </div>
             <div className="grid gap-1.5">
+              <Label htmlFor={`name-${product.id}`}>Имя</Label>
+              <Input id={`name-${product.id}`} name="name" required defaultValue={defaultName} placeholder="Как к вам обращаться" />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor={`email-${product.id}`}>Email</Label>
+              <Input id={`email-${product.id}`} name="email" type="email" required defaultValue={defaultEmail} placeholder="work@company.ru" />
+            </div>
+            <div className="grid gap-1.5">
               <Label htmlFor={`phone-${product.id}`}>Телефон</Label>
               <Input
                 id={`phone-${product.id}`}
@@ -307,7 +332,12 @@ function QuickOrderModal({
                 placeholder="+7"
               />
             </div>
-            <Button type="submit" className="h-10">
+            <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden className="hidden" />
+            <label className="flex items-start gap-2 text-xs text-steel">
+              <Checkbox name="consent" required defaultChecked />
+              <span>Согласен на обработку персональных данных</span>
+            </label>
+            <Button type="submit" className="h-10" disabled={pending}>
               Отправить заявку
             </Button>
             {inStock ? (

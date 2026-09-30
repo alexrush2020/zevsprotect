@@ -229,7 +229,7 @@ export default function CheckoutPage() {
                 required
               />
               <p className="text-xs text-steel">
-                Вес партии ≈ {weight.toFixed(1)} кг (мок из карточек).
+                Вес партии ≈ {weight.toFixed(1)} кг (по данным карточек).
               </p>
             </div>
           ) : null}

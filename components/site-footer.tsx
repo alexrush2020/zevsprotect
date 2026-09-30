@@ -106,7 +106,7 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="border-t border-white/10 py-4 text-center text-[11px] uppercase tracking-[0.16em] text-paper/40">
-        {brand.tagline} · прототип витрины {brand.domain}
+        {brand.tagline} · {brand.domain}
       </div>
     </footer>
   );

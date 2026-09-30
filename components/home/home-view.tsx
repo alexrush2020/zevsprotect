@@ -158,8 +158,7 @@ export function HomeView({
         <Reveal>
           <h2 className="font-heading text-3xl sm:text-4xl">Рекомендуемые модели</h2>
           <p className="mt-2 text-steel">
-            Цены и остатки в прототипе соответствуют витрине и помечены как данные
-            из 1С.
+            Цены и остатки синхронизируются с 1С.
           </p>
         </Reveal>
         <Stagger className="mt-8 grid auto-rows-fr items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-4">

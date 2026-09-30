@@ -61,9 +61,6 @@ export default function TrackPage() {
       <p className="mt-2 text-steel">
         Для гостевого заказа нужны номер и email из оформления.
       </p>
-      <p className="mt-2 text-sm text-steel">
-        Демо: <code>ZP-10990</code> · <code>gost@example.ru</code>
-      </p>
       <form className="mt-8 grid gap-3" onSubmit={onSubmit}>
         <div className="grid gap-1.5">
           <Label htmlFor="id">Номер заказа</Label>

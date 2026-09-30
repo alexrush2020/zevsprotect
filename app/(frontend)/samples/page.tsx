@@ -20,7 +20,7 @@ export default function SamplesPage() {
           <ul className="mt-6 space-y-3 text-steel">
             <li>Укажите виды защиты и размеры — подберём 2–4 модели.</li>
             <li>Доставка образцов ТК или с ближайшей отгрузкой.</li>
-            <li>Заявка уходит лидом в Битрикс24 (мок).</li>
+            <li>Заявка попадает менеджеру в Битрикс24.</li>
           </ul>
           <p className="mt-6 text-sm text-steel">
             {brand.phone}

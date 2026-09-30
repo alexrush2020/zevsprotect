@@ -35,11 +35,11 @@ const AUTH_ERRORS: Record<string, string> = {
   "yandex-exists": "Аккаунт с этим email уже есть — войдите паролем",
 };
 
-/** yandexEnabled — реальный OAuth (ключи в env); без него кнопка — заглушка прототипа. */
+/** yandexEnabled — реальный OAuth (ключи в env); без ключей кнопка скрыта. */
 export function AccountAuthForm({ yandexEnabled = false, authError }: { yandexEnabled?: boolean; authError?: string }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, register, loginYandex } = useStore();
+  const { user, register } = useStore();
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -234,29 +234,27 @@ export function AccountAuthForm({ yandexEnabled = false, authError }: { yandexEn
                 Яндекс или email и пароль. Сессия живёт 2–3 дня.
               </p>
 
-              <Button
-                type="button"
-                variant="outline"
-                className="mt-5 h-11 w-full gap-2 rounded-xl border-border bg-white text-ink hover:bg-paper"
-                onClick={() => {
-                  if (yandexEnabled) {
-                    // route handler с redirect на oauth.yandex.ru — нужна полная навигация, не router.push
-                    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-                    window.location.assign("/api/auth/yandex/start");
-                    return;
-                  }
-                  loginYandex();
-                  toast.success("Вход через Яндекс ID (заглушка прототипа)");
-                  goToCabinet();
-                }}
-              >
-                <YandexMark />
-                Войти через Яндекс
-              </Button>
+              {yandexEnabled ? (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="mt-5 h-11 w-full gap-2 rounded-xl border-border bg-white text-ink hover:bg-paper"
+                    onClick={() => {
+                      // route handler с redirect на oauth.yandex.ru — нужна полная навигация, не router.push
+                      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+                      window.location.assign("/api/auth/yandex/start");
+                    }}
+                  >
+                    <YandexMark />
+                    Войти через Яндекс
+                  </Button>
 
-              <p className="mt-5 text-[11px] font-medium uppercase tracking-[0.18em] text-steel">
-                или по email
-              </p>
+                  <p className="mt-5 text-[11px] font-medium uppercase tracking-[0.18em] text-steel">
+                    или по email
+                  </p>
+                </>
+              ) : null}
 
               <form onSubmit={onLogin} className="mt-3 grid gap-3">
                 <Field

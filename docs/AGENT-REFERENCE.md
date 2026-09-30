@@ -44,11 +44,11 @@
 | Прототип для сравнения | `git show prototype-final:<путь>` или https://zevsprotect-prototype.vercel.app |
 | Доска | `bun docs/workflow/wf.mjs <get\|add\|set\|list\|lint\|audit-quick>` |
 
-Тестового раннера в прототипе нет; Vitest добавляется первой задачей, где нужен unit-тест (парсер 1С, пересчёт цен, access).
+Тесты: `npm test` (Vitest, `lib/**/*.test.ts`, `payload/*.test.ts`), `npm run test:e2e` (Playwright, `e2e/`), `npm run typecheck`.
 
 ## Интеграции
 
-- 1С КА 2 — CommerceML 2, протокол «Обмен с сайтом». Тестовые XML-пакеты хранить в `tests/fixtures/onec/`.
+- 1С КА 2 — CommerceML 2, протокол «Обмен с сайтом». Тестовые XML-пакеты хранить в `lib/onec/__fixtures__/`.
 - Битрикс24 — REST через входящий вебхук (`B24_WEBHOOK_URL` в env), методы `crm.company.add`, `crm.contact.add`, `crm.deal.add`, `crm.deal.productrows.set`, `crm.lead.add`, `crm.deal.get`. Исходящий вебхук — `ONCRMDEALUPDATE`.
 - Оплата — провайдер выбирается (BIZ-4), по умолчанию ЮKassa; в прототипе мок `/pay/[id]`.
 Без тестовых учёток — только моки и unit-тесты маппинга; live-проверка остаётся открытым критерием карточки.

@@ -85,7 +85,7 @@ export function ProductShiftCompare({ product, catalog }: { product: Product; ca
         {saving > 0
           ? `${winner.product.name.replace(/^Перчатки\s+/i, "")} дешевле на ${saving}% за смену — меньше замен на участке.`
           : `${current.product.name.replace(/^Перчатки\s+/i, "")} выгоднее по расходу на смену в этой линейке.`}
-        <span className="text-steel/70"> Ресурс — оценка для прототипа, не протокол испытаний.</span>
+        <span className="text-steel/70"> Ресурс — расчётная оценка, не протокол испытаний.</span>
       </p>
     </div>
   );
