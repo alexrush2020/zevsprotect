@@ -6,11 +6,19 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { purchaseGuideSlides } from "@/lib/data/purchase-guide";
 
-export function PurchaseGuideCarousel({ className }: { className?: string }) {
+type Slide = { src: string; title: string; alt: string };
+
+export function PurchaseGuideCarousel({
+  className,
+  slides = purchaseGuideSlides,
+}: {
+  className?: string;
+  slides?: readonly Slide[];
+}) {
   const [index, setIndex] = useState(0);
   const startX = useRef<number | null>(null);
-  const slide = purchaseGuideSlides[index];
-  const total = purchaseGuideSlides.length;
+  const slide = slides[index];
+  const total = slides.length;
 
   function go(next: number) {
     setIndex((next + total) % total);
@@ -63,7 +71,7 @@ export function PurchaseGuideCarousel({ className }: { className?: string }) {
           <ChevronLeft />
         </Button>
         <div className="flex flex-wrap justify-center gap-1.5">
-          {purchaseGuideSlides.map((item, i) => (
+          {slides.map((item, i) => (
             <button
               key={item.src}
               type="button"
@@ -90,7 +98,7 @@ export function PurchaseGuideCarousel({ className }: { className?: string }) {
       <p className="mt-3 text-center font-heading text-lg leading-snug" aria-live="polite">
         {slide.title}
       </p>
-      {purchaseGuideSlides.map((item, i) =>
+      {slides.map((item, i) =>
         Math.abs(i - index) === 1 ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img key={item.src} src={item.src} alt="" className="hidden" />

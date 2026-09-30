@@ -105,7 +105,8 @@ export const getProductReviews = cached(
 export const getArticles = cached(
   async (): Promise<Article[]> => {
     const payload = await getPayload({ config });
-    const { docs } = await payload.find({ collection: "posts", ...read, sort: "-publishedAt" });
+    // при равной дате — порядок создания (как в моке прототипа)
+    const { docs } = await payload.find({ collection: "posts", ...read, sort: ["-publishedAt", "createdAt"] });
     return docs.map(mapArticle);
   },
   "articles",

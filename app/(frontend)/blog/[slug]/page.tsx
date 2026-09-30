@@ -2,12 +2,18 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Mail, Phone } from "lucide-react";
-import { articles } from "@/lib/data/catalog";
+import { getArticle, getArticles } from "@/lib/server/catalog";
 import { formatDate } from "@/lib/format";
 import { brand } from "@/lib/brand";
 import { Button } from "@/components/ui/button";
 import { InquiryDialog } from "@/components/inquiry-dialog";
 import { PurchaseGuideCarousel } from "@/components/purchase-guide-carousel";
+
+// Опубликованные статьи пререндерятся; новые рендерятся по запросу (dynamicParams по умолчанию true),
+// снятые с публикации отдают 404 после сброса тега blog (payload/hooks/revalidate.ts).
+export async function generateStaticParams() {
+  return (await getArticles()).map((a) => ({ slug: a.slug }));
+}
 
 export async function generateMetadata({
   params,
@@ -15,7 +21,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const article = articles.find((a) => a.slug === slug);
+  const article = await getArticle(slug);
   if (!article) return { title: "Статья" };
   return { title: article.title, description: article.excerpt };
 }
@@ -69,7 +75,7 @@ export default async function ArticlePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const article = articles.find((a) => a.slug === slug);
+  const [article, articles] = await Promise.all([getArticle(slug), getArticles()]);
   if (!article) notFound();
   const related = articles.filter((a) => a.slug !== slug);
 
@@ -84,7 +90,7 @@ export default async function ArticlePage({
       <p className="mt-2 text-sm text-steel">{formatDate(article.date)}</p>
       {article.slides?.length ? (
         <div className="mt-8">
-          <PurchaseGuideCarousel />
+          <PurchaseGuideCarousel slides={article.slides} />
         </div>
       ) : (
         // eslint-disable-next-line @next/next/no-img-element
