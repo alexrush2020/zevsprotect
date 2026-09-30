@@ -1,0 +1,94 @@
+# Прод-стек: Caddy (TLS) → app (Next standalone + Payload) → PostgreSQL. Порядок выкатки — deploy/deploy.sh, docs/DEPLOY.md.
+# Запуск только с файлом переменных (секреты не в compose):
+#   docker compose --env-file deploy/.env.production -f deploy/docker-compose.prod.yml <команда>
+name: zevs
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file: .env.production # POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # Только loopback хоста: к нему ходит `next build` (сеть host, см. app.build). Снаружи порт закрыт.
+    ports:
+      - '127.0.0.1:5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # Одноразовый: `payload migrate` до старта приложения. Повторный запуск без новых миграций — no-op.
+  migrate:
+    build:
+      context: ..
+      target: migrator
+    image: zevs-migrate:latest
+    env_file: .env.production
+    restart: 'no'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  app:
+    build:
+      context: ..
+      target: runner
+      # next build читает БД: сеть хоста + имя postgres → loopback (порт 5432 опубликован выше)
+      network: host
+      extra_hosts:
+        - 'postgres:127.0.0.1'
+      secrets:
+        - app_env
+    image: zevs-app:latest
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      MEDIA_DIR: /data/media
+      ONEC_EXCHANGE_DIR: /data/1c-exchange
+    volumes:
+      - media:/data/media
+      - onec:/data/1c-exchange
+    # Только loopback: SSH-туннель для диагностики; публичный вход — через caddy
+    ports:
+      - '127.0.0.1:3000:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    logging:
+      driver: json-file
+      options: { max-size: '20m', max-file: '5' }
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:?SITE_DOMAIN не задан в .env.production}
+      ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL не задан в .env.production}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+    logging:
+      driver: json-file
+      options: { max-size: '20m', max-file: '5' }
+
+secrets:
+  app_env:
+    file: .env.production
+
+volumes:
+  pgdata:
+  media:
+  onec:
+  caddy_data:
+  caddy_config:

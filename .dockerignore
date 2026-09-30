@@ -1,0 +1,15 @@
+.git
+node_modules
+.next
+.env*
+deploy/
+media
+uploads
+screenshots
+test-results
+playwright-report
+.playwright-mcp
+.claude
+.vercel
+*.log
+*.tsbuildinfo
