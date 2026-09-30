@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useStore } from "@/lib/store";
 import { submitLead } from "@/lib/server/lead-action";
+import { formEvent, track } from "@/lib/analytics";
 
 const types = {
   consult: {
@@ -96,6 +97,7 @@ export function InquiryDialog({
       toast.error(res?.error ?? "Не удалось отправить заявку. Попробуйте ещё раз или позвоните нам.");
       return;
     }
+    track(formEvent(copy.lead));
     setSent(true);
     toast.success(`Лид ${res.id} отправлен в Битрикс24`);
   }

@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import { getPayload } from "payload";
 import config from "@payload-config";
 import type { Article, Product } from "@/lib/types";
+import { parseCounterId } from "@/lib/analytics";
 import type { ProductReview } from "@/lib/data/product-reviews";
 import {
   mapArticle,
@@ -205,6 +206,13 @@ export const getSiteContacts = orDefault(
   cached(async () => mapContacts(await findGlobal("settings", 0)), "site-contacts", "content"),
   CONTACTS_DEFAULTS,
   "settings",
+);
+
+/** ID Яндекс.Метрики (Settings → «Счётчики»); пусто, не число или сбой чтения -> null, счётчик выключен. */
+export const getMetrikaId = orDefault(
+  cached(async () => parseCounterId((await findGlobal("settings", 0)).analytics?.yandexMetrika), "metrika-id", "content"),
+  null,
+  "settings.analytics",
 );
 
 export const getPrivacyText = orDefault(

@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Reveal, Stagger, StaggerItem } from "@/components/home/motion";
 import { submitLead } from "@/lib/server/lead-action";
+import { formEvent, track } from "@/lib/analytics";
 import { toast } from "sonner";
 import { useState } from "react";
 import { brand } from "@/lib/brand";
@@ -40,6 +41,7 @@ export function ContactsView({ contacts }: { contacts: SiteContacts }) {
       toast.error(res?.error ?? "Не удалось отправить сообщение. Попробуйте ещё раз или позвоните нам.");
       return;
     }
+    track(formEvent("feedback"));
     setSent(true);
     toast.success("Заявка сохранена и отправлена лидом в Битрикс24");
   }

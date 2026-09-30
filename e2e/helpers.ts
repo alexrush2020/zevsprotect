@@ -1,7 +1,7 @@
 import pg from "pg";
 import { test as base, expect, type Browser, type BrowserContext, type Page } from "@playwright/test";
 
-export const BASE_URL = "http://localhost:43140";
+export const BASE_URL = process.env.E2E_BASE_URL ?? "http://localhost:43140";
 
 /**
  * x-real-ip прогона — только на запросы к нашему серверу (сторонние, например карта Яндекса, падают на CORS

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { toManagerChatProduct } from "@/lib/manager-chat";
 import { productMinQty, snapOrderQty } from "@/lib/order-qty";
 import { productCoatingOptions } from "@/lib/product-options";
 import { useStore } from "@/lib/store";
+import { track } from "@/lib/analytics";
 import { defaultVolumeQty, formatVolumeQty } from "@/lib/volume-quote";
 import type { Product } from "@/lib/types";
 
@@ -24,6 +25,8 @@ export function ProductBuy({ product }: { product: Product }) {
   const [qty, setQty] = useState(() => defaultVolumeQty(product));
   const inStock = product.stock > 0;
   const min = productMinQty(product);
+
+  useEffect(() => track("product_view", { slug: product.slug }), [product.slug]);
 
   function add() {
     if (!inStock) return false;

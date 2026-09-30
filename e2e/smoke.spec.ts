@@ -50,3 +50,19 @@ for (const path of ["/product/e2e-net-takogo-tovara", "/blog/e2e-net-takoy-stati
     expect(res?.status()).toBe(404);
   });
 }
+
+// AN-1: без ID Метрики в Settings (как в zevs_e2e) скрипт счётчика не встраивается и не запрашивается
+test("без ID Метрики нет скрипта mc.yandex.ru и запросов к нему", async ({ page }) => {
+  const external: string[] = [];
+  await page.route((url) => url.hostname !== "localhost", (route) => {
+    external.push(route.request().url());
+    return route.abort(); // наружу из теста ничего не уходит
+  });
+  for (const path of ["/", "/product/atlant", "/checkout"]) {
+    const res = await page.goto(path);
+    expect(await res?.text()).not.toContain("mc.yandex.ru");
+    await page.waitForLoadState("networkidle");
+    expect(await page.evaluate(() => typeof (window as { ym?: unknown }).ym)).toBe("undefined");
+  }
+  expect(external.filter((u) => u.includes("mc.yandex"))).toEqual([]);
+});

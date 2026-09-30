@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { setPendingReviews, topicLabels, type ReviewTopic } from "@/lib/data/product-reviews";
 import { myPendingReviews, submitReview } from "@/lib/server/review-action";
+import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
 const topics = Object.keys(topicLabels) as ReviewTopic[];
@@ -96,6 +97,7 @@ export function LeaveReviewModal({
         setError(res.error);
         return;
       }
+      track("review_submit", { slug: productSlug, rating });
       setDone(true);
       // свой отзыв на модерации — с сервера (сессия/подписанная cookie), виден только автору
       void myPendingReviews().then(setPendingReviews, () => undefined);

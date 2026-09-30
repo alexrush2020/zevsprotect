@@ -58,8 +58,19 @@ export const Settings: GlobalConfig = {
       type: 'group',
       label: 'Счётчики',
       fields: [
-        { name: 'yandexMetrika', type: 'text', label: 'ID Яндекс.Метрики' },
-        { name: 'googleAnalytics', type: 'text', label: 'ID Google Analytics' },
+        {
+          name: 'yandexMetrika',
+          type: 'text',
+          label: 'ID Яндекс.Метрики',
+          admin: { description: 'Номер счётчика (только цифры). Пусто — счётчик на сайте не подключается.' },
+        },
+        // TODO(BIZ-3): GA передаёт данные за рубеж (152-ФЗ, CONTRA-4) — на витрине не подключается до решения бизнеса
+        {
+          name: 'googleAnalytics',
+          type: 'text',
+          label: 'ID Google Analytics',
+          admin: { description: 'Пока не подключается: нужно решение по 152-ФЗ (BIZ-3).' },
+        },
       ],
     },
     {

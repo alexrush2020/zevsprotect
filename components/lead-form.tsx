@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useStore } from "@/lib/store";
 import { submitLead } from "@/lib/server/lead-action";
+import { formEvent, track } from "@/lib/analytics";
 
 export function LeadForm({
   type,
@@ -49,6 +50,7 @@ export function LeadForm({
       toast.error(res?.error ?? "Не удалось отправить заявку. Попробуйте ещё раз или позвоните нам.");
       return;
     }
+    track(formEvent(type));
     setLeadId(res.id);
     setSent(true);
     toast.success(`Лид ${res.id} · мок Битрикс24`);
