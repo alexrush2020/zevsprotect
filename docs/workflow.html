@@ -373,7 +373,7 @@ const TRACKS = [
     deps:['S-1'],
     links:[['ARCHITECTURE.md', 'Архитектура'], ['CONTRADICTIONS.md', 'Противоречия']],
     acc:'Админка на русском; manager не правит каталог; content не видит заказы (тест access).' },
-  { id:'S-6', t:'Сид Payload из мок-данных прототипа', d:'Скрипт: categories, products (все поля Product, фильтры, лоты/упаковка), articles → posts, reviews (доска), картинки → Media (с zevsprotect.ru и public/).', pr:'P1', st:'todo', own:'agent',
+  { id:'S-6', t:'Сид Payload из мок-данных прототипа', d:'Скрипт: categories, products (все поля Product, фильтры, лоты/упаковка), articles → posts, reviews (доска), картинки → Media (с zevsprotect.ru и public/).', pr:'P1', st:'doing', own:'agent',
     req:['Источник — lib/data/catalog.ts, lib/data/product-reviews.ts, lib/data/purchase-guide.ts.', 'Идемпотентно (upsert по slug); картинки не хотлинкать — WordPress выключат.'],
     deps:['C-CAT', 'C-BLOG', 'C-CONTENT'],
     links:[['ARCHITECTURE.md', 'Архитектура']],
