@@ -11,8 +11,9 @@ import type { ViewOrder } from "@/lib/server/orders";
 
 /** Счёт по заказу Payload (строки — снапшот цен на момент оформления) или по демо-заказу из localStorage. */
 export function InvoiceView({ id, serverOrder }: { id: string; serverOrder: ViewOrder | null }) {
-  const { orders, getProduct } = useStore();
-  const order = serverOrder ?? orders.find((o) => o.id === id);
+  const { orders, getProduct, user } = useStore();
+  // клиенту с сессией Payload демо-заказы localStorage не показываем
+  const order = serverOrder ?? (user?.authProvider === "password" ? undefined : orders.find((o) => o.id === id));
 
   if (!order) {
     return (

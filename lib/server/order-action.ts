@@ -8,12 +8,42 @@ import { getProducts } from "@/lib/server/catalog";
 import {
   ORDER_ACCESS_COOKIE,
   createOrderReceiver,
+  createOrderTracker,
+  customerOrders,
   rememberOrder,
   type OrderInput,
   type OrderResult,
+  type TrackResult,
+  type ViewOrder,
 } from "@/lib/server/orders";
 
 const receive = createOrderReceiver();
+const track = createOrderTracker();
+
+// клиент задаёт начало XFF, прокси дописывает в конец
+const clientIp = (h: Headers) =>
+  h.get("x-real-ip") || h.get("x-forwarded-for")?.split(",").at(-1)?.trim() || "unknown";
+
+/** История заказов ЛК: только заказы клиента из сессии customers (access коллекции, не overrideAccess). */
+export async function myOrders(): Promise<ViewOrder[]> {
+  const payload = await getPayload({ config });
+  const { user } = await payload.auth({ headers: await headers() });
+  return customerOrders(payload, user);
+}
+
+/**
+ * /track: статус по номеру + email без ПДн. overrideAccess — гость без сессии; заказ отдаётся только
+ * после точного совпадения пары (createOrderTracker), и только поля TrackView.
+ */
+export async function trackOrder(number: string, email: string): Promise<TrackResult> {
+  const h = await headers();
+  const payload = await getPayload({ config });
+  return track(
+    async (n) =>
+      (await payload.find({ collection: "orders", where: { number: { equals: n } }, limit: 1, depth: 1, overrideAccess: true })).docs[0],
+    { number, email, ip: clientIp(h) },
+  );
+}
 
 /**
  * Оформление заказа с витрины → коллекция orders (+ письма клиенту и менеджеру).
@@ -21,7 +51,7 @@ const receive = createOrderReceiver();
  */
 export async function createOrder(input: OrderInput): Promise<OrderResult> {
   const h = await headers();
-  const ip = h.get("x-real-ip") || h.get("x-forwarded-for")?.split(",").at(-1)?.trim() || "unknown"; // клиент задаёт начало XFF, прокси дописывает в конец
+  const ip = clientIp(h);
   const payload = await getPayload({ config });
   const { user } = await payload.auth({ headers: h });
   const customerId = user?.collection === "customers" ? Number(user.id) : undefined;

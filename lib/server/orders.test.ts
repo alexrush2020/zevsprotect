@@ -4,8 +4,11 @@ import { computeTotal } from "@/payload/hooks/orders";
 import type { Product } from "@/lib/types";
 import type { Order as OrderDoc } from "@/payload/payload-types";
 import {
+  TRACK_NOT_FOUND,
   buildOrder,
   createOrderReceiver,
+  createOrderTracker,
+  customerOrders,
   hasOrderAccess,
   rememberOrder,
   toViewOrder,
@@ -301,5 +304,97 @@ describe("toViewOrder: страницы берут снапшот, а не те�
     expect(v.lines).toEqual([{ key: "a", title: "Ткань (старое имя)", sku: "ZP-T", size: "L", qty: 50, unit: "пара", unitPrice: 77.77, total: 3888.5 }]);
     expect(v).toMatchObject({ id: "ZP-2026-0007", total: 3888.5, guest: true, paymentStatus: "pending", items: [{ productId: "tkan", size: "L", qty: 50 }] });
     expect(v).not.toHaveProperty("deliveryCost"); // доставку ещё не рассчитал менеджер
+  });
+});
+
+const trackDoc = {
+  id: 7,
+  number: "ZP-2026-0007",
+  createdAt: now.toISOString(),
+  updatedAt: now.toISOString(),
+  customer: { id: 5, email: "Buyer@Firm.ru", name: "Пётр", phone: "+79005554433" },
+  guest: { name: "Иван Петров", phone: "+79001234567", email: "ivan@firm.ru", company: "ООО Ромашка", inn: "7707083893" },
+  items: [{ id: "a", product: { id: 11, slug: "tkan", unit: "пара" }, sku: "ZP-T", title: "Ткань", size: "L", price: 100, qty: 50 }],
+  total: 5000,
+  delivery: { city: "Ростов", carrier: "cdek", carrierName: "СДЭК", address: "Садовая, 1" },
+  comment: "позвонить Ивану",
+  paymentMethod: "invoice_auto",
+  paymentStatus: "invoiced",
+  status: "shipped",
+} as unknown as OrderDoc;
+
+describe("отслеживание /track: номер + email", () => {
+  const find = vi.fn(async (n: string) => (n === trackDoc.number ? trackDoc : null));
+  const req = (number: string, email: string, ip = "1.1.1.1") => ({ number, email, ip, now });
+
+  it("верная пара — только статус, дата, состав и сумма, без ПДн", async () => {
+    const track = createOrderTracker();
+    const r = await track(find, req(" zp-2026-0007 ", " IVAN@firm.RU "));
+    expect(r).toEqual({
+      ok: true,
+      order: {
+        number: "ZP-2026-0007",
+        createdAt: now.toISOString(),
+        status: "shipped",
+        paymentStatus: "invoiced",
+        total: 5000,
+        lines: [{ key: "a", title: "Ткань", size: "L", qty: 50, unit: "пара" }],
+      },
+    });
+    const json = JSON.stringify(r);
+    for (const pd of ["Иван", "Пётр", "+7900", "firm.ru", "Садовая", "Ростов", "Ромашка", "7707083893", "СДЭК", "позвонить"])
+      expect(json).not.toContain(pd);
+    // email клиента (из сессии оформления) тоже подходит
+    expect((await track(find, req("ZP-2026-0007", "buyer@firm.ru"))).ok).toBe(true);
+  });
+
+  it("чужой email и несуществующий номер — одинаковый ответ, ничего не раскрыто", async () => {
+    const track = createOrderTracker();
+    const wrongEmail = await track(find, req("ZP-2026-0007", "other@firm.ru"));
+    const noOrder = await track(find, req("ZP-2026-0999", "ivan@firm.ru"));
+    const junk = await track(find, req("ZP-10990", "ivan@firm.ru"));
+    const empty = await track(find, req("ZP-2026-0007", ""));
+    for (const r of [wrongEmail, noOrder, junk, empty]) expect(r).toEqual({ ok: false, error: TRACK_NOT_FOUND });
+  });
+
+  it("гостевой заказ без email не находится по пустому email; сбой БД — не «не найден»", async () => {
+    const track = createOrderTracker();
+    const noMail = { ...trackDoc, customer: null, guest: { phone: "+79001234567" } } as unknown as OrderDoc;
+    expect(await track(async () => noMail, req("ZP-2026-0007", "x@y.ru"))).toEqual({ ok: false, error: TRACK_NOT_FOUND });
+    const r = await track(async () => {
+      throw new Error("db down");
+    }, req("ZP-2026-0007", "ivan@firm.ru"));
+    expect(r.ok).toBe(false);
+    expect(r).not.toEqual({ ok: false, error: TRACK_NOT_FOUND });
+  });
+
+  it("лимит попыток по IP — и для верной пары", async () => {
+    const track = createOrderTracker({ limit: 2, windowMs: 60_000 });
+    await track(find, req("ZP-2026-0001", "a@b.ru"));
+    await track(find, req("ZP-2026-0002", "a@b.ru"));
+    const blocked = await track(find, req("ZP-2026-0007", "ivan@firm.ru"));
+    expect(blocked.ok).toBe(false);
+    expect(blocked).not.toEqual({ ok: false, error: TRACK_NOT_FOUND });
+    expect((await track(find, req("ZP-2026-0007", "ivan@firm.ru", "2.2.2.2"))).ok).toBe(true);
+    expect((await track(find, { ...req("ZP-2026-0007", "ivan@firm.ru"), now: new Date(now.getTime() + 61_000) })).ok).toBe(true);
+  });
+});
+
+describe("customerOrders: история заказов ЛК", () => {
+  it("клиент — только через access коллекции и фильтр по своему id", async () => {
+    const find = vi.fn(async () => ({ docs: [trackDoc] }));
+    const user = { id: 5, collection: "customers" } as never;
+    const orders = await customerOrders({ find } as never, user);
+    expect(orders.map((o) => o.id)).toEqual(["ZP-2026-0007"]);
+    expect(find).toHaveBeenCalledWith(
+      expect.objectContaining({ collection: "orders", where: { customer: { equals: 5 } }, overrideAccess: false, user, disableErrors: true }),
+    );
+  });
+
+  it("гость и сотрудник не получают заказы, БД не спрашиваем", async () => {
+    const find = vi.fn();
+    expect(await customerOrders({ find } as never, null)).toEqual([]);
+    expect(await customerOrders({ find } as never, { id: 1, collection: "users" } as never)).toEqual([]);
+    expect(find).not.toHaveBeenCalled();
   });
 });

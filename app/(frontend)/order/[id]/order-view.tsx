@@ -13,8 +13,9 @@ import type { ViewOrder } from "@/lib/server/orders";
 
 /** Заказ Payload (serverOrder, строки — снапшот) или демо-заказ из localStorage. */
 export function OrderView({ id, serverOrder }: { id: string; serverOrder: ViewOrder | null }) {
-  const { orders, getProduct } = useStore();
-  const order = serverOrder ?? orders.find((o) => o.id === id);
+  const { orders, getProduct, user } = useStore();
+  // клиенту с сессией Payload демо-заказы localStorage не показываем
+  const order = serverOrder ?? (user?.authProvider === "password" ? undefined : orders.find((o) => o.id === id));
 
   if (!order) {
     return (
@@ -119,7 +120,7 @@ export function OrderView({ id, serverOrder }: { id: string; serverOrder: ViewOr
         <Button nativeButton={false} render={<Link href="/catalog" />} variant="outline">
           Продолжить покупки
         </Button>
-        <Button nativeButton={false} render={<Link href={order.guest ? "/track" : "/account"} />} variant="outline">
+        <Button nativeButton={false} render={<Link href={order.guest ? (serverOrder ? `/track?number=${order.id}` : "/track") : "/account"} />} variant="outline">
           {order.guest ? "Отслеживание" : "Личный кабинет"}
         </Button>
       </div>

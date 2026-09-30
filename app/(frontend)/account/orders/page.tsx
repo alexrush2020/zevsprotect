@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { AccountOrderCard, ordersForUser } from "@/components/account/account-order-card";
+import { AccountOrderCard, useAccountOrders } from "@/components/account/account-order-card";
 import { AccountScroll } from "@/components/account/account-scroll";
 import { StarRating } from "@/components/product-reviews/star-rating";
 import { useStore } from "@/lib/store";
@@ -21,7 +21,8 @@ function inquiriesForUser(leads: Lead[], email: string, phone: string) {
 }
 
 export default function AccountOrdersPage() {
-  const { user, orders, leads } = useStore();
+  const { user, leads } = useStore();
+  const loaded = useAccountOrders();
   const [reviews, setReviews] = useState<ProductReview[]>([]);
 
   useEffect(() => {
@@ -34,7 +35,7 @@ export default function AccountOrdersPage() {
 
   if (!user) return null;
 
-  const mine = ordersForUser(orders, user.email);
+  const mine = loaded ?? [];
   const inquiries = inquiriesForUser(leads, user.email, user.phone);
 
   return (
@@ -45,7 +46,7 @@ export default function AccountOrdersPage() {
           Статусы в прототипе заданы вручную. По ТЗ источник статуса — Битрикс24.
         </p>
         <AccountScroll className="mt-4">
-          {mine.length === 0 ? (
+          {loaded === null ? null : mine.length === 0 ? (
             <p className="rounded-2xl border bg-card p-5 text-steel">Заказов пока нет.</p>
           ) : (
             mine.map((order) => <AccountOrderCard key={order.id} order={order} />)

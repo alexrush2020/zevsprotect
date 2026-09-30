@@ -602,10 +602,19 @@ export function StoreProvider({ children, catalog }: { children: ReactNode; cata
 
   const updateProfile = useCallback(
     (profile: UserProfile) => {
+      const prev = user;
       const next = user ? { ...user, ...profile } : profile;
       setUser(next);
       if (next.authProvider === "password") {
-        updateRequest(next).catch(() => toast.error("Не удалось сохранить профиль на сервере"));
+        // источник истины — ответ Payload (email не меняется PATCH-ем профиля); отказ — откат правки
+        updateRequest(next)
+          .then((saved) => {
+            if (saved) setUser(saved);
+          })
+          .catch((e: unknown) => {
+            setUser(prev);
+            toast.error(`Не удалось сохранить профиль: ${e instanceof Error ? e.message : "ошибка сервера"}`);
+          });
       }
     },
     [user],

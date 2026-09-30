@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { migrateLegacyCart, migrateLegacyFavorites, normalizeCart, orderableItems, priceCart } from './cart-pricing'
+import { migrateLegacyCart, migrateLegacyFavorites, normalizeCart, orderableItems, priceCart, repeatOrderItems } from './cart-pricing'
 import { LEGACY_PRODUCT_IDS } from './legacy-product-ids'
 import { products } from './data/catalog'
 import type { Product } from './types'
@@ -133,5 +133,52 @@ describe('миграция localStorage прототипа', () => {
 
   it('таблица покрывает весь мок-каталог', () => {
     expect(Object.fromEntries(products.map((p) => [p.id, p.slug]))).toEqual(LEGACY_PRODUCT_IDS)
+  })
+})
+
+describe('repeatOrderItems: «Повторить заказ»', () => {
+  const sized = { ...fabric, sizes: ['L', 'XL'] } as Product
+  const cat = [sized, dipped, { ...base, id: '3', slug: 'bez-ceny', price: 0 } as unknown as Product]
+
+  it('цены — по текущему каталогу, а не из снапшота; клиентский пересчёт = серверный', () => {
+    // в снапшоте заказа было 77.77 ₽ — корзина считает по нынешним 100 ₽ и скидке объёма
+    const { items, skipped } = repeatOrderItems(
+      [
+        { productId: 'tkan', size: 'L', qty: 500 },
+        { productId: 'tkan', size: 'XL', qty: 500 },
+        { productId: 'obliv', size: 'L', qty: 13 },
+      ],
+      cat,
+    )
+    expect(skipped).toBe(0)
+    expect(items).toEqual([
+      { productId: 'tkan', size: 'L', qty: 500 },
+      { productId: 'tkan', size: 'XL', qty: 500 },
+      { productId: 'obliv', size: 'L', qty: 24 }, // упаковка 12 — вверх
+    ])
+    const priced = priceCart(items, cat)
+    expect(priced.lines.map((l) => l.unitPrice)).toEqual([95, 95, 28.9])
+    expect(priced.goods).toBe(95000 + 693.6)
+    // повторная нормализация в корзине (addToCart/snapOrderQty) не меняет состав и сумму
+    expect(priceCart(normalizeCart(items, cat), cat).goods).toBe(priced.goods)
+  })
+
+  it('снятая модель, модель без цены и снятый размер пропускаются и считаются', () => {
+    const { items, skipped } = repeatOrderItems(
+      [
+        { productId: 'tkan', size: 'L', qty: 50 },
+        { productId: 'tkan', size: 'XXL', qty: 50 },
+        { productId: 'snyata', size: 'L', qty: 50 },
+        { productId: 'bez-ceny', size: 'L', qty: 50 },
+        { productId: '', size: 'L', qty: 50 }, // товар удалён — slug пуст
+      ],
+      cat,
+    )
+    expect(items).toEqual([{ productId: 'tkan', size: 'L', qty: 50 }])
+    expect(skipped).toBe(4)
+  })
+
+  it('всё недоступно — пустой состав, корзину не трогаем', () => {
+    expect(repeatOrderItems([{ productId: 'snyata', size: 'L', qty: 50 }], cat)).toEqual({ items: [], skipped: 1 })
   })
 })

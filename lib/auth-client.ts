@@ -64,8 +64,9 @@ export const forgotRequest = (email: string) => call("/forgot-password", { email
 export const resetRequest = (token: string, password: string) =>
   call("/reset-password", { token, password });
 
-export async function updateRequest(p: UserProfile): Promise<void> {
-  if (!p.customerId) return;
+/** PATCH профиля; возвращает сохранённый сервером профиль (или null — нет customerId). */
+export async function updateRequest(p: UserProfile): Promise<UserProfile | null> {
+  if (!p.customerId) return null;
   const { name, phone, company, inn, kpp, address, kind, bankName, bankAccount, bik, addresses } = p;
   const res = await fetch(`/api/customers/${p.customerId}`, {
     method: "PATCH",
@@ -76,7 +77,12 @@ export async function updateRequest(p: UserProfile): Promise<void> {
       addresses: addresses?.map(({ id, ...a }) => ({ ...a, ...(id ? { id } : {}) })),
     }),
   });
-  if (!res.ok) throw new Error("Не удалось сохранить профиль");
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const first = json?.errors?.[0];
+    throw new Error(first?.data?.errors?.[0]?.message ?? first?.message ?? "Не удалось сохранить профиль");
+  }
+  return json?.doc?.email ? toProfile(json.doc) : null;
 }
 
 export const logoutRequest = async () => {

@@ -1,6 +1,7 @@
 import { legacySlug } from "@/lib/legacy-product-ids";
 import { cartLineKey } from "@/lib/lots";
 import { snapOrderQty } from "@/lib/order-qty";
+import { productCoatingOptions } from "@/lib/product-options";
 import { splitVat } from "@/lib/vat";
 import { volumeUnitPrice } from "@/lib/volume-quote";
 import type { CartItem, Product } from "@/lib/types";
@@ -57,6 +58,22 @@ export function orderableItems(lines: PricedCartLine[]): CartItem[] {
   return lines
     .filter((l) => l.available)
     .map(({ productId, size, coating, qty }) => ({ productId, size, qty, ...(coating ? { coating } : {}) }));
+}
+
+/**
+ * «Повторить заказ»: строки снапшота заказа → позиции корзины по текущему каталогу (цены — не из снапшота,
+ * корзина пересчитает их priceCart, как и сервер при оформлении). Пропускаются: модели нет в каталоге,
+ * нет цены (уточнит менеджер), размер или покрытие больше не выпускаются. skipped — число таких строк снапшота.
+ */
+export function repeatOrderItems(items: CartItem[], catalog: Product[]): { items: CartItem[]; skipped: number } {
+  const available = priceCart(normalizeCart(items, catalog), catalog).lines.filter((l) => {
+    if (!l.available) return false;
+    const p = l.product!;
+    const coatings = productCoatingOptions(p);
+    return (!p.sizes?.length || p.sizes.includes(l.size)) && (!l.coating || !coatings.length || coatings.includes(l.coating));
+  });
+  const kept = new Set(available.map(cartLineKey));
+  return { items: orderableItems(available), skipped: items.filter((i) => !kept.has(cartLineKey(i))).length };
 }
 
 /**

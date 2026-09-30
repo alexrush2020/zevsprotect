@@ -3,13 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { AccountOrderCard, ordersForUser } from "@/components/account/account-order-card";
+import { AccountOrderCard, useAccountOrders } from "@/components/account/account-order-card";
 import { useStore } from "@/lib/store";
 import { formatDate, formatPrice, STATUS_LABEL } from "@/lib/format";
 import { NOTICE_KIND_LABEL, readNotices, type AccountNotice } from "@/lib/account-notices";
 
 export default function AccountHomePage() {
-  const { user, orders, favoriteIds, getProduct } = useStore();
+  const { user, favoriteIds, getProduct } = useStore();
+  const loaded = useAccountOrders();
   const [notices, setNotices] = useState<AccountNotice[]>([]);
 
   useEffect(() => {
@@ -19,7 +20,7 @@ export default function AccountHomePage() {
 
   if (!user) return null;
 
-  const mine = ordersForUser(orders, user.email);
+  const mine = loaded ?? [];
   const inFlight = mine.filter(
     (o) => o.status !== "delivered" && o.status !== "cancelled",
   );
@@ -72,7 +73,7 @@ export default function AccountHomePage() {
             </Link>
           </div>
           <div className="mt-3 space-y-3">
-            {mine.length === 0 ? (
+            {loaded === null ? null : mine.length === 0 ? (
               <p className="rounded-2xl border bg-card p-5 text-sm text-steel">
                 Заказов пока нет. Оформите поставку из каталога.
               </p>
