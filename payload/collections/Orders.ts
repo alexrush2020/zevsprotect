@@ -9,7 +9,7 @@ const syncField = (name: string, label: string) => ({
   name,
   type: 'text' as const,
   label,
-  access: { create: isAdmin, update: isAdmin },
+  access: { read: manager, create: isAdmin, update: isAdmin }, // внутренняя диагностика обмена — не клиенту
   admin: { position: 'sidebar' as const, readOnly: true },
 })
 
