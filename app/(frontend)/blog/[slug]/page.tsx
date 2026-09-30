@@ -107,14 +107,14 @@ export default async function ArticlePage({
         <div className="mt-8">
           <PurchaseGuideCarousel slides={article.slides} />
         </div>
-      ) : (
+      ) : article.image ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={article.image}
           alt=""
           className="mt-8 w-full rounded-2xl object-cover"
         />
-      )}
+      ) : null}
       <div className="mt-8 space-y-5 text-lg leading-8 text-ink/90">
         <ArticleBody blocks={article.content} />
       </div>

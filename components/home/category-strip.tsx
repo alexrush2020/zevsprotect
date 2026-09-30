@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { CatalogCategory } from "@/lib/server/map";
+import { MediaImage } from "@/components/media-image";
 
 export function CategoryStrip({ categories }: { categories: CatalogCategory[] }) {
   return (
@@ -12,8 +13,7 @@ export function CategoryStrip({ categories }: { categories: CatalogCategory[] })
           href={`/catalog?category=${c.slug}`}
           className="cat-panel"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={c.image} alt="" className="cat-panel-img" />
+          <MediaImage src={c.image} alt="" className="cat-panel-img" />
           <span className="cat-panel-shade" />
           <span className="cat-panel-title">{c.short}</span>
         </Link>

@@ -3,6 +3,7 @@
 import type { CatalogCategory } from "@/lib/server/map";
 import type { Product } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { MediaImage } from "@/components/media-image";
 
 const tileClass: Record<string, string> = {
   mehanika: "col-span-2 min-h-[12.5rem]",
@@ -53,8 +54,7 @@ export function CatalogCategoryTiles({
               selected && "ring-2 ring-orange",
             )}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <MediaImage
               src={category.image}
               alt=""
               className="absolute inset-0 size-full object-cover"

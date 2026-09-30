@@ -74,8 +74,6 @@ export function watchConsole(page: Page) {
     if (m.type() !== "error") return;
     const t = m.text();
     if (/Failed to load resource/.test(t) && /\/(api\/media|media|_next\/image)\//.test(m.location().url ?? "")) return;
-    // товар без фото → <img src=""> (lib/server/map.ts: image = ""); дефект D-2 протокола, в сиде e2e фото не загружены
-    if (/An empty string \(""\) was passed to the %s attribute/.test(t)) return;
     errors.push(t);
   });
   return errors;
