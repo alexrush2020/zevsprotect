@@ -37,6 +37,18 @@ describe('Customers/Orders access', () => {
     }
   })
 
+  it('authProvider и yandexId: клиент и гость не задают ни при регистрации, ни правкой (SH-YA)', () => {
+    for (const name of ['authProvider', 'yandexId']) {
+      const f = Customers.fields.find((x) => 'name' in x && x.name === name) as { access: Record<string, (a: never) => boolean> }
+      for (const op of ['create', 'update']) {
+        expect(f.access[op](as(null))).toBe(false)
+        expect(f.access[op](as(customer()))).toBe(false)
+        expect(f.access[op](as(staff('manager')))).toBe(false)
+        expect(f.access[op](as(staff('admin')))).toBe(true)
+      }
+    }
+  })
+
   it('клиент не удаляет профили; регистрация открыта', () => {
     expect((Customers.access!.delete as (a: never) => boolean)(as(customer()))).toBe(false)
     expect((Customers.access!.create as () => boolean)()).toBe(true)

@@ -251,7 +251,7 @@ footer{margin-top:34px; color:var(--muted); font-size:12.5px; text-align:center}
 
 <header class="top">
   <h1>ЗевсПротект — сайт zevsprotect.ru</h1>
-  <p class="sub">Новый сайт производителя перчаток на основе <a href="https://zevsprotect-prototype.vercel.app">прототипа</a> (тег <code>prototype-final</code>), каталог, магазин, ЛК, блог, Payload CMS, интеграции 1С КА 2 и Битрикс24. Треки = этапы КП (537 000 ₽, 3 мес.). Источник карточек — <code>docs/TZ.md</code>, <code>docs/meetings/</code> и <code>docs/ARCHITECTURE.md</code>; статусы сверены с кодом на 2026-09-29. Прогресс и заметки в браузере — <code>localStorage</code>.</p>
+  <p class="sub">Новый сайт производителя перчаток на основе <a href="https://zevsprotect-prototype.vercel.app">прототипа</a> (тег <code>prototype-final</code>), каталог, магазин, ЛК, блог, Payload CMS, интеграции 1С КА 2 и Битрикс24. Треки = этапы КП (537 000 ₽, 3 мес.). Источник карточек — <code>docs/TZ.md</code>, <code>docs/meetings/</code> и <code>docs/ARCHITECTURE.md</code>; статусы ведутся командой <code>bun docs/workflow/wf.mjs</code> и сверены с кодом на 2026-09-30; в браузере (<code>localStorage</code>) хранятся только заметки.</p>
 </header>
 
 <div class="summary">
@@ -413,7 +413,7 @@ const TRACKS = [
     deps:['S-7', 'C-REV'],
     links:[['TZ.md', 'ТЗ: сводка'], ['meetings/2026-09-19-prototype-demo-followup.md', 'Встреча 19.09']],
     acc:'Карточка как в прототипе на данных Payload; SEO-мета и JSON-LD Product.' },
-  { id:'F-BLOG', t:'Блог на Payload', d:'/blog и /blog/[slug] из posts; превью contain (Learned).', pr:'P1', st:'done', anchors:['app/(frontend)/blog/error.tsx','generateStaticParams']/page.tsx','app/(frontend)/blog/error.tsx'], res:'<b>Коммиты 8ef27e3 + правки ревью.</b> /blog и /blog/[slug] на getArticles/getArticle (ISR 5 мин + revalidateTag(\'blog\')), 404 для неопубликованных, error.tsx, порядок как в прототипе; гид закупщика — проп slides. Скриншоты 1440/768/375 просмотрены, /samples не изменился. test 88/88, typecheck, next build --webpack ок, ревью opus. Не проверено вживую: снятие статьи с публикации и CRUD в админке (писать в БД нельзя). Риски: next build требует БД; главная (F-HOME) ещё на моке статей; slug без проверки формата.', own:'agent',
+  { id:'F-BLOG', t:'Блог на Payload', d:'/blog и /blog/[slug] из posts; превью contain (Learned).', pr:'P1', st:'done', anchors:['generateStaticParams','app/(frontend)/blog/[slug]/page.tsx','app/(frontend)/blog/error.tsx'], res:'<b>Коммиты 8ef27e3 + правки ревью.</b> /blog и /blog/[slug] на getArticles/getArticle (ISR 5 мин + revalidateTag(\'blog\')), 404 для неопубликованных, error.tsx, порядок как в прототипе; гид закупщика — проп slides. Скриншоты 1440/768/375 просмотрены, /samples не изменился. test 88/88, typecheck, next build --webpack ок, ревью opus. Не проверено вживую: снятие статьи с публикации и CRUD в админке (писать в БД нельзя). Риски: next build требует БД; главная (F-HOME) ещё на моке статей; slug без проверки формата.', own:'agent',
     req:['T-BLOG.'],
     deps:['C-BLOG', 'S-7'],
     links:[['TZ.md', 'ТЗ: сводка']],
@@ -434,7 +434,7 @@ const TRACKS = [
   id:'meet', name:'Хвосты встречи 19.09',
   desc:'Правки по итогам показа прототипа, ещё не внесённые в код (сверено 2026-09-29).',
   items:[
-  { id:'M-1', t:'Карточка товара: «Сертификаты и документы» → документы без сертификата', d:'Клиент: есть декларация соответствия, сертификата нет — не выдумывать.', pr:'P2', st:'done', anchors:['DEFAULT_DOCS']/page.tsx'], res:'<b>Коммит 6c869e6.</b> Заголовок «Документы», список без сертификата (product/[slug]/page.tsx). test 66/66, typecheck, ревью opus. В браузере не смотрели.', own:'agent',
+  { id:'M-1', t:'Карточка товара: «Сертификаты и документы» → документы без сертификата', d:'Клиент: есть декларация соответствия, сертификата нет — не выдумывать.', pr:'P2', st:'done', anchors:['DEFAULT_DOCS','app/(frontend)/product/[slug]/page.tsx'], res:'<b>Коммит 6c869e6.</b> Заголовок «Документы», список без сертификата (product/[slug]/page.tsx). test 66/66, typecheck, ревью opus. В браузере не смотрели.', own:'agent',
     req:['app/(frontend)/product/[slug]/page.tsx:156 — заголовок «Сертификаты и документы».'],
     links:[['meetings/2026-09-19-prototype-demo-followup.md', 'Встреча 19.09']],
     acc:'На карточке нет упоминания несуществующего сертификата.' },
@@ -507,7 +507,7 @@ const TRACKS = [
     deps:['S-5'],
     links:[['CONTRADICTIONS.md', 'Противоречия']],
     acc:'Регистрация/вход/выход/сброс работают; клиент не читает чужие заказы и чужой профиль (access-тест).' },
-  { id:'SH-YA', t:'Вход через Яндекс ID', d:'OAuth Яндекс → поиск/создание customer → сессия Payload.', pr:'P2', st:'todo', own:'agent',
+  { id:'SH-YA', t:'Вход через Яндекс ID', d:'OAuth Яндекс → поиск/создание customer → сессия Payload.', pr:'P2', st:'done', anchors:['lib/server/yandex.ts','lib/server/yandex.test.ts'], res:'<b>Коммиты d929907, f7893c3.</b> Вход через Яндекс ID (/api/auth/yandex/start, /callback): включается только при YANDEX_CLIENT_ID/SECRET + NEXT_PUBLIC_SERVER_URL + PAYLOAD_SECRET, иначе заглушка прототипа (везде, где рендерится форма: /login, /register, /forgot, /account); state HMAC+cookie, одноразовый, срок 10 мин; вход по yandexId, при занятом email — отказ без автолинковки; сессия Payload штатно (addSessionToUser/jwtSign/generatePayloadCookie), проверка lockUntil, канонический хост, rate limit. test 309/309, build, e2e auth 4/4 на zevs_e2e, ревью opus. НЕ проверено с реальным Яндексом (нет ключей): обмен кода, профиль, выдача сессии. Вопросы заказчику: приложение в oauth.yandex.ru (login:email, login:info, Callback https://<домен>/api/auth/yandex/callback), согласие на ПДн (SH-CONSENT), привязка Яндекса к аккаунту после входа по паролю. При ручной проверке ушли обычные GET на страницу авторизации oauth.yandex.ru с фиктивным client_id (без секрета и code).', own:'agent',
     req:['Есть в прототипе, нет в ТЗ (CONTRA-2).'],
     deps:['SH-AUTH', 'BIZ-2'],
     links:[['CONTRADICTIONS.md', 'Противоречия']],
@@ -575,6 +575,10 @@ const TRACKS = [
   { id:'QA-D2', t:'Товар без фото: пустой src у img', d:'lib/server/map.ts image: images[0] ?? "" — товар без фото рендерит <img src="">, React предупреждает в консоли (после сида без картинок и для новых товаров из 1С). Нужна заглушка или условный рендер.', pr:'P2', st:'done', anchors:['components/media-image.tsx','lib/media-image.test.ts'], res:'<b>Коммиты e7ef99a + a11y.</b> components/media-image.tsx: заглушка (bg-muted + LogoMark) вместо <img src=""> для товаров, категорий и статей без фото; вёрстка с фото не менялась; smoke e2e теперь требует чистую консоль. Обложка статьи без фото не выводится. Не покрыт чат менеджера (background-image url("")). test 290/290, e2e 38/38, ревью opus.', own:'agent',
     req:['docs/qa/2026-09-30-e2e-protocol.md, D-2'],
     acc:'Нет пустых src на карточках, есть заглушка; консоль без предупреждения.' },
+
+  { id:'B24-RETRY-UI', t:'Кнопка «Отправить в Б24 повторно» для заявок и клиентов', d:'Сейчас кнопка есть только у заказов (payload/components/B24Retry.tsx), хотя /api/b24/retry поддерживает lead и company. Добавить в Leads и Customers.', pr:'P2', st:'done', anchors:['lib/b24/target.ts','lib/b24/target.test.ts'], res:'<b>Коммит 9ddf3e2.</b> Кнопка «Отправить в Б24 повторно» у заказов, заявок и клиентов (ui-поле b24RetryField, showB24Retry в lib/b24/target.ts — общая логика с сервером), эндпоинт без изменений (admin/manager), ADMIN-GUIDE обновлён. test 309/309, ревью opus. Клик в админке вживую не проверялся.', own:'agent',
+    req:['ADMIN-GUIDE: расхождение, найденное при ревью L-DOCS'],
+    acc:'Кнопка у заявок и клиентов без b24-id; тест/проверка по коду; ADMIN-GUIDE обновлён.' },
   ]
 },
 {
@@ -703,6 +707,8 @@ const TRACKS = [
 ];
 
 // ────────────────────────────────────────────────────────────
+// Карточки, заведённые через wf.mjs add, могут быть без оценки h — без нормализации все суммы и проценты дают NaN.
+TRACKS.forEach(t=>(t.items||[]).forEach(i=>{ if(!Number.isFinite(i.h)) i.h=0; }));
 const KEY='zevsprotect-workflow-v1';
 const ST_LABEL={todo:'Не начато',doing:'В работе',done:'Готово',blocked:'Заблокировано',wont:'Не делать',superseded:'Неактуально'};
 const ST_CLASS={todo:'st-todo',doing:'st-doing',done:'st-done',blocked:'st-blocked',wont:'st-wont',superseded:'st-superseded'};
@@ -736,7 +742,9 @@ function get(id){
   // localStorage, поэтому задачи «в работе» показывали 0% всем, кроме того, кто
   // лично двигал ползунок, и по эпикам нельзя было понять, сделано 20% или 80%.
   const базовый = item.pg ?? (item.st==='done'?100:0);
-  return { st: d.st ?? item.st, pg: d.pg ?? базовый, notes: d.notes ?? '' };
+  // Статус и процент — из файла: их ведёт `wf.mjs`, а старые правки в localStorage не должны их перекрывать.
+  // В браузере остаются только заметки.
+  return { st: item.st, pg: базовый, notes: d.notes ?? '' };
 }
 function set(id, patch){ state[id] = Object.assign({}, get(id), patch); save(); render(); }
 function allItems(){ return TRACKS.flatMap(t=>t.items); }
@@ -1015,7 +1023,7 @@ function stats(){
   // материалы в статистику не идут — показываем их числом «вне счёта», чтобы не выглядело, будто потерялись
   document.getElementById('stMat').textContent=TRACKS.filter(t=>t.noStats).flatMap(t=>t.items).length;
   const left=act.filter(i=>get(i.id).st!=='done').reduce((s,i)=>s+i.h,0);
-  document.getElementById('stHours').textContent=Math.round(left*10)/10;
+  document.getElementById('stHours').textContent=left?Math.round(left*10)/10:'—';
 
   // Факт vs оценка по пунктам с обеими метками времени.
   // `tShared` — пункт, сделанный одним прогоном с другим (MP-4 вместе с MP-3):

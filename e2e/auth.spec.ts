@@ -93,3 +93,24 @@ test("регистрация на занятый email — отказ без в�
   await expect(page.getByText("Не удалось создать кабинет")).toBeVisible();
   expect(await sql("select id from customers where email = $1", [email])).toHaveLength(1);
 });
+
+test("Яндекс ID без ключей: маршруты выключены, кнопка — заглушка прототипа; ошибки входа видны", async ({ page, request }) => {
+  expect((await request.get("/api/auth/yandex/start", { maxRedirects: 0 })).status()).toBe(404);
+  expect((await request.get("/api/auth/yandex/callback?code=x&state=y", { maxRedirects: 0 })).status()).toBe(404);
+
+  await page.goto("/login?error=yandex-exists");
+  await expect(page.getByText("Аккаунт с этим email уже есть — войдите паролем")).toBeVisible();
+  await expect(page).toHaveURL(/\/login$/);
+
+  await page.getByRole("button", { name: "Войти через Яндекс" }).click();
+  await page.waitForURL(/\/account$/);
+  await expect(page.getByText("Вход через Яндекс ID (заглушка прототипа)")).toBeVisible();
+});
+
+test("Яндекс ID без ключей: форма входа на /account без сессии — та же заглушка", async ({ page }) => {
+  await page.goto("/account");
+  await page.getByRole("button", { name: "Войти через Яндекс" }).click();
+  await expect(page.getByText("Вход через Яндекс ID (заглушка прототипа)")).toBeVisible();
+  await expect(page).toHaveURL(/\/account$/);
+  await expect(page.getByRole("button", { name: "Выйти" })).toBeVisible();
+});

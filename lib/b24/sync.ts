@@ -1,36 +1,13 @@
 import type { Payload } from 'payload'
 import type { Customer, Lead, Order } from '@/payload/payload-types'
 import { B24Error, type B24Client } from './client'
+import { B24_TARGET, syncedId, type B24Kind } from './target'
 
 // Ядро отправки документов в Б24: идемпотентность по b24-id документа, syncError, реестр исполнителей.
 // Сам job — payload/jobs/b24.ts; исполнители сделки/лида/компании регистрируются своими карточками.
 
-export const B24_TARGET = {
-  order: { collection: 'orders', field: 'b24DealId' },
-  lead: { collection: 'leads', field: 'b24LeadId' },
-  company: { collection: 'customers', field: 'b24CompanyId' },
-} as const
-
-export type B24Kind = keyof typeof B24_TARGET
+export { B24_TARGET, isB24Kind, type B24Kind } from './target'
 type Docs = { order: Order; lead: Lead; company: Customer }
-
-/**
- * b24-id документа, если отправка завершена, иначе undefined. Клиент готов, когда есть контакт
- * (у юрлица — ещё и компания): компания без контакта значит, что прошлая попытка упала посередине.
- */
-function syncedId(kind: B24Kind, doc: object): string | undefined {
-  const get = (f: string) => {
-    const v: unknown = Reflect.get(doc, f)
-    return typeof v === 'string' && v ? v : undefined
-  }
-  if (kind !== 'company') return get(B24_TARGET[kind].field)
-  const contact = get('b24ContactId')
-  if (!contact) return undefined
-  if (Reflect.get(doc, 'kind') === 'legal') return get('b24CompanyId')
-  return get('b24CompanyId') ?? contact
-}
-
-export const isB24Kind = (v: unknown): v is B24Kind => typeof v === 'string' && Object.hasOwn(B24_TARGET, v)
 
 /**
  * Исполнитель: создаёт сущность в Б24 и возвращает её ID (он запишется в документ) либо null — «отправлять нечего».

@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { docTitle } from '../admin-ui'
+import { b24RetryField, docTitle } from '../admin-ui'
 import { hasRole, isAdmin } from '../access'
 import { validateInn } from '../validators'
 import { enqueueB24Sync } from '../../lib/b24/sync'
@@ -116,5 +116,6 @@ export const Customers: CollectionConfig = {
       access: { read: staffRead, create: isAdmin, update: isAdmin },
       admin: { position: 'sidebar' as const, readOnly: true },
     })),
+    b24RetryField('company'),
   ],
 }

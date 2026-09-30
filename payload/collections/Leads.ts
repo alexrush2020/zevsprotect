@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { docTitle, statusCell } from '../admin-ui'
+import { b24RetryField, docTitle, statusCell } from '../admin-ui'
 import { hasRole, isAdmin } from '../access'
 import { enqueueB24Sync } from '../../lib/b24/sync'
 
@@ -58,5 +58,6 @@ export const Leads: CollectionConfig = {
     },
     { name: 'b24LeadId', type: 'text', label: 'ID лида Б24', access: { create: isAdmin, update: isAdmin }, admin: { position: 'sidebar', readOnly: true } },
     { name: 'syncError', type: 'text', label: 'Ошибка синхронизации', access: { create: isAdmin, update: isAdmin }, admin: { position: 'sidebar', readOnly: true } },
+    b24RetryField('lead'),
   ],
 }
