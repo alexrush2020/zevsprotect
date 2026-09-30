@@ -507,7 +507,7 @@ const TRACKS = [
     deps:['S-5'],
     links:[['CONTRADICTIONS.md', 'Противоречия']],
     acc:'Регистрация/вход/выход/сброс работают; клиент не читает чужие заказы и чужой профиль (access-тест).' },
-  { id:'SH-YA', t:'Вход через Яндекс ID', d:'OAuth Яндекс → поиск/создание customer → сессия Payload.', pr:'P2', st:'todo', own:'agent',
+  { id:'SH-YA', t:'Вход через Яндекс ID', d:'OAuth Яндекс → поиск/создание customer → сессия Payload.', pr:'P2', st:'doing', own:'agent',
     req:['Есть в прототипе, нет в ТЗ (CONTRA-2).'],
     deps:['SH-AUTH', 'BIZ-2'],
     links:[['CONTRADICTIONS.md', 'Противоречия']],
@@ -575,6 +575,10 @@ const TRACKS = [
   { id:'QA-D2', t:'Товар без фото: пустой src у img', d:'lib/server/map.ts image: images[0] ?? "" — товар без фото рендерит <img src="">, React предупреждает в консоли (после сида без картинок и для новых товаров из 1С). Нужна заглушка или условный рендер.', pr:'P2', st:'done', anchors:['components/media-image.tsx','lib/media-image.test.ts'], res:'<b>Коммиты e7ef99a + a11y.</b> components/media-image.tsx: заглушка (bg-muted + LogoMark) вместо <img src=""> для товаров, категорий и статей без фото; вёрстка с фото не менялась; smoke e2e теперь требует чистую консоль. Обложка статьи без фото не выводится. Не покрыт чат менеджера (background-image url("")). test 290/290, e2e 38/38, ревью opus.', own:'agent',
     req:['docs/qa/2026-09-30-e2e-protocol.md, D-2'],
     acc:'Нет пустых src на карточках, есть заглушка; консоль без предупреждения.' },
+
+  { id:'B24-RETRY-UI', t:'Кнопка «Отправить в Б24 повторно» для заявок и клиентов', d:'Сейчас кнопка есть только у заказов (payload/components/B24Retry.tsx), хотя /api/b24/retry поддерживает lead и company. Добавить в Leads и Customers.', pr:'P2', st:'doing', own:'agent',
+    req:['ADMIN-GUIDE: расхождение, найденное при ревью L-DOCS'],
+    acc:'Кнопка у заявок и клиентов без b24-id; тест/проверка по коду; ADMIN-GUIDE обновлён.' },
   ]
 },
 {
