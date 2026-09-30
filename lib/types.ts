@@ -44,6 +44,9 @@ export type Article = {
   content: string[];
   slides?: { src: string; title: string; alt: string }[];
   home?: boolean;
+  updatedAt?: string;
+  /** SEO-поля Payload (плагин seo); пусто — берутся title/excerpt/cover. */
+  seo?: { title?: string; description?: string; image?: string };
 };
 
 export type OrderStatus =

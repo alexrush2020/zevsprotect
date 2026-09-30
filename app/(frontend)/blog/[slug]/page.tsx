@@ -5,6 +5,8 @@ import { Mail, Phone } from "lucide-react";
 import { getArticle, getArticles } from "@/lib/server/catalog";
 import { formatDate } from "@/lib/format";
 import { brand } from "@/lib/brand";
+import { jsonLdScript } from "@/lib/product-jsonld";
+import { articleJsonLd, breadcrumbJsonLd, pageMeta } from "@/lib/seo-jsonld";
 import { Button } from "@/components/ui/button";
 import { InquiryDialog } from "@/components/inquiry-dialog";
 import { PurchaseGuideCarousel } from "@/components/purchase-guide-carousel";
@@ -23,7 +25,13 @@ export async function generateMetadata({
   const { slug } = await params;
   const article = await getArticle(slug);
   if (!article) return { title: "Статья" };
-  return { title: article.title, description: article.excerpt };
+  const { seo } = article;
+  return pageMeta(
+    seo?.title || article.title,
+    seo?.description || article.excerpt,
+    `/blog/${slug}`,
+    seo?.image || article.image || undefined,
+  );
 }
 
 function ArticleBody({ blocks }: { blocks: string[] }) {
@@ -81,6 +89,12 @@ export default async function ArticlePage({
 
   return (
     <article className="mx-auto max-w-3xl px-4 py-10">
+      {[
+        articleJsonLd({ ...article, updatedAt: article.updatedAt }),
+        breadcrumbJsonLd([["Статьи", "/blog"], [article.title, `/blog/${slug}`]]),
+      ].map((ld, i) => (
+        <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(ld) }} />
+      ))}
       <p className="text-sm text-steel">
         <Link href="/blog">Статьи</Link> / {article.category}
       </p>

@@ -2,7 +2,9 @@ import { LeadForm } from "@/components/lead-form";
 import { PurchaseGuideTeaser } from "@/components/purchase-guide-teaser";
 import { brand } from "@/lib/brand";
 
-export const metadata = { title: "Расчёт поставки" };
+import { pageMeta } from "@/lib/seo-jsonld";
+
+export const metadata = pageMeta("Расчёт поставки", "Считаем стоимость, фасовку и срок отгрузки по складу и графику цеха. Укажите объём, город и желаемый срок.", "/calculation");
 
 export default function CalculationPage() {
   return (

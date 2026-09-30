@@ -22,6 +22,7 @@ import { brand } from "@/lib/brand";
 import { catalogPrice } from "@/lib/lots";
 import { productMinQty } from "@/lib/order-qty";
 import { absolute, jsonLdScript, productJsonLd } from "@/lib/product-jsonld";
+import { breadcrumbJsonLd } from "@/lib/seo-jsonld";
 import { formatVolumeQty } from "@/lib/volume-quote";
 
 // Опубликованные товары пререндерятся; новые — по запросу, снятые с публикации — 404 после сброса тега catalog.
@@ -52,7 +53,8 @@ export async function generateMetadata({
   return {
     title: { absolute: seo.title },
     description: seo.description,
-    openGraph: { title: seo.title, description: seo.description, ...(image ? { images: [absolute(image)] } : {}) },
+    alternates: { canonical: `/product/${slug}` },
+    openGraph: { title: seo.title, description: seo.description, url: `/product/${slug}`, siteName: brand.mark, locale: "ru_RU", type: "website", ...(image ? { images: [absolute(image)] } : {}) },
   };
 }
 
@@ -84,6 +86,18 @@ export default async function ProductPage({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: jsonLdScript(
+            breadcrumbJsonLd([
+              ["Каталог", "/catalog"],
+              ...(category ? ([[category.short, `/catalog?category=${product.category}`]] as [string, string][]) : []),
+              [product.name, `/product/${product.slug}`],
+            ]),
+          ),
+        }}
       />
       <p className="text-sm text-steel">
         <Link href="/catalog">Каталог</Link> /{" "}

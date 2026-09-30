@@ -2,12 +2,15 @@ import { Suspense } from "react";
 import { CatalogBrowser } from "@/components/catalog-browser";
 import { PurchaseGuideTeaser } from "@/components/purchase-guide-teaser";
 import { brand } from "@/lib/brand";
+import { pageMeta } from "@/lib/seo-jsonld";
 import { withMockIds } from "@/lib/data/catalog";
 import { getCategories, getProducts } from "@/lib/server/catalog";
 
-export const metadata = {
-  title: "Каталог рабочих перчаток",
-};
+export const metadata = pageMeta(
+  "Каталог рабочих перчаток",
+  "Каталог защитных перчаток от производителя: основа, покрытие, размеры, оптовые цены.",
+  "/catalog",
+);
 
 async function CatalogData() {
   const [products, categories] = await Promise.all([getProducts(), getCategories()]);

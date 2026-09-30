@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Unbounded } from "next/font/google";
 import { brand, brandTitle } from "@/lib/brand";
+import { siteOrigin } from "@/lib/seo-jsonld";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { SiteHeader } from "@/components/site-header";
@@ -18,6 +19,7 @@ const unbounded = Unbounded({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteOrigin),
   title: {
     default: brandTitle,
     template: `%s · ${brand.mark}`,
