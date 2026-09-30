@@ -58,6 +58,8 @@ export const Orders: CollectionConfig = {
         const note = typeof context.statusNote === 'string' ? context.statusNote : undefined
         if (status)
           data.statusHistory = nextStatusHistory(originalDoc?.statusHistory, originalDoc?.status, status, new Date().toISOString(), note)
+        // любое сохранение → заказ снова к выгрузке в 1С; пометку ставит только обмен (lib/onec/orders-export.ts, мимо хуков)
+        data.onecExportedAt = null
         return data
       },
     ],

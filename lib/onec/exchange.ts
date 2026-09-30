@@ -1,20 +1,23 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
-import { appendFile, mkdir, readdir, readFile, rm, stat } from 'node:fs/promises'
+import { appendFile, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import type { Payload } from 'payload'
 import { parseCommerceMl } from './commerceml'
 import { runImport, type ImportReport } from './import'
+import { loadOrdersToExport, markExported, ordersXml, type ExportSnapshot } from './orders-export'
 
-// Протокол «Обмен с сайтом» 1С (совместим с 1С-Битрикс /bitrix/admin/1c_exchange.php), только type=catalog:
-//   checkauth → «success\n<cookie>\n<значение>»;  init → «zip=no\nfile_limit=N»;
-//   file (POST, тело — часть файла, дописывается) → «success»;  import&filename=… → «success» | «failure\n…».
-// Заказы (type=sale, mode=query/success) — I-1C-ORD.
+// Протокол «Обмен с сайтом» 1С (совместим с 1С-Битрикс /bitrix/admin/1c_exchange.php):
+//   checkauth → «success\n<cookie>\n<значение>»;  init → «zip=no\nfile_limit=N» (общие для type=catalog и type=sale);
+//   catalog: file (POST, тело — часть файла, дописывается) → «success»;  import&filename=… → «success» | «failure\n…».
+//   sale: query → XML заказов (orders-export.ts), снимок отданного — в каталоге сессии;  success → пометка снимка.
 
 export const SESSION_COOKIE = 'ZEVS_1C_SESSION'
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000
 /** Потолок размера файла пакета (сумма частей): картинки; XML — ONEC_EXCHANGE_XML_LIMIT (разбирается в памяти). */
 const MAX_FILE_BYTES = 200 * 1024 * 1024
+/** Заказов за один query; остаток уходит следующим обменом. */
+const SALE_LIMIT = 500
 const isXml = (name: string) => /\.xml$/i.test(name)
 const ALLOWED_EXT = /\.(xml|jpe?g|png|webp)$/i
 
@@ -122,7 +125,7 @@ export async function handleExchange(req: ExchangeRequest, deps: ExchangeDeps): 
 
   const sid = verifySession(req.headers.get('cookie'), cfg.user, cfg.password, now)
   if (!sid) return failure('Нет сессии или она истекла — начните с mode=checkauth', 401)
-  if (type !== 'catalog') return failure(`type=${type ?? ''} не поддерживается (обмен заказами — отдельный этап)`)
+  if (type !== 'catalog' && type !== 'sale') return failure(`type=${type ?? ''} не поддерживается`)
   const dir = path.join(cfg.dir, sid)
 
   if (mode === 'init') {
@@ -130,6 +133,33 @@ export async function handleExchange(req: ExchangeRequest, deps: ExchangeDeps): 
     await rm(dir, { recursive: true, force: true })
     await mkdir(dir, { recursive: true })
     return reply(`zip=no\nfile_limit=${cfg.fileLimit}`)
+  }
+
+  if (type === 'sale') {
+    const snapFile = path.join(dir, 'sale-query.json')
+    if (mode === 'query') {
+      const { orders, refs, snapshot } = await loadOrdersToExport(deps.payload, SALE_LIMIT)
+      // повторный query без success отдаёт те же заказы и перезаписывает снимок
+      await mkdir(dir, { recursive: true })
+      await writeFile(snapFile, JSON.stringify(snapshot))
+      deps.log?.(`1С sale query: заказов ${orders.length}`)
+      return new Response(ordersXml(orders, refs, new Date(now)), { headers: { 'content-type': 'application/xml; charset=utf-8' } })
+    }
+    if (mode === 'success') {
+      // нет снимка (чужая/новая сессия, повторный success) — помечать нечего
+      const raw = await readFile(snapFile, 'utf8').catch(() => null)
+      const snapshot = raw ? (JSON.parse(raw) as ExportSnapshot) : []
+      const marked = await markExported(deps.payload, snapshot, new Date(now))
+      await rm(snapFile, { force: true })
+      deps.log?.(`1С sale success: помечено ${marked} из ${snapshot.length}`)
+      return reply('success')
+    }
+    // ponytail: обратная загрузка заказов из 1С (mode=file) не реализована — принимаем и не применяем, статусы идут из Б24
+    if (mode === 'file') {
+      deps.log?.('1С sale file: изменения заказов из 1С сайтом не применяются')
+      return reply('success')
+    }
+    return failure(`Неизвестный mode=${mode ?? ''} для type=sale`)
   }
 
   if (mode === 'file') {
