@@ -52,6 +52,7 @@ export const Settings: GlobalConfig = {
       type: 'array',
       labels: { singular: 'Соответствие', plural: 'Соответствия' },
       label: 'Стадии Б24 → статус заказа',
+      admin: { description: 'ID стадии сделки из Б24 (STAGE_ID). Несопоставленная стадия заказ не меняет.' },
       access: { read: hasRole('admin', 'manager') },
       fields: [
         { name: 'stage', type: 'text', label: 'Стадия сделки Б24', required: true },
@@ -67,6 +68,18 @@ export const Settings: GlobalConfig = {
             { label: 'В доставке', value: 'delivery' },
             { label: 'Доставлен', value: 'delivered' },
             { label: 'Отменён', value: 'cancelled' },
+          ],
+        },
+        {
+          name: 'paymentStatus',
+          type: 'select',
+          label: 'Статус оплаты (необязательно)',
+          admin: { description: 'Пусто — статус оплаты заказа не меняется.' },
+          options: [
+            { label: 'Ожидает', value: 'pending' },
+            { label: 'Счёт выставлен', value: 'invoiced' },
+            { label: 'Оплачен', value: 'paid' },
+            { label: 'Ошибка', value: 'failed' },
           ],
         },
       ],

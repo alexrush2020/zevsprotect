@@ -1424,10 +1424,17 @@ export interface Setting {
     yandexMetrika?: string | null;
     googleAnalytics?: string | null;
   };
+  /**
+   * ID стадии сделки из Б24 (STAGE_ID). Несопоставленная стадия заказ не меняет.
+   */
   b24StageMap?:
     | {
         stage: string;
         status: 'accepted' | 'picking' | 'shipped' | 'delivery' | 'delivered' | 'cancelled';
+        /**
+         * Пусто — статус оплаты заказа не меняется.
+         */
+        paymentStatus?: ('pending' | 'invoiced' | 'paid' | 'failed') | null;
         id?: string | null;
       }[]
     | null;
@@ -1550,6 +1557,7 @@ export interface SettingsSelect<T extends boolean = true> {
     | {
         stage?: T;
         status?: T;
+        paymentStatus?: T;
         id?: T;
       };
   updatedAt?: T;

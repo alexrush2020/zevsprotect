@@ -2,6 +2,7 @@ import { JobCancelledError, type Endpoint, type TaskConfig } from 'payload'
 import { hasRole } from '../access'
 import { B24Error, getB24Client } from '@/lib/b24/client'
 import { B24_TARGET, B24_TASK, isB24Kind, retryB24Sync, runB24Sync } from '@/lib/b24/sync'
+import { handleB24DealWebhook } from '@/lib/b24/status'
 // Исполнители регистрируются импортом модуля здесь (не в lib/b24/sync.ts — там был бы цикл импортов)
 import '@/lib/b24/company'
 import '@/lib/b24/deal'
@@ -50,5 +51,21 @@ export const b24RetryEndpoint: Endpoint = {
     const result = await retryB24Sync(req.payload, body.kind, id)
     const status = result.status === 'not_found' ? 404 : result.status === 'failed' ? 503 : 200
     return Response.json(result, { status })
+  },
+}
+
+/** POST /api/b24/webhook — исходящий вебхук Б24 (ONCRMDEALUPDATE), токен из B24_WEBHOOK_TOKEN. Логика — lib/b24/status.ts. */
+export const b24WebhookEndpoint: Endpoint = {
+  path: '/b24/webhook',
+  method: 'post',
+  handler: async (req) => {
+    const { status, body } = await handleB24DealWebhook({
+      contentType: req.headers.get('content-type'),
+      raw: (await req.text?.().catch(() => '')) ?? '',
+      expectedToken: process.env.B24_WEBHOOK_TOKEN,
+      payload: req.payload,
+      b24: getB24Client(),
+    })
+    return Response.json(body, { status })
   },
 }

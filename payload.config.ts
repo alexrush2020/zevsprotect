@@ -25,7 +25,7 @@ import { About } from './payload/globals/About'
 import { Delivery } from './payload/globals/Delivery'
 import { Navigation } from './payload/globals/Navigation'
 import { Settings } from './payload/globals/Settings'
-import { b24RetryEndpoint, b24SyncTask } from './payload/jobs/b24'
+import { b24RetryEndpoint, b24SyncTask, b24WebhookEndpoint } from './payload/jobs/b24'
 import { hasRole, isAdmin } from './payload/access'
 
 const filename = fileURLToPath(import.meta.url)
@@ -50,7 +50,7 @@ export default buildConfig({
   i18n: { supportedLanguages: { ru }, fallbackLanguage: 'ru', translations: { ru: ruOverrides } },
   collections: [Users, Customers, Categories, Products, Media, Reviews, Orders, Leads, PostCategories, Posts, Pages],
   globals: [Home, About, Delivery, Navigation, Settings],
-  endpoints: [b24RetryEndpoint],
+  endpoints: [b24RetryEndpoint, b24WebhookEndpoint],
   jobs: {
     tasks: [b24SyncTask],
     enableConcurrencyControl: true,
