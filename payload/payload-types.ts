@@ -1542,7 +1542,13 @@ export interface Setting {
     bik?: string | null;
   };
   analytics?: {
+    /**
+     * Номер счётчика (только цифры). Пусто — счётчик на сайте не подключается.
+     */
     yandexMetrika?: string | null;
+    /**
+     * Пока не подключается: нужно решение по 152-ФЗ (BIZ-3).
+     */
     googleAnalytics?: string | null;
   };
   /**

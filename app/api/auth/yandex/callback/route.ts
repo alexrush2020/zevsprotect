@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
       },
     );
     if (!result.ok) return redirect(`/login?error=${result.error}`);
-    return redirect("/account", await sessionCookie(payload, result.customerId));
+    return redirect("/account?login=yandex", await sessionCookie(payload, result.customerId));
   } catch (e) {
     console.error("yandex oauth: сбой сессии", e instanceof Error ? e.message : e);
     return redirect("/login?error=yandex");

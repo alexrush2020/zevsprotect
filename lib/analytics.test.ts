@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { formEvent, hit, initCounter, parseCounterId, resetAnalytics, safeParams, track } from "@/lib/analytics";
+import { cleanUrl, formEvent, hit, initCounter, isAnalyticsBlockedPath, parseCounterId, resetAnalytics, safeParams, track } from "@/lib/analytics";
 
-const w = globalThis as unknown as { window?: { ym?: unknown }; document?: { referrer: string } };
+const w = globalThis as unknown as { window?: { ym?: unknown; location?: { origin: string } }; document?: { referrer: string } };
 
 beforeEach(() => {
   resetAnalytics();
-  w.window = {};
+  w.window = { location: { origin: "http://x" } };
   w.document = { referrer: "" };
 });
 afterEach(() => {
@@ -62,6 +62,35 @@ describe("analytics", () => {
       [5, "hit", "http://x/a", undefined],
       [5, "hit", "http://x/b", { referer: "http://x/a" }],
     ]);
+  });
+
+  it("hit: токен, поиск, номер, email и id заказа не уходят ни в url, ни в referer; category сохраняется", () => {
+    w.document!.referrer = "https://mail.example/inbox?uid=42&email=a@b.ru";
+    initCounter(9);
+    hit("http://x/forgot/reset?token=abc123");
+    hit("http://x/catalog?category=nitril&q=%D0%B8%D0%B2%D0%B0%D0%BD#top");
+    hit("http://x/order/ZP-2026-0001");
+    hit("http://x/track?number=ZP-2026-0002&email=a%40b.ru");
+    hit("http://x/pay/ZP-2026-0003/success");
+    const queue = (w.window!.ym as unknown as { a: unknown[][] }).a;
+    const hits = queue.filter((a) => a[1] === "hit").map((a) => [a[2], (a[3] as { referer?: string } | undefined)?.referer]);
+    expect(hits).toEqual([
+      ["http://x/forgot/reset", "https://mail.example/"],
+      ["http://x/catalog?category=nitril", "http://x/forgot/reset"],
+      ["http://x/order/:id", "http://x/catalog?category=nitril"],
+      ["http://x/track", "http://x/order/:id"],
+      ["http://x/pay/:id/success", "http://x/track"],
+    ]);
+    const dump = JSON.stringify(queue);
+    for (const leak of ["abc123", "token", "q=", "ZP-2026", "email", "a@b", "a%40b", "uid", "#top"]) expect(dump).not.toContain(leak);
+  });
+
+  it("cleanUrl и заблокированные пути", () => {
+    expect(cleanUrl("/invoice/15?print=1", "http://x")).toBe("http://x/invoice/:id");
+    expect(cleanUrl("/catalog?category=a&category=b&sort=1", "http://x")).toBe("http://x/catalog?category=a&category=b");
+    expect(isAnalyticsBlockedPath("/forgot/reset")).toBe(true);
+    expect(isAnalyticsBlockedPath("/forgot")).toBe(true);
+    expect(isAnalyticsBlockedPath("/forgotten")).toBe(false);
   });
 
   it("safeParams вырезает ПДн по ключу и email в значении", () => {

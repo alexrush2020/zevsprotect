@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { AccountOrderCard, useAccountOrders } from "@/components/account/account-order-card";
 import { useStore } from "@/lib/store";
+import { track } from "@/lib/analytics";
 import { formatDate, formatPrice, STATUS_LABEL } from "@/lib/format";
 import { NOTICE_KIND_LABEL, readNotices, type AccountNotice } from "@/lib/account-notices";
 
@@ -12,6 +13,13 @@ export default function AccountHomePage() {
   const { user, favoriteIds, getProduct } = useStore();
   const { orders: loaded, notice } = useAccountOrders();
   const [notices, setNotices] = useState<AccountNotice[]>([]);
+
+  useEffect(() => {
+    // возврат из Яндекс ID (серверный редирект /account?login=yandex): цель входа и чистый адрес
+    if (new URLSearchParams(window.location.search).get("login") !== "yandex") return;
+    track("login_success", { method: "yandex" });
+    window.history.replaceState(null, "", "/account");
+  }, []);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- чтение localStorage после гидратации

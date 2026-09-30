@@ -3,28 +3,30 @@
 import { Suspense, useEffect } from "react";
 import Script from "next/script";
 import { usePathname, useSearchParams } from "next/navigation";
-import { hit, initCounter } from "@/lib/analytics";
+import { counterReady, hit, initCounter, isAnalyticsBlockedPath } from "@/lib/analytics";
 
 /** Яндекс.Метрика: рендерится только при ID из Settings → «Счётчики»; без ID — ничего не грузится. */
 export function Analytics({ metrikaId }: { metrikaId: number | null }) {
   if (!metrikaId) return null;
-  // до эффектов потомков (просмотр товара, начало оформления): их события встают в очередь ym
-  initCounter(metrikaId);
   return (
-    <>
-      <Script id="ym-tag" src="https://mc.yandex.ru/metrika/tag.js" strategy="afterInteractive" />
-      <Suspense fallback={null}>
-        <PageHits />
-      </Suspense>
-    </>
+    <Suspense fallback={null}>
+      <Counter id={metrikaId} />
+    </Suspense>
   );
 }
 
-function PageHits() {
+function Counter({ id }: { id: number }) {
   const pathname = usePathname();
   const search = useSearchParams().toString();
+  const blocked = isAnalyticsBlockedPath(pathname);
+  // до эффектов потомков (просмотр товара, начало оформления): их события встают в очередь ym.
+  // Заход на /forgot/* (ссылка с токеном) — счётчик не инициализируется, пока пользователь не уйдёт оттуда.
+  if (!blocked) initCounter(id);
+
   useEffect(() => {
     hit(window.location.href);
   }, [pathname, search]);
-  return null;
+
+  if (blocked && !counterReady()) return null;
+  return <Script id="ym-tag" src="https://mc.yandex.ru/metrika/tag.js" strategy="afterInteractive" />;
 }

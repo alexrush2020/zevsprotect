@@ -83,10 +83,13 @@ export function initCounter(id: number) {
     webvisor: false,
     clickmap: false,
     trackHash: false,
-    trackLinks: true,
-    accurateTrackBounce: true,
+    // авто-запросы tag.js берут location.href как есть — выключены, URL в Метрику уходит только через hit()
+    trackLinks: false,
+    accurateTrackBounce: false,
   });
 }
+
+export const counterReady = () => counterId !== null;
 
 function call(...args: unknown[]) {
   if (counterId === null) return;
@@ -103,10 +106,37 @@ export function track(event: AnalyticsEvent, params?: AnalyticsParams) {
   else call("reachGoal", event);
 }
 
-/** Хит просмотра страницы (абсолютный URL; клиентская навигация App Router); повтор того же URL подряд не шлётся. */
-export function hit(url: string) {
-  if (counterId === null || url === lastHit) return;
-  const referer = lastHit ?? (typeof document !== "undefined" ? document.referrer : undefined);
+const ALLOWED_QUERY = ["category"];
+
+/**
+ * URL для Метрики без секретов и идентификаторов: только путь и разрешённые query-ключи (token сброса пароля,
+ * q, number, email, error — вырезаются), без hash; id заказа/счёта/оплаты маскируется; чужой домен — только origin.
+ */
+export function cleanUrl(raw: string, origin: string): string | undefined {
+  let u: URL;
+  try {
+    u = new URL(raw, origin);
+  } catch {
+    return undefined;
+  }
+  if (u.origin !== new URL(origin).origin) return `${u.origin}/`;
+  const path = u.pathname.replace(/^\/(order|invoice|pay)\/[^/]+/, "/$1/:id");
+  const q = new URLSearchParams();
+  for (const k of ALLOWED_QUERY) for (const v of u.searchParams.getAll(k)) q.append(k, v);
+  const s = q.toString();
+  return `${u.origin}${path}${s ? `?${s}` : ""}`;
+}
+
+/** Пути, на которых счётчик не инициализируется при заходе (tag.js не видит ссылку сброса пароля с токеном). */
+export const isAnalyticsBlockedPath = (pathname: string) => pathname === "/forgot" || pathname.startsWith("/forgot/");
+
+/** Хит просмотра страницы (клиентская навигация App Router); URL и referer — через cleanUrl, повтор подряд не шлётся. */
+export function hit(rawUrl: string) {
+  if (counterId === null) return;
+  const origin = window.location.origin;
+  const url = cleanUrl(rawUrl, origin);
+  if (!url || url === lastHit) return;
+  const referer = lastHit ?? (document.referrer ? cleanUrl(document.referrer, origin) : undefined);
   lastHit = url;
   call("hit", url, referer ? { referer } : undefined);
 }

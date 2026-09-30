@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -14,7 +14,11 @@ const fieldClass = "h-11 rounded-xl bg-white";
 
 function ResetForm() {
   const params = useSearchParams();
-  const token = params.get("token") || "";
+  // токен держим в состоянии формы, а из адресной строки убираем: не попадёт в историю, referer и аналитику
+  const [token] = useState(() => params.get("token") || "");
+  useEffect(() => {
+    if (window.location.search) window.history.replaceState(null, "", "/forgot/reset");
+  }, []);
   const [password, setPassword] = useState("");
   const [repeat, setRepeat] = useState("");
   const [done, setDone] = useState(false);
