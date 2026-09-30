@@ -46,6 +46,9 @@ describe("buildLead", () => {
     expect(buildLead("feedback", { ...ok, phone: "12345" }, now).ok).toBe(false);
     expect(buildLead("feedback", { ...ok, email: "" }, now).ok).toBe(false);
     expect(buildLead("feedback", { ...ok, email: "не почта" }, now).ok).toBe(false);
+    for (const email of ["a..b@x.ru", "a@b.c", "ivan@почта.рф"]) // Payload-валидатор их отвергает — отказ до записи
+      expect(buildLead("feedback", { ...ok, email }, now)).toMatchObject({ ok: false, error: "Проверьте email" });
+    expect(buildLead("feedback", { ...ok, email: "ivan.petrov+z@sub.firm.ru" }, now).ok).toBe(true);
     expect(buildLead("feedback", { ...ok, message: "" }, now).ok).toBe(false);
     expect(buildLead("feedback", { ...ok, "bad-key": "x" }, now).ok).toBe(false);
     expect(buildLead("feedback", { ...ok, message: "x".repeat(10_001) }, now).ok).toBe(false);

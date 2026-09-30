@@ -51,7 +51,7 @@ export function buildLead(
   const digits = phone.replace(/\D/g, "").length;
   if (digits < 10 || digits > 15) return { ok: false, error: "Укажите телефон полностью" };
   if (kind !== "cart" && !email) return { ok: false, error: "Укажите email" };
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { ok: false, error: "Проверьте email" };
+  if (email && !/^(?!.*\.\.)[\w.!#$%&'*+/=?^`{|}~-]+@[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*\.[a-z]{2,}$/i.test(email)) return { ok: false, error: "Проверьте email" };
   if (kind === "feedback" && !message) return { ok: false, error: "Напишите сообщение" };
 
   const extraKeys = Object.keys(f).filter((k) => !SKIP.has(k));

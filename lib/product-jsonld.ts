@@ -3,7 +3,7 @@ import { catalogPrice } from "@/lib/lots";
 import type { Product } from "@/lib/types";
 
 const origin = `https://${brand.domain}`;
-const absolute = (src: string) => (/^https?:\/\//.test(src) ? src : `${origin}${src.startsWith("/") ? "" : "/"}${src}`);
+export const absolute = (src: string) => (/^https?:\/\//.test(src) ? src : `${origin}${src.startsWith("/") ? "" : "/"}${src}`);
 
 /** JSON-LD schema.org/Product для карточки товара. Цена — та же, что в карточке и корзине (catalogPrice). */
 export function productJsonLd(

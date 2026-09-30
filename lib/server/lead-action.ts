@@ -11,7 +11,7 @@ const receive = createLeadReceiver();
 /** Заявка с формы витрины → коллекция leads (+ письмо менеджеру). Валидация и спам-защита — в receive. */
 export async function submitLead(kind: string, fields: Record<string, string>): Promise<LeadResult> {
   const h = await headers();
-  const ip = h.get("x-forwarded-for")?.split(",")[0].trim() || h.get("x-real-ip") || "unknown";
+  const ip = h.get("x-real-ip") || h.get("x-forwarded-for")?.split(",").at(-1)?.trim() || "unknown"; // клиент задаёт начало XFF, прокси дописывает в конец;
   let sourceUrl: string | undefined;
   try {
     const ref = h.get("referer");

@@ -51,6 +51,7 @@ export function leadManagerMail(l: {
     ...(l.email ? [`Email: ${l.email}`] : []),
     ...(l.company ? [`Организация: ${l.company}`] : []),
     ...(l.message ? [`Сообщение: ${l.message}`] : []),
+    ...(extra.length ? ['Данные из формы (заполнены клиентом, не проверены сервером):'] : []),
     ...extra.map(([k, v]) => `${k}: ${String(v)}`),
     ...(l.sourceUrl ? [`Страница: ${l.sourceUrl}`] : []),
   ])

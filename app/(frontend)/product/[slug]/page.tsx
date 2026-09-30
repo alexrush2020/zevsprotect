@@ -21,7 +21,7 @@ import { formatPrice } from "@/lib/format";
 import { brand } from "@/lib/brand";
 import { catalogPrice } from "@/lib/lots";
 import { productMinQty } from "@/lib/order-qty";
-import { jsonLdScript, productJsonLd } from "@/lib/product-jsonld";
+import { absolute, jsonLdScript, productJsonLd } from "@/lib/product-jsonld";
 import { formatVolumeQty } from "@/lib/volume-quote";
 
 // Опубликованные товары пререндерятся; новые — по запросу, снятые с публикации — 404 после сброса тега catalog.
@@ -52,7 +52,7 @@ export async function generateMetadata({
   return {
     title: { absolute: seo.title },
     description: seo.description,
-    openGraph: { title: seo.title, description: seo.description, ...(image ? { images: [image] } : {}) },
+    openGraph: { title: seo.title, description: seo.description, ...(image ? { images: [absolute(image)] } : {}) },
   };
 }
 
