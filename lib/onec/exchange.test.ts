@@ -148,12 +148,12 @@ describe('init → file → import', () => {
     expect((await s.call('type=catalog&mode=import&filename=import.xml')).text).toMatch(/^success/)
   })
 
-  it('import без файла, type=sale, неизвестный mode — failure', async () => {
+  it('import без файла, неизвестный type, неизвестный mode — failure', async () => {
     const s = setup()
     await s.login()
     await s.call('type=catalog&mode=init')
     expect((await s.call('type=catalog&mode=import&filename=offers.xml')).text).toMatch(/^failure/)
-    expect((await s.call('type=sale&mode=query')).text).toMatch(/^failure/)
+    expect((await s.call('type=reports&mode=query')).text).toMatch(/^failure/)
     expect((await s.call('type=catalog&mode=zzz')).text).toMatch(/^failure/)
     expect((await s.call('type=catalog&mode=complete')).text).toBe('success')
   })

@@ -54,7 +54,8 @@ async function patchDoc(payload: Payload, kind: B24Kind, id: string | number, pa
   const { collection, field } = B24_TARGET[kind]
   const data: Record<string, string | null> = { syncError: patch.syncError }
   if (patch.b24Id !== undefined) data[field] = patch.b24Id
-  await payload.update({ collection, id, data, depth: 0, overrideAccess: true })
+  // техническая запись — не повод заново выгружать заказ в 1С (страховка к сравнению полей в Orders.beforeChange)
+  await payload.update({ collection, id, data, depth: 0, overrideAccess: true, context: { skipOnecReset: true } })
 }
 
 export async function runB24Sync(args: { kind: B24Kind; id: string | number; payload: Payload; b24: B24Client }): Promise<B24SyncResult> {

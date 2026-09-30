@@ -578,7 +578,7 @@ const TRACKS = [
     deps:['C-CAT'],
     links:[['ARCHITECTURE.md', 'Архитектура'], ['TZ.md', 'ТЗ: сводка']],
     acc:'Unit-тесты парсера на фикстурах CommerceML; повторный импорт идемпотентен; manualOverride соблюдается; live — на тестовой 1С (I-TEST).' },
-  { id:'I-1C-ORD', t:'Сайт → 1С: заказы и клиенты', d:'type=sale&mode=query/success: XML заказов (состав, клиент, оплата, доставка), пометка выгруженных.', pr:'P1', st:'todo', own:'agent',
+  { id:'I-1C-ORD', t:'Сайт → 1С: заказы и клиенты', d:'type=sale&mode=query/success: XML заказов (состав, клиент, оплата, доставка), пометка выгруженных.', pr:'P1', st:'done', anchors:['lib/onec/orders-export.ts','lib/onec/orders-export.test.ts','onecFieldsChanged'], res:'<b>Коммиты 69b6ffe, 5c552ca.</b> /api/1c-exchange type=sale: query — XML заказов CommerceML 2.08 (состав, контрагент юрлицо/физлицо/гость, оплата, доставка строкой, реквизиты; НДС не передаётся — BIZ-8), success — атомарная пометка onecExportedAt условным UPDATE по id+updatedAt; изменённый после выгрузки заказ уходит снова, технические записи Б24 пометку не сбрасывают (onecFieldsChanged), повторный query идемпотентен, повреждённый снимок безопасен. Фикстура orders-export.xml, test 287/287, build, ревью opus. Не проверено: живой Postgres (atomic updateOne, сравнение updatedAt), приём фикстуры в тестовой 1С (I-TEST). Предел: type=sale&mode=file (обратная загрузка из 1С) отвечает success и ничего не применяет. Вопросы заказчику: версия схемы/кодировка узла КА2, сопоставление контрагентов, Ид товара без GUID, размер/покрытие как реквизиты или характеристики, единица «пар», названия реквизитов.', own:'agent',
     req:['T-1C «С сайта в 1С».'],
     deps:['C-ORD', 'I-1C-CAT'],
     links:[['ARCHITECTURE.md', 'Архитектура']],
