@@ -47,7 +47,7 @@ export function getNum(block, name) {
   return m ? Number(m[1]) : null;
 }
 export function getList(block, name) {
-  const m = new RegExp("\\b" + name + ":\\[([^\\]]*)\\]").exec(block);
+  const m = new RegExp("\\b" + name + ":\\[((?:\\s*'(?:[^'\\\\]|\\\\.)*'\\s*,?)*)\\s*\\]").exec(block);
   if (!m) return null;
   return [...m[1].matchAll(/'((?:[^'\\]|\\.)*)'/g)].map((x) => x[1]);
 }
@@ -121,7 +121,7 @@ export function setFields(text, id, patch) {
   let block = card.block;
   const setOne = (key, render) => {
     const re = new RegExp("\\b" + key + (NUMS.has(key) ? ":\\d+" :
-      LISTS.has(key) ? ":\\[[^\\]]*\\]" : ":'(?:[^'\\\\]|\\\\.)*'"));
+      LISTS.has(key) ? ":\\[(?:\\s*'(?:[^'\\\\]|\\\\.)*'\\s*,?)*\\s*\\]" : ":'(?:[^'\\\\]|\\\\.)*'"));
     if (re.test(block)) block = block.replace(re, render());
     else {
       // нового поля нет — вставляем сразу после st:'…' (есть у каждой карточки)
@@ -310,7 +310,11 @@ function cmdAuditQuick() {
 }
 
 function cmdLint() {
-  const { errors, warnings } = lintBoard(readFileSync(BOARD, "utf8"));
+  const text = readFileSync(BOARD, "utf8");
+  const { errors, warnings } = lintBoard(text);
+  // синтаксис скрипта доски: битая строка карточки (например, после правки списка) обнуляет всю страницу, а разбор в lintBoard этого не видит
+  const script = /<script>([\s\S]*?)<\/script>/.exec(text);
+  if (script) { try { new Function(script[1]); } catch (e) { errors.push("скрипт доски не парсится: " + e.message); } }
   for (const w of warnings) console.log("warn  " + w);
   for (const e of errors) console.log("ERROR " + e);
   console.log(`lint: ${errors.length} ошибок, ${warnings.length} предупреждений`);
