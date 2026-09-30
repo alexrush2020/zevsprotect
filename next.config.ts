@@ -1,7 +1,9 @@
 import { withPayload } from "@payloadcms/next/withPayload";
 import type { NextConfig } from "next";
+import { redirects } from "./lib/redirects";
 
 const nextConfig: NextConfig = {
+  redirects: async () => redirects,
   images: {
     remotePatterns: [
       {
