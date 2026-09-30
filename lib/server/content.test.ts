@@ -110,4 +110,9 @@ describe("подбор для главной", () => {
     expect(pickHomeArticles(list, []).map((x) => x.slug)).toEqual(["y", "z"]);
     expect(pickHomeArticles(list, ["x"]).map((x) => x.slug)).toEqual(["x"]);
   });
+  it("статьи: ничего не отмечено/выбор не найден -> свежие, блок не пустой", () => {
+    const list = [a("x", false), a("y", false), a("z", false), a("w", false)];
+    expect(pickHomeArticles(list, []).map((x) => x.slug)).toEqual(["x", "y", "z"]);
+    expect(pickHomeArticles(list, ["нет-такой"]).map((x) => x.slug)).toEqual(["x", "y", "z"]);
+  });
 });
