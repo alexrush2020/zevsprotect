@@ -507,7 +507,7 @@ const TRACKS = [
     deps:['S-5'],
     links:[['CONTRADICTIONS.md', 'Противоречия']],
     acc:'Регистрация/вход/выход/сброс работают; клиент не читает чужие заказы и чужой профиль (access-тест).' },
-  { id:'SH-YA', t:'Вход через Яндекс ID', d:'OAuth Яндекс → поиск/создание customer → сессия Payload.', pr:'P2', st:'doing', own:'agent',
+  { id:'SH-YA', t:'Вход через Яндекс ID', d:'OAuth Яндекс → поиск/создание customer → сессия Payload.', pr:'P2', st:'done', anchors:['lib/server/yandex.ts','lib/server/yandex.test.ts'], res:'<b>Коммиты d929907, f7893c3.</b> Вход через Яндекс ID (/api/auth/yandex/start, /callback): включается только при YANDEX_CLIENT_ID/SECRET + NEXT_PUBLIC_SERVER_URL + PAYLOAD_SECRET, иначе заглушка прототипа (везде, где рендерится форма: /login, /register, /forgot, /account); state HMAC+cookie, одноразовый, срок 10 мин; вход по yandexId, при занятом email — отказ без автолинковки; сессия Payload штатно (addSessionToUser/jwtSign/generatePayloadCookie), проверка lockUntil, канонический хост, rate limit. test 309/309, build, e2e auth 4/4 на zevs_e2e, ревью opus. НЕ проверено с реальным Яндексом (нет ключей): обмен кода, профиль, выдача сессии. Вопросы заказчику: приложение в oauth.yandex.ru (login:email, login:info, Callback https://<домен>/api/auth/yandex/callback), согласие на ПДн (SH-CONSENT), привязка Яндекса к аккаунту после входа по паролю. При ручной проверке ушли обычные GET на страницу авторизации oauth.yandex.ru с фиктивным client_id (без секрета и code).', own:'agent',
     req:['Есть в прототипе, нет в ТЗ (CONTRA-2).'],
     deps:['SH-AUTH', 'BIZ-2'],
     links:[['CONTRADICTIONS.md', 'Противоречия']],
@@ -576,7 +576,7 @@ const TRACKS = [
     req:['docs/qa/2026-09-30-e2e-protocol.md, D-2'],
     acc:'Нет пустых src на карточках, есть заглушка; консоль без предупреждения.' },
 
-  { id:'B24-RETRY-UI', t:'Кнопка «Отправить в Б24 повторно» для заявок и клиентов', d:'Сейчас кнопка есть только у заказов (payload/components/B24Retry.tsx), хотя /api/b24/retry поддерживает lead и company. Добавить в Leads и Customers.', pr:'P2', st:'doing', own:'agent',
+  { id:'B24-RETRY-UI', t:'Кнопка «Отправить в Б24 повторно» для заявок и клиентов', d:'Сейчас кнопка есть только у заказов (payload/components/B24Retry.tsx), хотя /api/b24/retry поддерживает lead и company. Добавить в Leads и Customers.', pr:'P2', st:'done', anchors:['lib/b24/target.ts','lib/b24/target.test.ts'], res:'<b>Коммит 9ddf3e2.</b> Кнопка «Отправить в Б24 повторно» у заказов, заявок и клиентов (ui-поле b24RetryField, showB24Retry в lib/b24/target.ts — общая логика с сервером), эндпоинт без изменений (admin/manager), ADMIN-GUIDE обновлён. test 309/309, ревью opus. Клик в админке вживую не проверялся.', own:'agent',
     req:['ADMIN-GUIDE: расхождение, найденное при ревью L-DOCS'],
     acc:'Кнопка у заявок и клиентов без b24-id; тест/проверка по коду; ADMIN-GUIDE обновлён.' },
   ]
