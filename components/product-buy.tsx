@@ -66,12 +66,12 @@ export function ProductBuy({ product }: { product: Product }) {
             </div>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
-            <Button className="h-11 flex-1" onClick={add}>
+            <Button className="h-11 sm:flex-1" onClick={add}>
               В корзину
             </Button>
             <Button
               variant="outline"
-              className="h-11 flex-1"
+              className="h-11 sm:flex-1"
               onClick={() => {
                 if (add()) router.push("/checkout");
               }}
