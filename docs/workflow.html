@@ -373,7 +373,7 @@ const TRACKS = [
     deps:['S-1'],
     links:[['ARCHITECTURE.md', 'Архитектура'], ['CONTRADICTIONS.md', 'Противоречия']],
     acc:'Админка на русском; manager не правит каталог; content не видит заказы (тест access).' },
-  { id:'S-6', t:'Сид Payload из мок-данных прототипа', d:'Скрипт: categories, products (все поля Product, фильтры, лоты/упаковка), articles → posts, reviews (доска), картинки → Media (с zevsprotect.ru и public/).', pr:'P1', st:'doing', own:'agent',
+  { id:'S-6', t:'Сид Payload из мок-данных прототипа', d:'Скрипт: categories, products (все поля Product, фильтры, лоты/упаковка), articles → posts, reviews (доска), картинки → Media (с zevsprotect.ru и public/).', pr:'P1', st:'done', anchors:['scripts/seed.ts','lib/seed/map.ts','lib/seed/map.test.ts'], res:'<b>Коммиты 204eaa8 + правка.</b> scripts/seed.ts (npm run seed; SEED_UPDATE/SEED_FORCE/SEED_FETCH_IMAGES), lib/seed/map.ts + раундтрип-тест. Локально запущен после логического бэкапа: 7 категорий, 65 товаров, 5 рубрик, 5 статей, 7 отзывов, 51 картинка скачана в Media; повтор не плодит дубли. Схема: categories.short/description, reviews.colorLabel/sizeLabel/orderDate/shipped/shippedAt/recommends/tags — нужна миграция перед деплоем. Класс вязки 7.5 не сидится (CONTRA-10/BIZ-12). test 82/82, typecheck.', own:'agent',
     req:['Источник — lib/data/catalog.ts, lib/data/product-reviews.ts, lib/data/purchase-guide.ts.', 'Идемпотентно (upsert по slug); картинки не хотлинкать — WordPress выключат.'],
     deps:['C-CAT', 'C-BLOG', 'C-CONTENT'],
     links:[['ARCHITECTURE.md', 'Архитектура']],
@@ -554,6 +554,10 @@ const TRACKS = [
   { id:'SH-CONSENT', t:'Согласие на обработку ПДн при регистрации клиента', d:'В форме регистрации нет чекбокса согласия, customers.consentPdAt не заполняется (в заявках чекбокс есть). Нужно решение: чекбокс + текст согласия, момент фиксации.', pr:'P1', st:'todo', own:'business', deps:['SH-AUTH'],
     req:['152-ФЗ: не подменять требование предположением; поле consentPdAt защищено (только admin), ставить его — через хук при регистрации.'],
     acc:'Решение владельца о тексте и обязательности согласия; после — чекбокс и запись consentPdAt на сервере.' },
+
+  { id:'BIZ-12', t:'Класс вязки 7.5: допускать дробные классы?', d:'У 5 товаров прототипа класс вязки 7.5 (реальная полуклассная вязка), валидатор Payload допускает только целые 5–18. Решить: разрешить 0.5-шаг или вести иначе; до решения сид оставляет поле пустым.', pr:'P2', st:'todo', own:'business',
+    req:['CONTRA-10'],
+    acc:'Решение владельца; затем правка validateKnitClass и повторный сид (SEED_UPDATE=1).' },
   ]
 },
 {
