@@ -10,8 +10,7 @@ export function MediaImage({ src, alt, className }: { src: string; alt: string; 
   if (!src)
     return (
       <span
-        role="img"
-        aria-label={alt || "Нет фото"}
+        {...(alt ? { role: "img", "aria-label": alt } : { "aria-hidden": true })} // alt="" — декоративная, как и была
         className={cn(className, "block bg-muted text-steel/30")}
       >
         <span className="flex size-full items-center justify-center">
