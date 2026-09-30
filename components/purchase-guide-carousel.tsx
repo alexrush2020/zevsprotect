@@ -73,7 +73,7 @@ export function PurchaseGuideCarousel({
         <div className="flex flex-wrap justify-center gap-1.5">
           {slides.map((item, i) => (
             <button
-              key={item.src}
+              key={i}
               type="button"
               aria-label={`Слайд ${i + 1}: ${item.title}`}
               aria-current={i === index}
@@ -101,7 +101,7 @@ export function PurchaseGuideCarousel({
       {slides.map((item, i) =>
         Math.abs(i - index) === 1 ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img key={item.src} src={item.src} alt="" className="hidden" />
+          <img key={i} src={item.src} alt="" className="hidden" />
         ) : null,
       )}
     </div>
