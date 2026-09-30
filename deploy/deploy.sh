@@ -6,7 +6,14 @@ set -euo pipefail
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 env_file="$here/.env.production"
 [[ -f $env_file ]] || { echo "нет $env_file (шаблон: deploy/env.production.example)" >&2; exit 1; }
-dc() { docker compose --env-file "$env_file" -f "$here/docker-compose.prod.yml" "$@"; }
+files=(-f "$here/docker-compose.prod.yml")
+# DEPLOY_PROXY=traefik: вход снаружи — внешний Traefik по меткам app (docker-compose.traefik.yml), caddy не запускается
+traefik=''
+grep -qx 'DEPLOY_PROXY=traefik' "$env_file" && { traefik=1; files+=(-f "$here/docker-compose.traefik.yml"); }
+dc() { docker compose --env-file "$env_file" "${files[@]}" "$@"; }
+initialized() { curl -fsS http://127.0.0.1:3000/api/users/init 2>/dev/null | grep -q '"initialized":true'; }
+# пока первого администратора нет (первый запуск), метки Traefik выключены: /admin снаружи закрыт
+initialized || export TRAEFIK_ENABLE=false
 
 echo "== postgres"
 dc up -d --wait postgres
@@ -33,12 +40,19 @@ dc up -d --wait app
 curl -fsS http://127.0.0.1:3000/api/health
 echo
 
-# caddy (вход снаружи) — только когда первый администратор уже создан: иначе /admin предложит его создать любому
-if ! curl -fsS http://127.0.0.1:3000/api/users/init | grep -q '"initialized":true'; then
+# вход снаружи (caddy или метки Traefik) — только когда первый администратор уже создан: иначе /admin предложит его создать любому
+if ! initialized; then
   echo "== пользователей нет: создайте администратора (deploy/create-admin.sh) и запустите deploy.sh ещё раз" >&2
   exit 1
 fi
 
-echo "== запуск caddy"
-dc up -d caddy
+if [[ -n $traefik ]]; then
+  echo "== app за Traefik"
+  # no-op, если метки уже включены; после первого администратора — пересоздаёт app с traefik.enable=true
+  unset TRAEFIK_ENABLE
+  dc up -d --wait app
+else
+  echo "== запуск caddy"
+  dc up -d caddy
+fi
 dc ps

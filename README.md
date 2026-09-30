@@ -11,11 +11,13 @@
 ## Запуск
 
 ```bash
-docker compose up -d        # PostgreSQL, порт 5442
+docker compose up -d        # PostgreSQL (порт 5442) и mailpit (письма: http://localhost:43126)
 npm install
 npm run seed                # начальные данные
 npm run dev                 # http://localhost:43127, админка /admin
 ```
+
+Всё в Docker, включая приложение: `make local-up` → http://zevs.test (через общий nginx-local) или http://localhost:43128. Остальные команды — `make help`.
 
 Проверки: `npm test`, `npm run typecheck`, `npm run lint`, `npm run test:e2e`.
 

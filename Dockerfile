@@ -1,7 +1,8 @@
 # syntax=docker/dockerfile:1
 # Прод-образ зевспротект® (Next.js standalone + Payload). Сборка и запуск — deploy/deploy.sh, описание — docs/DEPLOY.md.
 # Цели: migrator — полный исходник для `payload migrate` (запускается до приложения);
-#       runner  — минимальный образ приложения (server.js из output: 'standalone').
+#       runner  — минимальный образ приложения (server.js из output: 'standalone');
+#       dev     — локальный стенд (docker-compose.yml, профиль app): исходник и node_modules приходят томами.
 # `next build` пререндерит страницы из БД (layout читает каталог через Local API), поэтому стадия builder
 # ходит в уже смигрированную БД: переменные — из BuildKit-секрета app_env (не попадают в слои образа),
 # сеть — host (см. build.network в deploy/docker-compose.prod.yml).
@@ -11,6 +12,14 @@ ARG NODE_VERSION=22
 FROM node:${NODE_VERSION}-bookworm-slim AS base
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
+
+FROM base AS dev
+ENV NODE_ENV=development
+# точки монтирования томов создаются с владельцем node: пустой именованный том наследует права.
+# ponytail: node = uid 1000, как у пользователя хоста (bind-mount исходника); другой uid — добавить ARG UID
+RUN mkdir -p node_modules .next && chown node:node node_modules .next
+USER node
+CMD ["npm", "run", "dev"]
 
 FROM base AS deps
 COPY package.json package-lock.json ./

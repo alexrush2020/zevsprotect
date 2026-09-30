@@ -1,0 +1,47 @@
+# Оверлей к docker-compose.prod.yml для сервера, где TLS и вход снаружи держит общий внешний Traefik v3 (docker-провайдер).
+# Включается строкой DEPLOY_PROXY=traefik в .env.production — её читают deploy.sh, backup.sh, restore.sh, create-admin.sh.
+# Caddy при этом не запускается; его обязанности (Caddyfile) перенесены в метки: www → домен, HSTS, сжатие, кэш ассетов.
+# На стороне Traefik (его статическая конфигурация — вне репозитория): entrypoint и certresolver с именами ниже,
+# редирект http → https, таймауты entrypoint не меньше 300 с (шаг импорта 1С) — см. docs/DEPLOY.md §8.
+services:
+  caddy:
+    profiles: [caddy]
+
+  app:
+    networks: [default, traefik]
+    labels:
+      # deploy.sh ставит false, пока не создан первый администратор: /admin снаружи закрыт (как с caddy)
+      - traefik.enable=${TRAEFIK_ENABLE:-true}
+      - traefik.docker.network=${TRAEFIK_NETWORK:-traefik}
+      - traefik.http.services.zevs.loadbalancer.server.port=3000
+
+      - traefik.http.routers.zevs.rule=Host(`${SITE_DOMAIN}`)
+      - traefik.http.routers.zevs.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}
+      - traefik.http.routers.zevs.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}
+      - traefik.http.routers.zevs.middlewares=zevs-hsts,zevs-compress
+      - traefik.http.routers.zevs.service=zevs
+
+      # картинки/видео из public и медиа — кэш на неделю (правило длиннее — приоритет выше основного роутера)
+      - traefik.http.routers.zevs-assets.rule=Host(`${SITE_DOMAIN}`) && PathRegexp(`\.(png|jpg|jpeg|webp|avif|svg|ico|mp4|woff2)$$`)
+      - traefik.http.routers.zevs-assets.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}
+      - traefik.http.routers.zevs-assets.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}
+      - traefik.http.routers.zevs-assets.middlewares=zevs-hsts,zevs-compress,zevs-assets-cache
+      - traefik.http.routers.zevs-assets.service=zevs
+
+      - traefik.http.routers.zevs-www.rule=Host(`www.${SITE_DOMAIN}`)
+      - traefik.http.routers.zevs-www.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}
+      - traefik.http.routers.zevs-www.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}
+      - traefik.http.routers.zevs-www.middlewares=zevs-www
+      - traefik.http.routers.zevs-www.service=zevs
+
+      - traefik.http.middlewares.zevs-www.redirectregex.regex=^https?://www\.(.+)
+      - traefik.http.middlewares.zevs-www.redirectregex.replacement=https://$${1}
+      - traefik.http.middlewares.zevs-www.redirectregex.permanent=true
+      - traefik.http.middlewares.zevs-hsts.headers.stsSeconds=31536000
+      - traefik.http.middlewares.zevs-compress.compress=true
+      - traefik.http.middlewares.zevs-assets-cache.headers.customresponseheaders.Cache-Control=public, max-age=604800
+
+networks:
+  traefik:
+    external: true
+    name: ${TRAEFIK_NETWORK:-traefik}

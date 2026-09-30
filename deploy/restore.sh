@@ -8,7 +8,9 @@ set -euo pipefail
 
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 env_file="$here/.env.production"
-dc() { docker compose --env-file "$env_file" -f "$here/docker-compose.prod.yml" "$@"; }
+files=(-f "$here/docker-compose.prod.yml")
+grep -qx 'DEPLOY_PROXY=traefik' "$env_file" && files+=(-f "$here/docker-compose.traefik.yml")
+dc() { docker compose --env-file "$env_file" "${files[@]}" "$@"; }
 
 usage() { sed -n '2,5p' "${BASH_SOURCE[0]}" >&2; exit 2; }
 [[ $# -eq 2 ]] || usage

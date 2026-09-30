@@ -25,7 +25,10 @@
 | Что | Как |
 |---|---|
 | БД | `docker --context default compose up -d` → PostgreSQL 16 на `127.0.0.1:5442` (zevs/zevs/zevs). Docker Desktop-контекст на этой машине нестабилен — использовать `--context default` |
+| Почта | тот же `compose up -d` поднимает mailpit: UI http://localhost:43126, SMTP `localhost:43125` (в `.env`: `SMTP_HOST=localhost`, `SMTP_PORT=43125`) |
 | Приложение | `npm run dev` → http://localhost:43127, админка http://localhost:43127/admin |
+| Приложение в Docker | `make local-up` (профиль `app`, контейнер `zevs-app`, та же БД) → http://localhost:43128 и http://zevs.test. Исходник — bind-mount, `node_modules` и `.next` — тома; зависимости переустанавливаются сами при смене `package-lock.json`. Команды — `make help` |
+| zevs.test | общий nginx-local (`~/web/nginx_local`, `conf.d/zevs.test.conf` → `zevs-app:43127` по сети `dev-local`) + строка `127.0.0.1 zevs.test` в `/etc/hosts`. nginx-local и стенд должны работать в одном Docker-контексте |
 | Env | `.env` (не коммитится), образец `.env.example` |
 
 В dev Payload сам синхронизирует схему БД (push). Для прода: `npm run payload migrate:create <имя>` → коммит миграций → `npm run payload migrate`.
