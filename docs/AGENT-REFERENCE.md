@@ -24,11 +24,11 @@
 
 | Что | Как |
 |---|---|
-| БД | `docker --context default compose up -d` → PostgreSQL 16 на `127.0.0.1:5442` (zevs/zevs/zevs). Docker Desktop-контекст на этой машине нестабилен — использовать `--context default` |
+| БД | `docker compose up -d` → PostgreSQL 16 на `127.0.0.1:5442` (zevs/zevs/zevs). Запускать в Docker Desktop (контекст `desktop-linux`); системный контекст `default` не использовать — его контейнеры не видны в Docker Desktop |
 | Почта | тот же `compose up -d` поднимает mailpit: UI http://localhost:43126, SMTP `localhost:43125` (в `.env`: `SMTP_HOST=localhost`, `SMTP_PORT=43125`) |
 | Приложение | `npm run dev` → http://localhost:43127, админка http://localhost:43127/admin |
 | Приложение в Docker | `make local-up` (профиль `app`, контейнер `zevs-app`, та же БД) → http://localhost:43128 и http://zevs.test. Исходник — bind-mount, `node_modules` и `.next` — тома; зависимости переустанавливаются сами при смене `package-lock.json`. Команды — `make help` |
-| zevs.test | общий nginx-local (`~/web/nginx_local`, `conf.d/zevs.test.conf` → `host.docker.internal:43128`, порт стенда на хосте) + строка `127.0.0.1 zevs.test` в `/etc/hosts`. Без правки hosts работает алиас http://zevs.localhost. nginx-local живёт в Docker Desktop, стенд — в `default`: общей сети нет, поэтому маршрут идёт через хост |
+| zevs.test | общий nginx-local (`~/web/nginx_local`, `conf.d/zevs.test.conf` → `zevs-app:43127` по сети `dev-local`) + строка `127.0.0.1 zevs.test` в `/etc/hosts`; без правки hosts работает http://zevs.localhost. nginx-local и стенд — оба в Docker Desktop, иначе общей сети нет |
 | Env | `.env` (не коммитится), образец `.env.example` |
 
 В dev Payload сам синхронизирует схему БД (push). Для прода: `npm run payload migrate:create <имя>` → коммит миграций → `npm run payload migrate`.

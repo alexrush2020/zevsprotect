@@ -257,9 +257,14 @@ export function pickHomeProducts(products: Product[], featured: string[]): Produ
   return featured.flatMap((s) => bySlug.get(s) ?? []);
 }
 
-/** Статьи главной: выбор редактора, иначе флаг «Показывать на главной» (первые 3). */
+/**
+ * Статьи главной: выбор редактора, иначе флаг «Показывать на главной» (первые 3).
+ * Если ничего не отмечено или выбранное снято с публикации — свежие, чтобы блок не был пустым.
+ */
 export function pickHomeArticles(articles: Article[], featured: string[]): Article[] {
-  if (!featured.length) return articles.filter((a) => a.home !== false).slice(0, 3);
   const bySlug = new Map(articles.map((a) => [a.slug, a]));
-  return featured.flatMap((s) => bySlug.get(s) ?? []).slice(0, 3);
+  const picked = featured.length
+    ? featured.flatMap((s) => bySlug.get(s) ?? [])
+    : articles.filter((a) => a.home !== false);
+  return (picked.length ? picked : articles).slice(0, 3);
 }
