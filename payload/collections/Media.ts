@@ -51,6 +51,7 @@ export const Media: CollectionConfig = {
     },
   ],
   upload: {
+    ...(process.env.MEDIA_DIR ? { staticDir: process.env.MEDIA_DIR } : {}), // том с медиа на проде / изолированный e2e
     focalPoint: true,
     mimeTypes: [
       'image/jpeg',
