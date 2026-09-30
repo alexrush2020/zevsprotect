@@ -39,8 +39,8 @@ export function mapCategory(doc: Category): CatalogCategory {
   return {
     slug: doc.slug as CategorySlug,
     name: doc.title,
-    short: doc.title, // в коллекции нет «короткого имени»
-    description: "", // в коллекции нет описания
+    short: doc.short || doc.title,
+    description: doc.description ?? "",
     image: mediaUrl(doc.image),
   };
 }
@@ -105,9 +105,12 @@ export function mapProductReview(doc: Review): ProductReview {
     rating: doc.rating,
     text: doc.text,
     date: new Date(doc.createdAt).toLocaleDateString('sv-SE', { timeZone: 'Europe/Moscow' }),
-    // нет в коллекции reviews — см. отчёт S-7
-    orderDate: "",
-    shipped: false,
-    tags: [],
+    ...(doc.colorLabel ? { colorLabel: doc.colorLabel } : {}),
+    ...(doc.sizeLabel ? { sizeLabel: doc.sizeLabel } : {}),
+    orderDate: doc.orderDate?.slice(0, 10) ?? "",
+    shipped: !!doc.shipped,
+    ...(doc.shippedAt ? { shippedAt: doc.shippedAt.slice(0, 10) } : {}),
+    ...(doc.recommends != null ? { recommends: doc.recommends } : {}),
+    tags: doc.tags ?? [],
   };
 }
