@@ -21,6 +21,7 @@ import { legacySlug } from "@/lib/legacy-product-ids";
 import { cartLineKey } from "@/lib/lots";
 import { snapOrderQty } from "@/lib/order-qty";
 import { demoAccount, yandexStubAccount } from "@/lib/demo-account";
+import type { CatalogCategory } from "@/lib/server/map";
 import { toast } from "sonner";
 import { logoutRequest, meRequest, updateRequest } from "@/lib/auth-client";
 import { createOrder } from "@/lib/server/order-action";
@@ -82,6 +83,8 @@ type Store = {
   favoriteIds: string[];
   /** Товары каталога Payload (лёгкая проекция из layout); productId позиций — slug. */
   catalog: Product[];
+  /** Категории каталога Payload (шапка, футер, меню). */
+  categories: CatalogCategory[];
   getProduct: (slug: string) => Product | undefined;
   /** false — товара нет в каталоге, ничего не добавлено. */
   /** Доступные позиции корзины к оформлению (qty после приведения к упаковке). */
@@ -381,7 +384,15 @@ function writeStorage(key: string, value: string | null) {
   }
 }
 
-export function StoreProvider({ children, catalog }: { children: ReactNode; catalog: Product[] }) {
+export function StoreProvider({
+  children,
+  catalog,
+  categories,
+}: {
+  children: ReactNode;
+  catalog: Product[];
+  categories: CatalogCategory[];
+}) {
   const bySlug = useMemo(() => new Map(catalog.map((p) => [p.slug, p])), [catalog]);
   const getProduct = useCallback((slug: string) => bySlug.get(slug), [bySlug]);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -685,6 +696,7 @@ export function StoreProvider({ children, catalog }: { children: ReactNode; cata
   const value = useMemo(
     () => ({
       catalog,
+      categories,
       getProduct,
       orderable,
       cart,
@@ -716,6 +728,7 @@ export function StoreProvider({ children, catalog }: { children: ReactNode; cata
     }),
     [
       catalog,
+      categories,
       getProduct,
       orderable,
       cart,

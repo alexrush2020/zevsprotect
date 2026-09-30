@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { categories, products } from "@/lib/data/catalog";
+import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 type ExtraLink = { href: string; label: string };
@@ -22,6 +22,7 @@ function productMenuLabel(name: string) {
 }
 
 export function CatalogMenu({ extra }: { extra: ExtraLink[] }) {
+  const { categories, catalog: products } = useStore();
   const rootRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -42,7 +43,7 @@ export function CatalogMenu({ extra }: { extra: ExtraLink[] }) {
           })),
       })),
     ],
-    [],
+    [categories, products],
   );
 
   const hovered = items.find((item) => item.id === hoveredId) ?? null;

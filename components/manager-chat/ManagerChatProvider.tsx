@@ -12,6 +12,7 @@ import {
   type RefObject,
 } from "react";
 import { usePathname } from "next/navigation";
+import { useStore } from "@/lib/store";
 import { resolveManagerChatContext } from "@/lib/manager-chat-context";
 import {
   buildClarifyMessage,
@@ -71,6 +72,7 @@ export function useManagerChat() {
 
 export function ManagerChatProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const { getProduct } = useStore();
   const [isOpen, setIsOpen] = useState(false);
   const [threads, setThreads] = useState<ManagerChatThread[]>([]);
   const [activeThreadId, setActiveThreadId] = useState(PINNED_THREAD_ID);
@@ -84,7 +86,7 @@ export function ManagerChatProvider({ children }: { children: ReactNode }) {
     threadsRef.current = threads;
   }, [threads]);
 
-  const routeContext = useMemo(() => resolveManagerChatContext(pathname), [pathname]);
+  const routeContext = useMemo(() => resolveManagerChatContext(pathname, getProduct), [pathname, getProduct]);
 
   const makeMessage = useCallback(
     (
@@ -106,7 +108,7 @@ export function ManagerChatProvider({ children }: { children: ReactNode }) {
       const withPinned = ensurePinned(current);
       return withPinned.map((thread) => {
         if (!thread.pinned || thread.messages.length > 0) return thread;
-        const context = displayedContext(thread, resolveManagerChatContext(pathname));
+        const context = displayedContext(thread, resolveManagerChatContext(pathname, getProduct));
         return {
           ...thread,
           messages: [makeMessage("manager", buildWelcomeMessage(context))],

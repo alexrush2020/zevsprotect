@@ -17,7 +17,6 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useStore } from "@/lib/store";
-import { categories } from "@/lib/data/catalog";
 import { formatPrice } from "@/lib/format";
 import { brand } from "@/lib/brand";
 
@@ -36,7 +35,7 @@ const extra = [
 ];
 
 export function SiteHeader() {
-  const { cartCount, cartTotal, user } = useStore();
+  const { cartCount, cartTotal, user, categories } = useStore();
   const [q, setQ] = useState("");
   const headerRef = useRef<HTMLElement>(null);
 

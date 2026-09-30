@@ -1,10 +1,13 @@
+"use client";
+
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { Messengers } from "@/components/messengers";
-import { categories } from "@/lib/data/catalog";
+import { useStore } from "@/lib/store";
 import { brand } from "@/lib/brand";
 
 export function SiteFooter() {
+  const { categories } = useStore();
   return (
     <footer className="mt-auto border-t border-white/10 bg-ink text-paper">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 md:grid-cols-2 lg:grid-cols-4">
