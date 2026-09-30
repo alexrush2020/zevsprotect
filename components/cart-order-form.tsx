@@ -58,6 +58,8 @@ export function CartOrderForm({ formId }: { formId: string }) {
   const [comment, setComment] = useState("");
   const [remember, setRemember] = useState(true);
   const [payment, setPayment] = useState<PaymentMethod>("invoice_auto");
+  const [pending, setPending] = useState(false);
+  const [token] = useState(() => crypto.randomUUID()); // повтор отправки этой формы не создаёт второй заказ
 
   useEffect(() => {
     if (!ready) return;
@@ -86,9 +88,6 @@ export function CartOrderForm({ formId }: { formId: string }) {
       : fallback?.city || "Ростов-на-Дону";
   const weight = useMemo(() => cartWeightKg(orderable, catalog), [orderable, catalog]);
   const quotes = useMemo(() => quoteCarriers(city, weight), [city, weight]);
-  const method = DELIVERY.find((d) => d.id === delivery) ?? DELIVERY[0];
-  const quote = quotes.find((q) => q.id === method.carrier);
-  const deliveryCost = quote?.price ?? 0;
 
   function resolvedAddress() {
     if (pickup) return formatAddressLine(PICKUP_ADDRESS);
@@ -96,44 +95,38 @@ export function CartOrderForm({ formId }: { formId: string }) {
     return formatAddressLine(selected);
   }
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (pending) return;
     const address = resolvedAddress();
     if (!pickup && !address) {
       toast.error("Укажите адрес доставки");
       return;
     }
     if (remember) writeInquiryContacts({ name, phone, company });
-    const order = placeOrder({
-      guest: !user,
+    setPending(true);
+    const res = await placeOrder({
+      token,
       payment,
       comment,
-      city: pickup ? PICKUP_ADDRESS.city : city,
-      carrier: method.carrier,
-      carrierName: method.name,
-      deliveryCost,
-      profile: {
+      consent: Boolean(new FormData(e.currentTarget).get("consent")),
+      delivery: { carrier: delivery, city: pickup ? PICKUP_ADDRESS.city : city, address },
+      contact: {
         name,
         phone,
         email: email || user?.email || "",
         company,
         inn: user?.inn || "",
         kpp: user?.kpp,
-        address,
       },
     });
-    if (!order) {
-      toast.error("В корзине нет доступных для заказа позиций");
+    setPending(false);
+    if (!res.ok) {
+      toast.error(res.error);
       return;
     }
-    toast.success(
-      !user
-        ? `Заказ ${order.id} принят. В Битрикс24 уходит лид, компания не создаётся.`
-        : `Заказ ${order.id} · сделка создана в Битрикс24 (мок)`,
-    );
-    if (payment === "online") router.push(`/pay/${order.id}`);
-    else if (payment === "invoice_auto") router.push(`/invoice/${order.id}`);
-    else router.push(`/order/${order.id}`);
+    toast.success(`Заказ ${res.number} принят`);
+    router.push(payment === "invoice_auto" ? `/invoice/${res.number}` : `/order/${res.number}`);
   }
 
   return (
@@ -204,7 +197,7 @@ export function CartOrderForm({ formId }: { formId: string }) {
                 </span>
                 {q ? (
                   <span className="text-sm font-medium">
-                    {q.price ? formatPrice(q.price) : "бесплатно"}
+                    {q.price ? `≈ ${formatPrice(q.price)}` : "бесплатно"}
                   </span>
                 ) : null}
               </label>
@@ -254,7 +247,7 @@ export function CartOrderForm({ formId }: { formId: string }) {
             <span>
               <span className="block font-medium">Онлайн-оплата</span>
               <span className="text-sm text-steel">
-                Мок виджета ЮKassa: успешная оплата или отказ.
+                Платёжный сервис подключается — заказ сохранится и будет ожидать оплаты.
               </span>
             </span>
           </label>
@@ -278,7 +271,7 @@ export function CartOrderForm({ formId }: { formId: string }) {
         Запомнить контакты на этом устройстве
       </label>
       <label className="flex items-start gap-2 text-sm text-steel">
-        <Checkbox required defaultChecked />
+        <Checkbox name="consent" required defaultChecked />
         Согласен с политикой обработки персональных данных
       </label>
     </form>

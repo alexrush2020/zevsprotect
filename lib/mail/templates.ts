@@ -24,6 +24,30 @@ export function orderMail(o: { number: string; items: OrderMailItem[]; total: nu
   ])
 }
 
+/** Уведомление менеджеру о заказе с сайта. Суммы — серверный пересчёт, доставку считает менеджер. */
+export function orderManagerMail(o: {
+  number: string
+  items: OrderMailItem[]
+  total: number
+  contact: { name: string; phone: string; email: string; company?: string | null; inn?: string | null }
+  customer: boolean
+  delivery: string
+  payment: string
+  comment?: string | null
+}): Mail {
+  return build(`Новый заказ ${o.number}`, [
+    `Заказ ${o.number} (${o.customer ? 'клиент из ЛК' : 'гость'})`,
+    ...o.items.map((i) => `${i.title} — ${i.qty} × ${rub(i.price)}`),
+    `Товары: ${rub(o.total)} (доставка не включена)`,
+    `Контакт: ${o.contact.name}, ${o.contact.phone}, ${o.contact.email}`,
+    ...(o.contact.company ? [`Организация: ${o.contact.company}`] : []),
+    ...(o.contact.inn ? [`ИНН: ${o.contact.inn}`] : []),
+    `Доставка: ${o.delivery}`,
+    `Оплата: ${o.payment}`,
+    ...(o.comment ? [`Комментарий: ${o.comment}`] : []),
+  ])
+}
+
 export function leadMail(l: { name: string; phone?: string; message?: string }): Mail {
   return build('Заявка получена', [
     `${l.name}, мы получили вашу заявку и скоро свяжемся с вами.`,

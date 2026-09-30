@@ -30,6 +30,8 @@ export default function CheckoutPage() {
   const router = useRouter();
   const addresses = addressesOf(user);
   const [payment, setPayment] = useState<PaymentMethod>("invoice_auto");
+  const [pending, setPending] = useState(false);
+  const [token] = useState(() => crypto.randomUUID()); // повтор отправки этой формы не создаёт второй заказ
   const [guest, setGuest] = useState(!user);
   const [city, setCity] = useState(
     defaultAddress(user)?.city || "Ростов-на-Дону",
@@ -68,10 +70,9 @@ export default function CheckoutPage() {
   const weight = useMemo(() => cartWeightKg(orderable, catalog), [orderable, catalog]);
   const quotes = useMemo(() => quoteCarriers(city, weight), [city, weight]);
   const selected = quotes.find((q) => q.id === carrierId) ?? quotes[0];
-  const deliveryCost = selected?.price ?? 0;
-  const total = cartTotal + deliveryCost;
+  // CONTRA-5: тарифы ТК — ориентир на моках; в заказ стоимость доставки не входит, её рассчитает менеджер
+  const total = cartTotal;
   const vatGoods = splitVat(cartTotal);
-  const vatTotal = splitVat(total);
 
   if (!cart.length) {
     return (
@@ -86,43 +87,38 @@ export default function CheckoutPage() {
 
   if (!orderable.length) return <NoOrderable onClear={clearCart} />;
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (pending) return;
     if (!pickup && !resolvedAddress) {
       toast.error("Укажите адрес доставки");
       return;
     }
     const data = new FormData(e.currentTarget);
-    const order = placeOrder({
-      guest,
+    const field = (k: string) => String(data.get(k) || "");
+    setPending(true);
+    const res = await placeOrder({
+      token,
       payment,
-      comment: String(data.get("comment") || ""),
-      city: pickup ? PICKUP_ADDRESS.city : city,
-      carrier: selected.id,
-      carrierName: selected.name,
-      deliveryCost,
-      profile: {
-        name: String(data.get("name") || ""),
-        phone: String(data.get("phone") || ""),
-        email: String(data.get("email") || ""),
-        company: String(data.get("company") || ""),
-        inn: String(data.get("inn") || ""),
-        kpp: String(data.get("kpp") || ""),
-        address: resolvedAddress,
+      comment: field("comment"),
+      consent: Boolean(data.get("consent")),
+      delivery: { carrier: selected.id, city: pickup ? PICKUP_ADDRESS.city : city, address: resolvedAddress },
+      contact: {
+        name: field("name"),
+        phone: field("phone"),
+        email: field("email"),
+        company: field("company"),
+        inn: field("inn"),
+        kpp: field("kpp"),
       },
     });
-    if (!order) {
-      toast.error("В корзине нет доступных для заказа позиций");
+    setPending(false);
+    if (!res.ok) {
+      toast.error(res.error);
       return;
     }
-    toast.success(
-      guest
-        ? `Заказ ${order.id} принят. В Битрикс24 уходит лид, компания не создаётся.`
-        : `Заказ ${order.id} · сделка создана в Битрикс24 (мок)`
-    );
-    if (payment === "online") router.push(`/pay/${order.id}`);
-    else if (payment === "invoice_auto") router.push(`/invoice/${order.id}`);
-    else router.push(`/order/${order.id}`);
+    toast.success(`Заказ ${res.number} принят`);
+    router.push(payment === "invoice_auto" ? `/invoice/${res.number}` : `/order/${res.number}`);
   }
 
   return (
@@ -137,8 +133,8 @@ export default function CheckoutPage() {
           </Link>
           <h1 className="mt-2 font-heading text-4xl">Оформление заказа</h1>
           <p className="mt-2 text-sm text-steel">
-            Регистрация не обязательна. Цены с НДС 20%. Доставка считается моком
-            API ТК.
+            Регистрация не обязательна. Цены с НДС 20%. Стоимость доставки
+            рассчитает менеджер.
           </p>
         </div>
 
@@ -197,7 +193,7 @@ export default function CheckoutPage() {
                   </span>
                 </span>
                 <span className="text-sm font-medium">
-                  {q.price ? formatPrice(q.price) : "бесплатно"}
+                  {q.price ? `≈ ${formatPrice(q.price)}` : "бесплатно"}
                 </span>
               </label>
             ))}
@@ -263,7 +259,7 @@ export default function CheckoutPage() {
               <span>
                 <span className="block font-medium">Онлайн-оплата</span>
                 <span className="text-sm text-steel">
-                  Мок виджета ЮKassa: успешная оплата или отказ.
+                  Платёжный сервис подключается — заказ сохранится и будет ожидать оплаты.
                 </span>
               </span>
             </label>
@@ -271,12 +267,12 @@ export default function CheckoutPage() {
         </div>
 
         <label className="flex items-start gap-2 text-sm text-steel">
-          <Checkbox required defaultChecked />
+          <Checkbox name="consent" required defaultChecked />
           Согласен с политикой обработки персональных данных
         </label>
         <div className="flex flex-wrap gap-3">
-          <Button type="submit" className="h-11">
-            Подтвердить заказ · {formatPrice(total)}
+          <Button type="submit" className="h-11" disabled={pending}>
+            {pending ? "Оформляем…" : `Подтвердить заказ · ${formatPrice(total)}`}
           </Button>
           <Button
             nativeButton={false}
@@ -316,14 +312,14 @@ export default function CheckoutPage() {
           </p>
           <p className="flex justify-between">
             <span>Доставка · {selected?.name}</span>
-            <span>{deliveryCost ? formatPrice(deliveryCost) : "0 ₽"}</span>
+            <span>{pickup ? "0 ₽" : "рассчитает менеджер"}</span>
           </p>
         </div>
         <p className="mt-3 flex justify-between font-medium">
           <span>Итого</span>
           <span>{formatPrice(total)}</span>
         </p>
-        <p className="mt-1 text-xs text-steel">в т.ч. НДС 20% {formatPrice(vatTotal.vat)}</p>
+        <p className="mt-1 text-xs text-steel">в т.ч. НДС 20% {formatPrice(vatGoods.vat)}</p>
       </aside>
     </div>
   );
