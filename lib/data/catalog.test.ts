@@ -11,6 +11,12 @@ describe("withMockIds", () => {
     ];
     expect(withMockIds(fromPayload).map((p) => p.id)).toEqual([a.id, b.id, "3"]);
   });
+
+  it("деньги и упаковка — из мока, как в корзине; прочие поля — из Payload", () => {
+    const [a] = products;
+    const [r] = withMockIds([{ ...a, id: "7", name: "Из Payload", price: a.price + 5, minQty: 1, stock: 0 }]);
+    expect([r.price, r.minQty, r.stock, r.name]).toEqual([a.price, a.minQty, a.stock, "Из Payload"]);
+  });
 });
 
 describe("buildSpecFilters", () => {
