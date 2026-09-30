@@ -492,7 +492,7 @@ const TRACKS = [
   id:'shop', name:'Этапы 5–6 — Магазин, ЛК, формы',
   desc:'Корзина → заказ → оплата/счёт → ЛК. Цены всегда пересчитывает сервер.',
   items:[
-  { id:'SH-CART', t:'Корзина на серверных ценах', d:'Корзина остаётся в localStorage (lib/store.tsx), цены/остатки/лоты — из Payload; заявка менеджеру vs заказ (как в прототипе).', pr:'P0', st:'todo', own:'agent',
+  { id:'SH-CART', t:'Корзина на серверных ценах', d:'Корзина остаётся в localStorage (lib/store.tsx), цены/остатки/лоты — из Payload; заявка менеджеру vs заказ (как в прототипе).', pr:'P0', st:'doing', own:'agent',
     req:['T-CART.'],
     deps:['F-PDP'],
     links:[['TZ.md', 'ТЗ: сводка']],
@@ -609,7 +609,7 @@ const TRACKS = [
   id:'seo', name:'Этап 9 — SEO и аналитика',
   desc:'',
   items:[
-  { id:'SEO-1', t:'ЧПУ, meta/OG, sitemap.xml, robots.txt, микроразметка', d:'generateMetadata из SEO-полей, app/sitemap.ts, app/robots.ts, JSON-LD Organization/Product/BreadcrumbList/Article.', pr:'P1', st:'todo', own:'agent',
+  { id:'SEO-1', t:'ЧПУ, meta/OG, sitemap.xml, robots.txt, микроразметка', d:'generateMetadata из SEO-полей, app/sitemap.ts, app/robots.ts, JSON-LD Organization/Product/BreadcrumbList/Article.', pr:'P1', st:'doing', own:'agent',
     req:['T-SEO.'],
     deps:['F-CAT', 'F-PDP', 'F-BLOG'],
     acc:'Валидатор микроразметки без ошибок; sitemap содержит товары/категории/статьи.' },
