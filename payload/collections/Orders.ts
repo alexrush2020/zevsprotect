@@ -2,7 +2,7 @@ import type { CollectionConfig } from 'payload'
 import { docTitle, statusCell } from '../admin-ui'
 import { hasRole, isAdmin, ownOrRoles } from '../access'
 import { enqueueB24Sync } from '../../lib/b24/sync'
-import { computeTotal, resolveDeliveryCost, formatOrderNumber, nextOrderSeq, hasCustomerOrGuest, nextStatusHistory } from '../hooks/orders'
+import { computeTotal, resolveDeliveryCost, formatOrderNumber, nextOrderSeq, hasCustomerOrGuest, nextStatusHistory, onecFieldsChanged } from '../hooks/orders'
 
 const manager = hasRole('admin', 'manager')
 const syncField = (name: string, label: string) => ({
@@ -51,15 +51,18 @@ export const Orders: CollectionConfig = {
       },
     ],
     beforeChange: [
-      ({ data, originalDoc, context }) => {
+      ({ data, originalDoc, context, operation }) => {
+        // до пересчёта total: сравниваются только входящие поля
+        const exportChanged = operation === 'create' || (!context.skipOnecReset && onecFieldsChanged(data, originalDoc))
         data.total = computeTotal(data.items ?? originalDoc?.items, resolveDeliveryCost(data, originalDoc))
         const status = data.status ?? originalDoc?.status
         // statusNote — источник смены (вебхук Б24 передаёт «Битрикс24»)
         const note = typeof context.statusNote === 'string' ? context.statusNote : undefined
         if (status)
           data.statusHistory = nextStatusHistory(originalDoc?.statusHistory, originalDoc?.status, status, new Date().toISOString(), note)
-        // любое сохранение → заказ снова к выгрузке в 1С; пометку ставит только обмен (lib/onec/orders-export.ts, мимо хуков)
-        data.onecExportedAt = null
+        // изменилось выгружаемое (состав, клиент, доставка, оплата, статус, комментарий) → заказ снова к выгрузке в 1С;
+        // технические записи (b24DealId, syncError) пометку не трогают. Ставит её только обмен (lib/onec/orders-export.ts, мимо хуков)
+        if (exportChanged) data.onecExportedAt = null
         return data
       },
     ],

@@ -148,7 +148,16 @@ export async function handleExchange(req: ExchangeRequest, deps: ExchangeDeps): 
     if (mode === 'success') {
       // нет снимка (чужая/новая сессия, повторный success) — помечать нечего
       const raw = await readFile(snapFile, 'utf8').catch(() => null)
-      const snapshot = raw ? (JSON.parse(raw) as ExportSnapshot) : []
+      let snapshot: ExportSnapshot = []
+      try {
+        const parsed: unknown = raw ? JSON.parse(raw) : []
+        if (!Array.isArray(parsed)) throw new Error('не массив')
+        snapshot = parsed.filter((r): r is ExportSnapshot[number] => Number.isInteger(r?.id) && typeof r?.updatedAt === 'string')
+      } catch {
+        // повреждённый снимок: не помечаем ничего — заказы уйдут следующим обменом повторно, а не потеряются
+        snapshot = []
+        deps.log?.('1С sale success: снимок query повреждён, пометка пропущена')
+      }
       const marked = await markExported(deps.payload, snapshot, new Date(now))
       await rm(snapFile, { force: true })
       deps.log?.(`1С sale success: помечено ${marked} из ${snapshot.length}`)

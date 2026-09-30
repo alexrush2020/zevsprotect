@@ -1,8 +1,10 @@
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import type { Payload } from 'payload'
 import { describe, expect, it } from 'vitest'
+import type { CollectionBeforeChangeHook } from 'payload'
+import { Orders } from '@/payload/collections/Orders'
 import type { Customer, Order } from '@/payload/payload-types'
 import { handleExchange } from './exchange'
 import { escapeXml, loadOrdersToExport, markExported, ordersXml, type ExportRefs } from './orders-export'
@@ -117,6 +119,36 @@ describe('XML заказов', () => {
   })
 })
 
+const runBeforeChange = (data: Record<string, unknown>, originalDoc: object, context: Record<string, unknown> = {}) =>
+  (Orders.hooks!.beforeChange![0] as (a: unknown) => Record<string, unknown>)({ data, originalDoc, context, operation: 'update' } satisfies Partial<Parameters<CollectionBeforeChangeHook>[0]>)
+
+describe('сброс пометки выгрузки (Orders.beforeChange)', () => {
+  const exported = { ...orders[0], onecExportedAt: NOW.toISOString() }
+  const reset = (data: Record<string, unknown>, context?: Record<string, unknown>) => runBeforeChange(structuredClone(data), exported, context).onecExportedAt === null
+
+  it('технические записи Б24 не сбрасывают', () => {
+    expect(reset({ syncError: null })).toBe(false)
+    expect(reset({ b24DealId: '77', syncError: null })).toBe(false)
+    expect(reset({ status: 'picking' }, { skipOnecReset: true })).toBe(false) // флаг — страховка
+  })
+  it('сохранение без изменений (полный документ из админки, id строк, связь документом) не сбрасывает', () => {
+    const full = structuredClone(exported) as Record<string, unknown>
+    full.items = (full.items as object[]).map((it, i) => ({ ...it, id: `row${i}` }))
+    full.customer = { id: 1, createdAt: T0 }
+    full.guest = { ...(full.guest as object), inn: '6154000000', kpp: '615401001', company: 'ООО «Рога & Копыта» <Юг>' }
+    expect(reset(full)).toBe(false)
+    expect(reset({ delivery: { cost: 500 } })).toBe(false) // частичная группа
+  })
+  it('изменение состава, статуса, адреса, оплаты, комментария сбрасывает', () => {
+    expect(reset({ items: [{ ...orders[0].items[0], qty: 240 }, orders[0].items[1]] })).toBe(true)
+    expect(reset({ status: 'picking' })).toBe(true)
+    expect(reset({ delivery: { address: 'ул. Мира, 2' } })).toBe(true)
+    expect(reset({ paymentStatus: 'paid' })).toBe(true)
+    expect(reset({ comment: 'другой' })).toBe(true)
+    expect(reset({ guest: { phone: '+70000000000' } })).toBe(true)
+  })
+})
+
 /** Заказы в памяти: find по onecExportedAt/id, db.updateOne атомарно по id+updatedAt, update как Payload (сброс пометки хуком). */
 function fakeStore() {
   const db = { orders: structuredClone(orders), customers, products }
@@ -137,9 +169,11 @@ function fakeStore() {
       },
     },
   }
-  const edit = (id: number, patch: Partial<Order>) => {
+  /** payload.update: настоящий Orders.beforeChange, затем запись и новый updatedAt. */
+  const edit = (id: number, patch: Record<string, unknown>, context: Record<string, unknown> = {}) => {
     const o = db.orders.find((d) => d.id === id)!
-    Object.assign(o, patch, { onecExportedAt: null, updatedAt: new Date(Date.parse(T0) + ++tick * 1000).toISOString() })
+    const out = runBeforeChange(structuredClone(patch), o, context)
+    Object.assign(o, out, { updatedAt: new Date(Date.parse(T0) + ++tick * 1000).toISOString() })
   }
   return { payload: payload as unknown as Payload, db, edit }
 }
@@ -161,6 +195,14 @@ describe('отбор и пометка', () => {
     expect((await loadOrdersToExport(s.payload, 500)).orders.map((o) => o.id).sort()).toEqual([11, 12])
   })
 
+  it('помеченный заказ после технической записи Б24 не уходит повторно', async () => {
+    const s = fakeStore()
+    await markExported(s.payload, (await loadOrdersToExport(s.payload, 500)).snapshot, NOW)
+    s.edit(13, { b24DealId: '501', syncError: null }, { skipOnecReset: true })
+    s.edit(12, { syncError: 'сбой' })
+    expect((await loadOrdersToExport(s.payload, 500)).orders).toHaveLength(0)
+  })
+
   it('конкурентные сессии: обе получают заказы, двойная пометка идемпотентна', async () => {
     const s = fakeStore()
     const [a, b] = await Promise.all([loadOrdersToExport(s.payload, 500), loadOrdersToExport(s.payload, 500)])
@@ -173,7 +215,7 @@ describe('/api/1c-exchange type=sale', () => {
   const basic = `Basic ${Buffer.from('site1c:p').toString('base64')}`
   function setup() {
     const env = { ONEC_EXCHANGE_USER: 'site1c', ONEC_EXCHANGE_PASSWORD: 'p', ONEC_EXCHANGE_DIR: mkdtempSync(path.join(tmpdir(), 'onec-sale-')) } as unknown as NodeJS.ProcessEnv
-    const s = fakeStore()
+    const s = { ...fakeStore(), dir: env.ONEC_EXCHANGE_DIR as string }
     const call = async (query: string, cookie = '', auth = '') => {
       const headers = new Headers()
       if (cookie) headers.set('cookie', cookie)
@@ -208,6 +250,18 @@ describe('/api/1c-exchange type=sale', () => {
     const c2 = await login()
     expect((await call('type=sale&mode=success', c2)).text).toBe('success') // success без query
     expect(numbers((await call('type=sale&mode=query', c2)).text)).toHaveLength(0)
+  })
+
+  it('повреждённый снимок query — success, ничего не помечено, снимок удалён', async () => {
+    const { call, login, s } = setup()
+    const c = await login()
+    await call('type=sale&mode=query', c)
+    const sid = c.split('=')[1].split('.')[1]
+    const snap = path.join(s.dir, sid, 'sale-query.json')
+    writeFileSync(snap, '{битый')
+    expect((await call('type=sale&mode=success', c)).text).toBe('success')
+    expect(existsSync(snap)).toBe(false)
+    expect(numbers((await call('type=sale&mode=query', c)).text)).toHaveLength(3)
   })
 
   it('неизвестный mode — failure', async () => {
