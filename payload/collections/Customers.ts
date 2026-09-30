@@ -105,14 +105,15 @@ export const Customers: CollectionConfig = {
         { label: 'Яндекс ID', value: 'yandex' },
       ],
     },
-    { name: 'yandexId', type: 'text', label: 'Yandex ID', index: true, unique: true, access: { create: isAdmin, update: isAdmin } },
+    // служебные ID и диагностика обмена — не клиенту (как syncField в Orders)
+    { name: 'yandexId', type: 'text', label: 'Yandex ID', index: true, unique: true, access: { read: staffRead, create: isAdmin, update: isAdmin } },
     { name: 'favorites', type: 'relationship', relationTo: 'products', hasMany: true, label: 'Избранное' },
     { name: 'consentPdAt', type: 'date', label: 'Согласие на обработку ПДн', access: { create: isAdmin, update: isAdmin }, admin: { readOnly: true } },
     ...['b24CompanyId', 'b24ContactId', 'onecId', 'syncError'].map((name) => ({
       name,
       type: 'text' as const,
       label: name,
-      access: { create: isAdmin, update: isAdmin },
+      access: { read: staffRead, create: isAdmin, update: isAdmin },
       admin: { position: 'sidebar' as const, readOnly: true },
     })),
   ],

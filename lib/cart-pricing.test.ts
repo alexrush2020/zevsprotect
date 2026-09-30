@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { migrateLegacyCart, migrateLegacyFavorites, normalizeCart, orderableItems, priceCart, repeatOrderItems } from './cart-pricing'
+import { migrateLegacyCart, migrateLegacyFavorites, normalizeCart, orderableItems, priceCart, repeatFailText, repeatOrderItems, unavailableNote } from './cart-pricing'
 import { LEGACY_PRODUCT_IDS } from './legacy-product-ids'
 import { products } from './data/catalog'
 import type { Product } from './types'
@@ -225,6 +225,24 @@ describe('repeatOrderItems: «Повторить заказ»', () => {
 
   it('демо-заказ без цен в снапшоте — сравнения цен нет', () => {
     expect(repeatOrderItems([{ productId: 'obliv', size: 'L', qty: 24 }], cat).priceChanges).toEqual([])
+  })
+
+  it('несколько удалённых товаров (productId "") не схлопываются в одну позицию', () => {
+    const r = repeatOrderItems(
+      [
+        { productId: '', size: 'M', qty: 50, title: 'Удалённая А' },
+        { productId: '', size: 'M', qty: 50, title: 'Удалённая Б' },
+      ],
+      cat,
+    )
+    expect(r.unavailable).toEqual(['Удалённая А · M', 'Удалённая Б · M'])
+    expect(unavailableNote(r.unavailable)).toBe('2 позиции недоступны: Удалённая А · M, Удалённая Б · M')
+  })
+
+  it('текст ошибки повтора: без «. Модели…» в начале при пустом списке', () => {
+    expect(repeatFailText([])).toBe('Повторить заказ не получилось. Модели сняты с продажи или цену уточнит менеджер.')
+    expect(repeatFailText(['Снятая · L'])).toBe('1 позиция недоступна: Снятая · L. Модели сняты с продажи или цену уточнит менеджер.')
+    expect(unavailableNote([])).toBe('')
   })
 
   it('всё недоступно — пустой состав, корзину не трогаем', () => {

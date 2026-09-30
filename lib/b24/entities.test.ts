@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Payload } from 'payload'
 import { createB24Client, type B24Error } from './client'
-import { runB24Sync } from './sync'
+import { retryB24Sync, runB24Sync } from './sync'
 import './company'
 import './deal'
 import './lead'
@@ -124,6 +124,18 @@ describe('сделка (I-B24-DEAL)', () => {
     expect(docs['customers/5']).toMatchObject({ b24CompanyId: company.ID, b24ContactId: contact.ID })
   })
 
+  it('организация/ИНН/КПП из оформления попадают в сделку, даже если отличаются от профиля', async () => {
+    const docs = {
+      'orders/1': order({ guest: { name: 'Пётр', phone: '+79005554433', email: 'p@example.ru', company: 'ООО Филиал', inn: '6154111111', kpp: '615402002' } }),
+      'customers/5': { ...legal(), b24CompanyId: '7', b24ContactId: '8' },
+    }
+    const p = fakePortal()
+    await runB24Sync({ kind: 'order', id: 1, payload: fakePayload(docs), b24: p.b24 })
+    const comments = String(p.store.deal[0].COMMENTS)
+    expect(comments).toContain('Клиент: ООО Прибой, Иван Петров, ИНН 6154000000')
+    expect(comments).toContain('Данные оформления: Пётр, ООО Филиал, ИНН 6154111111, КПП 615402002, +79005554433, p@example.ru')
+  })
+
   it('клиент уже в Б24 — компания/контакт не создаются, сделка ссылается на них', async () => {
     const docs = { 'orders/1': order(), 'customers/5': { ...legal(), b24CompanyId: '7', b24ContactId: '8' } }
     const p = fakePortal()
@@ -168,14 +180,15 @@ describe('сделка (I-B24-DEAL)', () => {
 
   it('гость при B24_GUEST_DEALS=1: контакт по телефону/email и сделка', async () => {
     vi.stubEnv('B24_GUEST_DEALS', '1')
-    const docs = { 'orders/2': order({ id: 2, customer: null, guest: { name: 'Олег', phone: '+79990000000', email: 'o@example.ru', company: 'ИП Олег', inn: '615400000000' } }) }
+    const docs = { 'orders/2': order({ id: 2, customer: null, guest: { name: 'Олег', phone: '+79990000000', email: 'o@example.ru', company: 'ИП Олег', inn: '615400000000', kpp: '615401002' } }) }
     const p = fakePortal()
     await runB24Sync({ kind: 'order', id: 2, payload: fakePayload(docs), b24: p.b24 })
     expect(p.adds()).toEqual(['crm.contact.add', 'crm.deal.add'])
     expect(p.store.contact[0]).toMatchObject({ NAME: 'Олег', PHONE: [{ VALUE: '+79990000000', VALUE_TYPE: 'WORK' }], EMAIL: [{ VALUE: 'o@example.ru', VALUE_TYPE: 'WORK' }], ORIGIN_ID: 'order:ZP-2026-0007' })
     expect(p.store.deal[0]).toMatchObject({ CONTACT_IDS: [p.store.contact[0].ID] })
     expect(p.store.deal[0]).not.toHaveProperty('COMPANY_ID')
-    expect(String(p.store.deal[0].COMMENTS)).toContain('ИНН 615400000000')
+    expect(String(p.store.deal[0].COMMENTS)).toContain('Данные оформления: Олег, ИП Олег, ИНН 615400000000, КПП 615401002, +79990000000, o@example.ru')
+    expect(String(p.store.contact[0].COMMENTS)).toBe('Компания: ИП Олег\nИНН: 615400000000\nКПП: 615401002')
   })
 
   it('воронка/стадия/ответственный — только из env', async () => {
@@ -204,6 +217,27 @@ describe('компания и контакт (I-B24-COMP)', () => {
     expect(p.store.contact[0]).toMatchObject({ NAME: 'Иван Петров', COMPANY_ID: company.ID })
     expect(r).toEqual({ status: 'sent', b24Id: company.ID })
     expect(docs['customers/5']).toMatchObject({ b24CompanyId: company.ID, b24ContactId: p.store.contact[0].ID, syncError: null })
+  })
+
+  it('регистрация юрлица: контакт упал после компании — повтор job company досоздаёт контакт, syncError очищен', async () => {
+    const docs = { 'customers/5': legal() }
+    const p = fakePortal({ failOnce: 'crm.contact.add' })
+    const payload = fakePayload(docs)
+    await expect(runB24Sync({ kind: 'company', id: 5, payload, b24: p.b24 })).rejects.toMatchObject({ retryable: true })
+    expect(docs['customers/5'].b24CompanyId).toBe(p.store.company[0].ID)
+    expect(docs['customers/5'].syncError).toMatch(/повтор/)
+    // ручной повтор тоже не считает такого клиента готовым
+    const queued: unknown[] = []
+    Object.assign(payload, { jobs: { queue: async (a: unknown) => queued.push(a) } })
+    expect(await retryB24Sync(payload, 'company', 5)).toEqual({ status: 'queued' })
+
+    const r = await runB24Sync({ kind: 'company', id: 5, payload, b24: p.b24 })
+    expect(r).toEqual({ status: 'sent', b24Id: p.store.company[0].ID })
+    expect(p.store.company).toHaveLength(1)
+    expect(p.store.contact).toHaveLength(1)
+    expect(p.store.contact[0].COMPANY_ID).toBe(p.store.company[0].ID)
+    expect(docs['customers/5']).toMatchObject({ b24ContactId: p.store.contact[0].ID, syncError: null })
+    expect(await runB24Sync({ kind: 'company', id: 5, payload, b24: p.b24 })).toEqual({ status: 'already', b24Id: p.store.company[0].ID })
   })
 
   it('физлицо: только контакт, повтор ничего не создаёт', async () => {

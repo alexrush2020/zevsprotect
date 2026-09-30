@@ -36,6 +36,12 @@ export function productRows(order: Order) {
   return rows
 }
 
+/** Покупатель, как указан при оформлении (может отличаться от профиля клиента). */
+export function checkoutBuyerText(g: Order['guest']) {
+  if (!g) return ''
+  return [g.name, g.company, g.inn && `ИНН ${g.inn}`, g.kpp && `КПП ${g.kpp}`, g.phone, g.email].filter(Boolean).join(', ')
+}
+
 export function dealFields(order: Order, who: { companyId?: string; contactId?: string; clientText: string }) {
   const cfg = b24Config()
   const delivery = deliveryText(order.delivery)
@@ -50,6 +56,7 @@ export function dealFields(order: Order, who: { companyId?: string; contactId?: 
     COMMENTS: lines(
       `Заказ ${order.number} от ${new Date(order.createdAt).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })}`,
       `Клиент: ${who.clientText}`,
+      checkoutBuyerText(order.guest) && `Данные оформления: ${checkoutBuyerText(order.guest)}`,
       `Оплата: ${PAYMENT[order.paymentMethod]}`,
       delivery && `Доставка: ${delivery}`,
       `Сумма: ${rub(order.total)}`,
@@ -89,10 +96,10 @@ registerB24Handler('order', async ({ doc: order, b24, payload }) => {
       TYPE_ID: 'CLIENT',
       SOURCE_ID: cfg.sourceId,
       SOURCE_DESCRIPTION: `Гостевой заказ ${order.number} на ${B24_ORIGINATOR}`,
-      ...optional('COMMENTS', lines(g.company && `Компания: ${g.company}`, g.inn && `ИНН: ${g.inn}`)),
+      ...optional('COMMENTS', lines(g.company && `Компания: ${g.company}`, g.inn && `ИНН: ${g.inn}`, g.kpp && `КПП: ${g.kpp}`)),
       ...optional('ASSIGNED_BY_ID', cfg.assignedById),
     })
-    who = { contactId, clientText: ['гость', g.name, g.company, g.inn && `ИНН ${g.inn}`, g.phone, g.email].filter(Boolean).join(', ') }
+    who = { contactId, clientText: 'гость (без регистрации), данные — ниже' }
   }
 
   const dealId = await findOrAdd(b24, 'deal', order.number, dealFields(order, who))

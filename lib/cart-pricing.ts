@@ -82,11 +82,11 @@ export type RepeatResult = {
  * нет цены (уточнит менеджер), размер или покрытие больше не выпускаются. Отчёт — что изменилось против снапшота.
  */
 export function repeatOrderItems(snapshot: RepeatLine[], catalog: Product[]): RepeatResult {
-  const lineTitle = (l: RepeatLine | CartItem) => {
-    const s = snapshot.find((x) => cartLineKey(x) === cartLineKey(l));
-    const name = s?.title || catalog.find((p) => p.slug === l.productId)?.name || l.productId || "Позиция";
-    return [name, l.size, l.coating].filter(Boolean).join(" · ");
-  };
+  const titleOf = (s: RepeatLine) =>
+    [s.title || catalog.find((p) => p.slug === s.productId)?.name || s.productId || "Позиция", s.size, s.coating]
+      .filter(Boolean)
+      .join(" · ");
+  const lineTitle = (l: CartItem) => titleOf(snapshot.find((x) => cartLineKey(x) === cartLineKey(l)) ?? l);
   const kept = priceCart(normalizeCart(snapshot, catalog), catalog).lines.filter((l) => {
     if (!l.available) return false;
     const p = l.product!;
@@ -117,12 +117,29 @@ export function repeatOrderItems(snapshot: RepeatLine[], catalog: Product[]): Re
   }
   return {
     items,
-    unavailable: [...new Set(snapshot.filter((s) => !keys.has(cartLineKey(s))).map(lineTitle))],
+    // по строке снапшота, без схлопывания: у удалённых товаров productId "" и ключи совпадают, а названия разные
+    unavailable: snapshot.filter((s) => !keys.has(cartLineKey(s))).map(titleOf),
     priceChanges: [...priceChanges.values()],
     qtyChanges,
     backorder: [...backorder],
   };
 }
+
+/** «1 позиция недоступна», «3 позиции недоступны», «5 позиций недоступно». */
+export function unavailableLabel(n: number) {
+  const d = n % 10;
+  const teen = n % 100 >= 11 && n % 100 <= 14;
+  if (d === 1 && !teen) return `${n} позиция недоступна`;
+  if (d >= 2 && d <= 4 && !teen) return `${n} позиции недоступны`;
+  return `${n} позиций недоступно`;
+}
+
+/** Строка тоста о недоступных позициях; пусто — нечего сообщать. */
+export const unavailableNote = (list: string[]) => (list.length ? `${unavailableLabel(list.length)}: ${list.join(", ")}` : "");
+
+/** Тост, когда повторять нечего. */
+export const repeatFailText = (list: string[]) =>
+  [unavailableNote(list) || "Повторить заказ не получилось", "Модели сняты с продажи или цену уточнит менеджер."].join(". ");
 
 /**
  * Корзина из localStorage: мусор отбрасывается, одинаковые строки сливаются, qty приводится к упаковке.

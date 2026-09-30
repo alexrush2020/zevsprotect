@@ -14,6 +14,22 @@ export const B24_TARGET = {
 export type B24Kind = keyof typeof B24_TARGET
 type Docs = { order: Order; lead: Lead; company: Customer }
 
+/**
+ * b24-id документа, если отправка завершена, иначе undefined. Клиент готов, когда есть контакт
+ * (у юрлица — ещё и компания): компания без контакта значит, что прошлая попытка упала посередине.
+ */
+function syncedId(kind: B24Kind, doc: object): string | undefined {
+  const get = (f: string) => {
+    const v: unknown = Reflect.get(doc, f)
+    return typeof v === 'string' && v ? v : undefined
+  }
+  if (kind !== 'company') return get(B24_TARGET[kind].field)
+  const contact = get('b24ContactId')
+  if (!contact) return undefined
+  if (Reflect.get(doc, 'kind') === 'legal') return get('b24CompanyId')
+  return get('b24CompanyId') ?? contact
+}
+
 export const isB24Kind = (v: unknown): v is B24Kind => typeof v === 'string' && Object.hasOwn(B24_TARGET, v)
 
 /**
@@ -43,12 +59,12 @@ async function patchDoc(payload: Payload, kind: B24Kind, id: string | number, pa
 
 export async function runB24Sync(args: { kind: B24Kind; id: string | number; payload: Payload; b24: B24Client }): Promise<B24SyncResult> {
   const { kind, id, payload, b24 } = args
-  const { collection, field } = B24_TARGET[kind]
+  const { collection } = B24_TARGET[kind]
   const doc = (await payload.findByID({ collection, id, depth: 0, overrideAccess: true, disableErrors: true })) as Docs[B24Kind] | null
   // документ мог ещё не закоммититься (job поставлен из afterChange до коммита) — повторим позже
   if (!doc) throw new B24Error(`Документ ${collection}/${id} не найден`, true, 'NOT_FOUND')
-  const existing: unknown = Reflect.get(doc, field)
-  if (typeof existing === 'string' && existing) return { status: 'already', b24Id: existing }
+  const existing = syncedId(kind, doc)
+  if (existing) return { status: 'already', b24Id: existing }
 
   const handler = handlers[kind] as B24Handler<B24Kind> | undefined
   if (!handler) {
@@ -89,10 +105,10 @@ export async function enqueueB24Sync(payload: Payload, kind: B24Kind, id: string
 
 /** Ручной повтор из админки: не создаёт дубль, если b24-id уже есть. */
 export async function retryB24Sync(payload: Payload, kind: B24Kind, id: string | number): Promise<B24SyncResult | { status: 'queued' | 'failed' | 'not_found' }> {
-  const { collection, field } = B24_TARGET[kind]
+  const { collection } = B24_TARGET[kind]
   const doc = await payload.findByID({ collection, id, depth: 0, overrideAccess: true, disableErrors: true })
   if (!doc) return { status: 'not_found' }
-  const existing: unknown = Reflect.get(doc, field)
-  if (typeof existing === 'string' && existing) return { status: 'already', b24Id: existing }
+  const existing = syncedId(kind, doc)
+  if (existing) return { status: 'already', b24Id: existing }
   return { status: (await enqueueB24Sync(payload, kind, id)) ? 'queued' : 'failed' }
 }
