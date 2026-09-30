@@ -9,7 +9,8 @@ export const Leads: CollectionConfig = {
   labels: { singular: 'Заявка', plural: 'Заявки' },
   admin: { group: 'Продажи', useAsTitle: 'name', defaultColumns: ['type', 'name', 'phone', 'status', 'createdAt'], listSearchableFields: ['name', 'phone', 'email', 'company'], components: docTitle('Новая заявка') },
   defaultSort: '-createdAt',
-  access: { read: manager, create: () => true, update: manager, delete: isAdmin },
+  // create закрыт: витрина пишет через server action (lib/server/lead-action.ts) после валидации, спам-защиты и согласия ПДн
+  access: { read: manager, create: manager, update: manager, delete: isAdmin },
   fields: [
     {
       name: 'type',
@@ -22,6 +23,8 @@ export const Leads: CollectionConfig = {
         { label: 'Образцы', value: 'samples' },
         { label: 'Консультация', value: 'consultation' },
         { label: 'Запрос по товару', value: 'product-request' },
+        { label: 'Прайс-лист', value: 'pricelist' },
+        { label: 'Запрос из корзины', value: 'cart' },
       ],
     },
     { name: 'name', type: 'text', label: 'Имя' },

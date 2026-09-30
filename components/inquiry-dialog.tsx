@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useStore } from "@/lib/store";
+import { submitLead } from "@/lib/server/lead-action";
 
 const types = {
   consult: {
@@ -41,7 +42,7 @@ const types = {
   product: {
     title: "Запрос по товару",
     description: "Уточним наличие, фасовку и срок отгрузки.",
-    lead: "product",
+    lead: "product-request",
   },
 } as const;
 
@@ -60,7 +61,8 @@ export function InquiryDialog({
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }) {
-  const { addLead, user } = useStore();
+  const { user } = useStore();
+  const [pending, setPending] = useState(false);
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const [sent, setSent] = useState(false);
   const copy = types[type];
@@ -73,10 +75,13 @@ export function InquiryDialog({
     if (!v) setSent(false);
   }
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (pending) return;
     const data = new FormData(e.currentTarget);
     const payload = {
+      consent: String(data.get("consent") || ""),
+      website: String(data.get("website") || ""),
       name: String(data.get("name") || ""),
       phone: String(data.get("phone") || ""),
       email: String(data.get("email") || ""),
@@ -84,9 +89,15 @@ export function InquiryDialog({
       message: String(data.get("message") || ""),
       product: productName || "",
     };
-    const lead = addLead(copy.lead, payload);
+    setPending(true);
+    const res = await submitLead(copy.lead, payload).catch(() => null);
+    setPending(false);
+    if (!res?.ok) {
+      toast.error(res?.error ?? "Не удалось отправить заявку. Попробуйте ещё раз или позвоните нам.");
+      return;
+    }
     setSent(true);
-    toast.success(`Лид ${lead.id} отправлен в Битрикс24`);
+    toast.success(`Лид ${res.id} отправлен в Битрикс24`);
   }
 
   return (
@@ -166,7 +177,8 @@ export function InquiryDialog({
                 </a>
               </span>
             </label>
-            <Button type="submit" className="h-10">
+            <input name="website" tabIndex={-1} autoComplete="off" aria-hidden className="hidden" />
+            <Button type="submit" className="h-10" disabled={pending}>
               Отправить заявку
             </Button>
           </form>

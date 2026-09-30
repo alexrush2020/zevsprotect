@@ -487,7 +487,7 @@ export interface Order {
  */
 export interface Lead {
   id: number;
-  type: 'feedback' | 'calculation' | 'samples' | 'consultation' | 'product-request';
+  type: 'feedback' | 'calculation' | 'samples' | 'consultation' | 'product-request' | 'pricelist' | 'cart';
   name?: string | null;
   phone?: string | null;
   email?: string | null;

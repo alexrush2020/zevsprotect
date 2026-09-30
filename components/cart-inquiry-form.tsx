@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { DeliveryAddressPicker } from "@/components/delivery-address-picker";
 import { useStore } from "@/lib/store";
+import { submitLead } from "@/lib/server/lead-action";
 import { getProductById } from "@/lib/data/catalog";
 import { formatPrice } from "@/lib/format";
 import { formatRuPhone } from "@/lib/demo-account";
@@ -48,6 +49,8 @@ export function CartInquiryForm() {
   const [comment, setComment] = useState("");
   const [remember, setRemember] = useState(true);
   const [sentId, setSentId] = useState("");
+  const [consent, setConsent] = useState(true);
+  const [pending, setPending] = useState(false);
 
   useEffect(() => {
     if (!ready) return;
@@ -75,8 +78,10 @@ export function CartInquiryForm() {
     return formatAddressLine(selected);
   }
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (pending) return;
+    const website = String(new FormData(e.currentTarget).get("website") || "");
     const address = resolvedAddress();
     if (!pickup && !address) {
       toast.error("Укажите адрес доставки");
@@ -90,7 +95,7 @@ export function CartInquiryForm() {
       })
       .filter(Boolean)
       .join("\n");
-    const lead = addLead("cart", {
+    const fields = {
       name,
       phone,
       company,
@@ -107,10 +112,23 @@ export function CartInquiryForm() {
       message: comment,
       items,
       total: String(cartTotal),
-    });
+    };
+    setPending(true);
+    const res = await submitLead("cart", {
+      ...fields,
+      consent: consent ? "on" : "",
+      website,
+    }).catch(() => null);
+    setPending(false);
+    if (!res?.ok) {
+      toast.error(res?.error ?? "Не удалось отправить заявку. Попробуйте ещё раз или позвоните нам.");
+      return;
+    }
+    // ponytail: история заявок в ЛК пока из локального стора — пишем копию, пока кабинет не на Payload
+    const lead = addLead("cart", fields);
     if (remember) writeInquiryContacts({ name, phone, company });
-    setSentId(lead.id);
-    toast.success(`Заявка ${lead.id} принята`);
+    setSentId(res.id || lead.id);
+    toast.success(`Заявка ${res.id || lead.id} принята`);
   }
 
   if (sentId) {
@@ -230,7 +248,21 @@ export function CartInquiryForm() {
         />
         Запомнить контакты на этом устройстве
       </label>
-      <Button type="submit" className="h-11 w-full">
+      <label className="flex items-start gap-2 text-xs text-steel">
+        <Checkbox
+          required
+          checked={consent}
+          onCheckedChange={(v) => setConsent(v !== false)}
+        />
+        <span>
+          Согласен с{" "}
+          <a className="underline" href="/privacy">
+            политикой обработки персональных данных
+          </a>
+        </span>
+      </label>
+      <input name="website" tabIndex={-1} autoComplete="off" aria-hidden className="hidden" />
+      <Button type="submit" className="h-11 w-full" disabled={pending}>
         Отправить заявку
       </Button>
     </form>
