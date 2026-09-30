@@ -10,12 +10,25 @@ import {
   mapProductReview,
   type CatalogCategory,
 } from "@/lib/server/map";
+import {
+  ABOUT_DEFAULTS,
+  CONTACTS_DEFAULTS,
+  DELIVERY_DEFAULTS,
+  HOME_DEFAULTS,
+  PRIVACY_DEFAULTS,
+  PRIVACY_PAGE_SLUG,
+  mapAbout,
+  mapContacts,
+  mapDelivery,
+  mapHome,
+  mapPageParagraphs,
+} from "@/lib/server/content";
 
 /**
  * Серверный слой данных витрины (Local API). Читаем с overrideAccess:false без user —
  * работают access коллекций: черновики недоступны, отзывы — только одобренные.
  * Кэш: unstable_cache + теги; сброс — payload/hooks/revalidate.ts (afterChange/afterDelete).
- * Теги: catalog (товары, категории, отзывы), blog (статьи, рубрики).
+ * Теги: catalog (товары, категории, отзывы), blog (статьи, рубрики), content (глобалы, pages).
  * ponytail: unstable_cache (Cache Components не включены); при переходе на 'use cache' заменить cached().
  */
 
@@ -155,4 +168,60 @@ export const getArticle = cached(
   },
   "article",
   "blog",
+);
+
+/*
+ * Контент (тег 'content'): глобалы home/about/delivery/settings и страницы pages; маппинг и тексты
+ * по умолчанию — lib/server/content.ts. Сбой чтения -> тексты по умолчанию, страница не падает.
+ */
+const orDefault = <T>(load: () => Promise<T>, fallback: T, what: string) => () =>
+  load().catch((e) => {
+    console.error(`[content] ${what}: ${e instanceof Error ? e.message : e}`);
+    return fallback;
+  });
+
+const findGlobal = async <S extends "home" | "about" | "delivery" | "settings">(slug: S, depth: number) =>
+  (await getPayload({ config })).findGlobal({ slug, overrideAccess: false, depth });
+
+export const getHomeContent = orDefault(
+  cached(async () => mapHome(await findGlobal("home", 1)), "home-content", "content"),
+  HOME_DEFAULTS,
+  "home",
+);
+
+export const getAboutContent = orDefault(
+  cached(async () => mapAbout(await findGlobal("about", 1)), "about-content", "content"),
+  ABOUT_DEFAULTS,
+  "about",
+);
+
+export const getDeliveryContent = orDefault(
+  cached(async () => mapDelivery(await findGlobal("delivery", 0)), "delivery-content", "content"),
+  DELIVERY_DEFAULTS,
+  "delivery",
+);
+
+export const getSiteContacts = orDefault(
+  cached(async () => mapContacts(await findGlobal("settings", 0)), "site-contacts", "content"),
+  CONTACTS_DEFAULTS,
+  "settings",
+);
+
+export const getPrivacyText = orDefault(
+  cached(
+    async () => {
+      const { docs } = await (await getPayload({ config })).find({
+        collection: "pages",
+        ...read,
+        depth: 0,
+        limit: 1,
+        where: { slug: { equals: PRIVACY_PAGE_SLUG } },
+      });
+      return mapPageParagraphs(docs[0], PRIVACY_DEFAULTS);
+    },
+    "privacy-page",
+    "content",
+  ),
+  PRIVACY_DEFAULTS,
+  "privacy",
 );

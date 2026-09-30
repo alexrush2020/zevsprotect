@@ -1296,9 +1296,78 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
  */
 export interface Home {
   id: number;
+  /**
+   * Каждая строка — отдельная строка заголовка. Пусто — на сайте текст по умолчанию.
+   */
   heroTitle?: string | null;
+  /**
+   * Пусто — на сайте текст по умолчанию.
+   */
   heroText?: string | null;
+  stats?:
+    | {
+        value: number;
+        suffix?: string | null;
+        label: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Пусто — на сайте текст по умолчанию.
+   */
+  aboutTitle?: string | null;
+  /**
+   * Пусто — на сайте текст по умолчанию.
+   */
+  aboutText?: string | null;
+  advantages?:
+    | {
+        title: string;
+        text: string;
+        id?: string | null;
+      }[]
+    | null;
+  terms?:
+    | {
+        text: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Пусто — на сайте текст по умолчанию.
+   */
+  reviewsTitle?: string | null;
+  reviews?:
+    | {
+        company: string;
+        city?: string | null;
+        line?: string | null;
+        text: string;
+        fact?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  stamps?:
+    | {
+        label: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Пусто — на сайте текст по умолчанию.
+   */
+  ctaTitle?: string | null;
+  /**
+   * Пусто — на сайте текст по умолчанию.
+   */
+  ctaText?: string | null;
+  /**
+   * Пусто — товары с бейджем «На главной».
+   */
   featuredProducts?: (number | Product)[] | null;
+  /**
+   * Пусто — статьи с флагом «Показывать на главной».
+   */
   featuredPosts?: (number | Post)[] | null;
   banners?:
     | {
@@ -1318,6 +1387,9 @@ export interface Home {
  */
 export interface About {
   id: number;
+  /**
+   * Первый абзац — под заголовком «Как устроен цех», остальные — мелким текстом ниже. Пусто — на сайте значение по умолчанию.
+   */
   text?: {
     root: {
       type: string;
@@ -1333,6 +1405,35 @@ export interface About {
     };
     [k: string]: unknown;
   } | null;
+  /**
+   * Пусто — на сайте значение по умолчанию.
+   */
+  capacity?: number | null;
+  whyLead?:
+    | {
+        title: string;
+        text: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Пусто — на сайте значение по умолчанию.
+   */
+  modelsCount?: number | null;
+  /**
+   * Пусто — на сайте значение по умолчанию.
+   */
+  regions?: number | null;
+  geo?:
+    | {
+        title: string;
+        detail: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Блок «Документы к партии». Пусто — документы по умолчанию.
+   */
   documents?:
     | {
         title: string;
@@ -1350,6 +1451,9 @@ export interface About {
  */
 export interface Delivery {
   id: number;
+  /**
+   * Пусто — текст по умолчанию.
+   */
   intro?: {
     root: {
       type: string;
@@ -1408,7 +1512,22 @@ export interface Setting {
     phone?: string | null;
     email?: string | null;
     address?: string | null;
+    /**
+     * Только https://…
+     */
     max?: string | null;
+    hours?: string | null;
+    /**
+     * Пусто — отделы по умолчанию.
+     */
+    desks?:
+      | {
+          title: string;
+          phone?: string | null;
+          email: string;
+          id?: string | null;
+        }[]
+      | null;
   };
   requisites?: {
     legalName?: string | null;
@@ -1448,6 +1567,48 @@ export interface Setting {
 export interface HomeSelect<T extends boolean = true> {
   heroTitle?: T;
   heroText?: T;
+  stats?:
+    | T
+    | {
+        value?: T;
+        suffix?: T;
+        label?: T;
+        id?: T;
+      };
+  aboutTitle?: T;
+  aboutText?: T;
+  advantages?:
+    | T
+    | {
+        title?: T;
+        text?: T;
+        id?: T;
+      };
+  terms?:
+    | T
+    | {
+        text?: T;
+        id?: T;
+      };
+  reviewsTitle?: T;
+  reviews?:
+    | T
+    | {
+        company?: T;
+        city?: T;
+        line?: T;
+        text?: T;
+        fact?: T;
+        id?: T;
+      };
+  stamps?:
+    | T
+    | {
+        label?: T;
+        id?: T;
+      };
+  ctaTitle?: T;
+  ctaText?: T;
   featuredProducts?: T;
   featuredPosts?: T;
   banners?:
@@ -1469,6 +1630,23 @@ export interface HomeSelect<T extends boolean = true> {
  */
 export interface AboutSelect<T extends boolean = true> {
   text?: T;
+  capacity?: T;
+  whyLead?:
+    | T
+    | {
+        title?: T;
+        text?: T;
+        id?: T;
+      };
+  modelsCount?: T;
+  regions?: T;
+  geo?:
+    | T
+    | {
+        title?: T;
+        detail?: T;
+        id?: T;
+      };
   documents?:
     | T
     | {
@@ -1533,6 +1711,15 @@ export interface SettingsSelect<T extends boolean = true> {
         email?: T;
         address?: T;
         max?: T;
+        hours?: T;
+        desks?:
+          | T
+          | {
+              title?: T;
+              phone?: T;
+              email?: T;
+              id?: T;
+            };
       };
   requisites?:
     | T
