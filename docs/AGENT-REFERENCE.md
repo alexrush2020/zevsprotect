@@ -24,7 +24,7 @@
 
 | Что | Как |
 |---|---|
-| БД | `docker --context default compose up -d` → PostgreSQL 16 на `127.0.0.1:5442` (zevs/zevs/zevs). Docker Desktop-контекст на этой машине нестабилен — использовать `--context default` |
+| БД | `docker compose up -d` → PostgreSQL 16 на `127.0.0.1:5442` (zevs/zevs/zevs). Запускать в Docker Desktop (контекст `desktop-linux`); системный контекст `default` не использовать — его контейнеры не видны в Docker Desktop |
 | Приложение | `npm run dev` → http://localhost:43127, админка http://localhost:43127/admin |
 | Env | `.env` (не коммитится), образец `.env.example` |
 
