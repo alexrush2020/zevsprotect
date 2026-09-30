@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { docTitle, slugField } from '../admin-ui'
-import { hasRole } from '../access'
+import { hasRole, isAdmin } from '../access'
 import { revalidateAfterChange, revalidateAfterDelete } from '../hooks/revalidate'
 
 export const Categories: CollectionConfig = {
@@ -24,5 +24,7 @@ export const Categories: CollectionConfig = {
     { name: 'icon', type: 'text', label: 'Иконка (имя из прототипа)' },
     { name: 'image', type: 'upload', relationTo: 'media', label: 'Картинка' },
     { name: 'order', type: 'number', label: 'Порядок', defaultValue: 0 },
+    // Ид группы 1С (обмен CommerceML); пусто — категория заведена на сайте
+    { name: 'guid1c', type: 'text', label: 'GUID группы 1С', unique: true, index: true, access: { create: isAdmin, update: isAdmin }, admin: { position: 'sidebar', readOnly: true } },
   ],
 }

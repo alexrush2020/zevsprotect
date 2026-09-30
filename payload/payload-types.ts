@@ -351,6 +351,7 @@ export interface Category {
   icon?: string | null;
   image?: (number | null) | Media;
   order?: number | null;
+  guid1c?: string | null;
   meta?: {
     title?: string | null;
     description?: string | null;
@@ -931,6 +932,7 @@ export interface CategoriesSelect<T extends boolean = true> {
   icon?: T;
   image?: T;
   order?: T;
+  guid1c?: T;
   meta?:
     | T
     | {
