@@ -378,7 +378,7 @@ const TRACKS = [
     deps:['C-CAT', 'C-BLOG', 'C-CONTENT'],
     links:[['ARCHITECTURE.md', 'Архитектура']],
     acc:'После сида витрина на Payload показывает те же товары и тексты, что прототип; повтор не плодит дубли.' },
-  { id:'S-7', t:'Серверный слой данных lib/server: Payload → типы lib/types.ts', d:'Функции getProducts/getProduct/getCategories/getArticles… через Local API с маппингом в Product/Article; компоненты не меняются.', pr:'P0', st:'todo', own:'agent',
+  { id:'S-7', t:'Серверный слой данных lib/server: Payload → типы lib/types.ts', d:'Функции getProducts/getProduct/getCategories/getArticles… через Local API с маппингом в Product/Article; компоненты не меняются.', pr:'P0', st:'done', anchors:['lib/server/catalog.ts','lib/server/map.ts','payload/hooks/revalidate.ts'], res:'<b>Коммиты 094149e + правки ревью.</b> lib/server/{map,catalog}.ts: getCategories/getProducts/getProduct/getRelatedProducts/getProductReviews/getArticles/getArticle через Local API (overrideAccess:false), unstable_cache (TTL 300 с + теги), хуки revalidate на коллекциях и Media. test 74/74, typecheck, ревью opus (утечек нет). Не проверено на живой БД. Расхождения схемы (нет categories.short/description; reviews без orderDate/shipped/tags/company/city; отзывы главной) — решать в F-* карточках.', own:'agent',
     req:['Контракт — lib/types.ts (ARCHITECTURE «Переход с прототипа на Payload»).', 'Только опубликованное; кэш/revalidate по afterChange.'],
     deps:['C-CAT'],
     acc:'Unit-тест маппинга документа Payload → Product; страница-потребитель рендерится без изменений.' },
@@ -434,7 +434,7 @@ const TRACKS = [
   id:'meet', name:'Хвосты встречи 19.09',
   desc:'Правки по итогам показа прототипа, ещё не внесённые в код (сверено 2026-09-29).',
   items:[
-  { id:'M-1', t:'Карточка товара: «Сертификаты и документы» → документы без сертификата', d:'Клиент: есть декларация соответствия, сертификата нет — не выдумывать.', pr:'P2', st:'done', anchors:['app/(frontend)/product/[slug]/page.tsx'], res:'<b>Коммит 6c869e6.</b> Заголовок «Документы», список без сертификата (product/[slug]/page.tsx). test 66/66, typecheck, ревью opus. В браузере не смотрели.', own:'agent',
+  { id:'M-1', t:'Карточка товара: «Сертификаты и документы» → документы без сертификата', d:'Клиент: есть декларация соответствия, сертификата нет — не выдумывать.', pr:'P2', st:'done', anchors:['DEFAULT_DOCS']/page.tsx'], res:'<b>Коммит 6c869e6.</b> Заголовок «Документы», список без сертификата (product/[slug]/page.tsx). test 66/66, typecheck, ревью opus. В браузере не смотрели.', own:'agent',
     req:['app/(frontend)/product/[slug]/page.tsx:156 — заголовок «Сертификаты и документы».'],
     links:[['meetings/2026-09-19-prototype-demo-followup.md', 'Встреча 19.09']],
     acc:'На карточке нет упоминания несуществующего сертификата.' },

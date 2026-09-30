@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 import { docTitle, slugField } from '../admin-ui'
 import { hasRole, isStaff, publishedOrStaff } from '../access'
+import { revalidateAfterChange, revalidateAfterDelete } from '../hooks/revalidate'
 
 const editor = hasRole('admin', 'content')
 
@@ -11,6 +12,7 @@ export const Posts: CollectionConfig = {
   defaultSort: '-publishedAt',
   versions: { drafts: true, maxPerDoc: 20 },
   access: { read: publishedOrStaff, readVersions: isStaff, create: editor, update: editor, delete: hasRole('admin') },
+  hooks: { afterChange: [revalidateAfterChange('blog')], afterDelete: [revalidateAfterDelete('blog')] },
   fields: [
     { name: 'title', type: 'text', label: 'Заголовок', required: true },
     slugField('/blog/<slug>'),

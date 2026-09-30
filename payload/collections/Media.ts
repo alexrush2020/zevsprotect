@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 import { docTitle } from '../admin-ui'
 import { hasRole } from '../access'
 import { kindFromMime } from '../hooks/media'
+import { revalidateAfterChange, revalidateAfterDelete } from '../hooks/revalidate'
 
 const MB = 1024 * 1024
 
@@ -16,6 +17,9 @@ export const Media: CollectionConfig = {
     delete: hasRole('admin', 'content'),
   },
   hooks: {
+    // URL файла меняется при замене — кэш витрины держит старый
+    afterChange: [revalidateAfterChange('catalog'), revalidateAfterChange('blog')],
+    afterDelete: [revalidateAfterDelete('catalog'), revalidateAfterDelete('blog')],
     beforeChange: [
       ({ data, originalDoc, req }) => {
         const size = req.file?.size ?? 0
