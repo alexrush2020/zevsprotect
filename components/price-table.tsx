@@ -5,10 +5,11 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { products } from "@/lib/data/catalog";
+import { useStore } from "@/lib/store";
 import { formatPrice } from "@/lib/format";
 
 export function PriceTable() {
+  const { catalog: products } = useStore();
   const [q, setQ] = useState("");
   const needle = q.trim().toLowerCase();
 
@@ -20,7 +21,7 @@ export function PriceTable() {
         .toLowerCase()
         .includes(needle)
     );
-  }, [needle]);
+  }, [needle, products]);
 
   return (
     <>

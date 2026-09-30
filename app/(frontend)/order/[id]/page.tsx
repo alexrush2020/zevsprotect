@@ -6,14 +6,13 @@ import { Button } from "@/components/ui/button";
 import { StatusTimeline } from "@/components/status-timeline";
 import { IntegrationLog } from "@/components/integration-log";
 import { useStore } from "@/lib/store";
-import { getProductById } from "@/lib/data/catalog";
 import { formatDate, formatPrice, PAYMENT_LABEL, STATUS_LABEL } from "@/lib/format";
 import { cartLineKey, cartLineOfferLabel, cartLineTotal, cartProductQty } from "@/lib/lots";
 import { splitVat } from "@/lib/vat";
 
 export default function OrderPage() {
   const { id } = useParams<{ id: string }>();
-  const { orders } = useStore();
+  const { orders, getProduct } = useStore();
   const order = orders.find((o) => o.id === id);
 
   if (!order) {
@@ -54,7 +53,7 @@ export default function OrderPage() {
 
       <div className="mt-6 space-y-2 rounded-2xl border bg-card p-5 text-sm">
         {order.items.map((item) => {
-          const p = getProductById(item.productId);
+          const p = getProduct(item.productId);
           if (!p) return null;
           return (
             <div key={cartLineKey(item)} className="flex justify-between">

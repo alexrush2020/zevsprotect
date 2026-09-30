@@ -7,7 +7,7 @@ import {
 import type { Product } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-/** catalog — товары витрины (Payload через withMockIds, id и деньги как в корзине). */
+/** catalog — товары витрины из Payload. */
 export function ProductShiftCompare({ product, catalog }: { product: Product; catalog: Product[] }) {
   const rows = shiftCompareRows(product, catalog);
   if (rows.length < 2) return null;

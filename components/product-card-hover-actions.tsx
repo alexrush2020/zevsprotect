@@ -39,7 +39,7 @@ export function ProductCardHoverActions({
   volumeQty?: number;
 }) {
   const { toggleFavorite, isFavorite, addToCart, addLead, user } = useStore();
-  const liked = isFavorite(product.id);
+  const liked = isFavorite(product.slug);
   const [quickOpen, setQuickOpen] = useState(false);
   const [samplesOpen, setSamplesOpen] = useState(false);
   const showTip = variant === "desktop";
@@ -48,7 +48,7 @@ export function ProductCardHoverActions({
   function onFavorite(e: MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    const added = toggleFavorite(product.id);
+    const added = toggleFavorite(product.slug);
     toast.success(added ? "Добавлено в избранное" : "Удалено из избранного");
   }
 
@@ -197,7 +197,7 @@ function QuickOrderModal({
   product: Product;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  addToCart: (productId: string, size: string, qty: number, coating?: string) => void;
+  addToCart: (productId: string, size: string, qty: number, coating?: string) => boolean;
   addLead: (type: string, payload: Record<string, string>) => { id: string };
   defaultPhone: string;
   volumeQty: number;
@@ -234,7 +234,10 @@ function QuickOrderModal({
 
   function handleAddToCart() {
     if (!inStock) return;
-    addToCart(product.id, size, snapOrderQty(qty, product), coating);
+    if (!addToCart(product.slug, size, snapOrderQty(qty, product), coating)) {
+      toast.error("Модель сейчас недоступна для заказа");
+      return;
+    }
     setJustAdded(true);
     toast.success("Добавлено в корзину");
     window.setTimeout(() => handleOpenChange(false), 700);

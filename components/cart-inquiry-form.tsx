@@ -12,7 +12,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { DeliveryAddressPicker } from "@/components/delivery-address-picker";
 import { useStore } from "@/lib/store";
 import { submitLead } from "@/lib/server/lead-action";
-import { getProductById } from "@/lib/data/catalog";
 import { formatPrice } from "@/lib/format";
 import { formatRuPhone } from "@/lib/demo-account";
 import {
@@ -35,7 +34,7 @@ const DELIVERY: { id: RequestDelivery; name: string; note?: string }[] = [
 ];
 
 export function CartInquiryForm() {
-  const { cart, cartTotal, user, lastUser, ready, addLead } = useStore();
+  const { cart, cartTotal, user, lastUser, ready, addLead, getProduct } = useStore();
   const addresses = addressesOf(user);
   const fallback = defaultAddress(user);
 
@@ -89,7 +88,7 @@ export function CartInquiryForm() {
     }
     const items = cart
       .map((item) => {
-        const p = getProductById(item.productId);
+        const p = getProduct(item.productId);
         if (!p) return "";
         return `${p.name} · ${cartLineCaption(p, item)} · ${formatPrice(cartLineTotal(p, item, cartProductQty(cart, item.productId)))}`;
       })

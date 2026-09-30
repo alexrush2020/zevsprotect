@@ -7,7 +7,7 @@ import { ProductCard } from "@/components/product-card";
 import { ProductGallery } from "@/components/product-gallery";
 import { ProductReviewsSection } from "@/components/product-reviews/product-reviews-section";
 import { Badge } from "@/components/ui/badge";
-import { productDocuments, productGallery, productSeo, withMockIds } from "@/lib/data/catalog";
+import { productDocuments, productGallery, productSeo } from "@/lib/data/catalog";
 import { reviewCountLabel, reviewStats } from "@/lib/data/product-reviews";
 import {
   getCategories,
@@ -30,11 +30,9 @@ export async function generateStaticParams() {
   return (await getProducts()).map((p) => ({ slug: p.slug }));
 }
 
-/** Товар из Payload; id и деньги — из мока (withMockIds), как в корзине, до SH-CART. */
 async function loadProduct(slug: string) {
-  const raw = await getProduct(slug);
-  if (!raw) return null;
-  const [product] = withMockIds([raw]);
+  const product = await getProduct(slug);
+  if (!product) return null;
   const category = (await getCategories()).find((c) => c.slug === product.category);
   return { product, category };
 }
@@ -67,13 +65,12 @@ export default async function ProductPage({
   const data = await loadProduct(slug);
   if (!data) notFound();
   const { product, category } = data;
-  const [relatedRaw, catalog, approved] = await Promise.all([
+  const [related, catalog, approved] = await Promise.all([
     getRelatedProducts(slug, 4),
     getProducts(),
     getProductReviews(slug),
   ]);
   const others = approved.length ? [] : await getOtherProductReviews(slug, 3);
-  const related = withMockIds(relatedRaw);
   const docs = productDocuments(product);
   const gallery = productGallery(product, category?.image);
   const seo = productSeo(product, category?.short);
@@ -137,7 +134,7 @@ export default async function ProductPage({
               ? `Остаток: ${product.stock} ${product.unit} · мин. заказ ${formatVolumeQty(productMinQty(product), product.unit)}`
               : `Нет на складе. Можно запросить срок партии. Мин. заказ ${formatVolumeQty(productMinQty(product), product.unit)}.`}
           </p>
-          <ProductShiftCompare product={product} catalog={withMockIds(catalog)} />
+          <ProductShiftCompare product={product} catalog={catalog} />
           <p className="mt-4 text-steel">{product.description}</p>
           <div className="mt-6">
             <ProductBuy product={product} />

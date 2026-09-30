@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { quoteVolume, volumeUnitPrice, volumeThresholds } from './volume-quote'
 import type { Product } from './types'
 
-const p = { id: 'p-fenix', price: 100, unit: 'пара', minQty: 50, coating: 'Без покрытия', coatingType: '' } as unknown as Product
+const p = { id: '1', slug: 'feniks', price: 100, unit: 'пара', minQty: 50, coating: 'Без покрытия', coatingType: '' } as unknown as Product
 
 describe('объёмная цена', () => {
   it('скидки по порогам 1000/3000/5000/10000', () => {

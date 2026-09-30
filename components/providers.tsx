@@ -2,6 +2,7 @@
 
 import { ThemeProvider } from "next-themes";
 import { StoreProvider } from "@/lib/store";
+import type { Product } from "@/lib/types";
 import { Toaster } from "@/components/ui/sonner";
 import { CookieBanner } from "@/components/cookie-banner";
 import { BackToTopGlove } from "@/components/home/back-to-top-glove";
@@ -9,10 +10,10 @@ import { ManagerChatProvider } from "@/components/manager-chat/ManagerChatProvid
 import { ManagerChatLauncher } from "@/components/manager-chat/ManagerChatLauncher";
 import { ManagerChatWindow } from "@/components/manager-chat/ManagerChatWindow";
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({ children, catalog }: { children: React.ReactNode; catalog: Product[] }) {
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-      <StoreProvider>
+      <StoreProvider catalog={catalog}>
         <ManagerChatProvider>
           {children}
           <CookieBanner />

@@ -50,12 +50,3 @@ export function groupCartByProduct(cart: CartItem[]) {
     items: groups.get(productId)!,
   }));
 }
-
-export function cartGoodsTotal(cart: CartItem[], catalog: Product[]) {
-  return groupCartByProduct(cart).reduce((sum, { productId, items }) => {
-    const product = catalog.find((item) => item.id === productId);
-    if (!product) return sum;
-    const qty = items.reduce((acc, item) => acc + item.qty, 0);
-    return sum + cartLineTotal(product, { productId, size: "", qty }, qty);
-  }, 0);
-}

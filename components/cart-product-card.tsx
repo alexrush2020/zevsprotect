@@ -258,7 +258,7 @@ export function CartProductCard({
   const [pickCoating, setPickCoating] = useState(
     () => items[0]?.coating ?? coatings[0] ?? product.coating,
   );
-  const productQty = cartProductQty(items, product.id);
+  const productQty = cartProductQty(items, product.slug);
   const quote = quoteVolume(product, productQty);
   const total = items.reduce(
     (sum, item) => sum + cartLineTotal(product, item, productQty),
@@ -277,7 +277,7 @@ export function CartProductCard({
       .reduce((sum, item) => sum + item.qty, 0);
     const others = productQty - primaryQty;
     setQty(
-      product.id,
+      product.slug,
       primary.size,
       Math.max(0, snapVolumeQty(product, nextQty) - others),
       primary.coating,
@@ -298,7 +298,7 @@ export function CartProductCard({
     if (!size || hasLine(size, coating)) return;
     const key = lineKey(size, coating);
     setExtraKeys((prev) => (prev.includes(key) ? prev : [...prev, key]));
-    setQty(product.id, size, productMinQty(product), coating);
+    setQty(product.slug, size, productMinQty(product), coating);
   }
 
   function lineCoating(line: { coating?: string }) {
@@ -430,7 +430,7 @@ export function CartProductCard({
                           setExtraKeys((prev) =>
                             prev.filter((key) => key !== `${line.size}::${line.coating ?? ""}`),
                           );
-                          setQty(product.id, line.size, 0, line.coating);
+                          setQty(product.slug, line.size, 0, line.coating);
                         }}
                       >
                         Удалить размер
@@ -443,7 +443,7 @@ export function CartProductCard({
                     product={product}
                     qty={linePairs}
                     onQtyChange={(next) =>
-                      setQty(product.id, line.size, next, line.coating)
+                      setQty(product.slug, line.size, next, line.coating)
                     }
                   />
                 </div>
@@ -453,7 +453,7 @@ export function CartProductCard({
           <button
             type="button"
             className="mt-4 text-xs text-steel underline"
-            onClick={() => removeProductFromCart(product.id)}
+            onClick={() => removeProductFromCart(product.slug)}
           >
             Удалить модель
           </button>

@@ -3,7 +3,6 @@ import { CatalogBrowser } from "@/components/catalog-browser";
 import { PurchaseGuideTeaser } from "@/components/purchase-guide-teaser";
 import { brand } from "@/lib/brand";
 import { pageMeta } from "@/lib/seo-jsonld";
-import { withMockIds } from "@/lib/data/catalog";
 import { getCategories, getProducts } from "@/lib/server/catalog";
 
 export const metadata = pageMeta(
@@ -14,7 +13,7 @@ export const metadata = pageMeta(
 
 async function CatalogData() {
   const [products, categories] = await Promise.all([getProducts(), getCategories()]);
-  return <CatalogBrowser products={withMockIds(products)} categories={categories} />;
+  return <CatalogBrowser products={products} categories={categories} />;
 }
 
 export default function CatalogPage() {
