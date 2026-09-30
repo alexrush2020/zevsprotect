@@ -22,7 +22,7 @@ function inquiriesForUser(leads: Lead[], email: string, phone: string) {
 
 export default function AccountOrdersPage() {
   const { user, leads } = useStore();
-  const loaded = useAccountOrders();
+  const { orders: loaded, notice } = useAccountOrders();
   const [reviews, setReviews] = useState<ProductReview[]>([]);
 
   useEffect(() => {
@@ -46,11 +46,11 @@ export default function AccountOrdersPage() {
           Статусы в прототипе заданы вручную. По ТЗ источник статуса — Битрикс24.
         </p>
         <AccountScroll className="mt-4">
-          {loaded === null ? null : mine.length === 0 ? (
+          {notice ?? (loaded === null ? null : mine.length === 0 ? (
             <p className="rounded-2xl border bg-card p-5 text-steel">Заказов пока нет.</p>
           ) : (
             mine.map((order) => <AccountOrderCard key={order.id} order={order} />)
-          )}
+          ))}
         </AccountScroll>
 
         <h2 className="mt-8 font-heading text-xl">Заявки менеджеру</h2>

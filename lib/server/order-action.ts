@@ -14,7 +14,7 @@ import {
   type OrderInput,
   type OrderResult,
   type TrackResult,
-  type ViewOrder,
+  type CustomerOrdersResult,
 } from "@/lib/server/orders";
 
 const receive = createOrderReceiver();
@@ -25,7 +25,7 @@ const clientIp = (h: Headers) =>
   h.get("x-real-ip") || h.get("x-forwarded-for")?.split(",").at(-1)?.trim() || "unknown";
 
 /** История заказов ЛК: только заказы клиента из сессии customers (access коллекции, не overrideAccess). */
-export async function myOrders(): Promise<ViewOrder[]> {
+export async function myOrders(): Promise<CustomerOrdersResult> {
   const payload = await getPayload({ config });
   const { user } = await payload.auth({ headers: await headers() });
   return customerOrders(payload, user);

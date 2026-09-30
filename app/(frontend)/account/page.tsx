@@ -10,7 +10,7 @@ import { NOTICE_KIND_LABEL, readNotices, type AccountNotice } from "@/lib/accoun
 
 export default function AccountHomePage() {
   const { user, favoriteIds, getProduct } = useStore();
-  const loaded = useAccountOrders();
+  const { orders: loaded, notice } = useAccountOrders();
   const [notices, setNotices] = useState<AccountNotice[]>([]);
 
   useEffect(() => {
@@ -73,7 +73,7 @@ export default function AccountHomePage() {
             </Link>
           </div>
           <div className="mt-3 space-y-3">
-            {loaded === null ? null : mine.length === 0 ? (
+            {notice ?? (loaded === null ? null : mine.length === 0 ? (
               <p className="rounded-2xl border bg-card p-5 text-sm text-steel">
                 Заказов пока нет. Оформите поставку из каталога.
               </p>
@@ -81,7 +81,7 @@ export default function AccountHomePage() {
               mine.slice(0, 2).map((order) => (
                 <AccountOrderCard key={order.id} order={order} />
               ))
-            )}
+            ))}
           </div>
         </section>
 

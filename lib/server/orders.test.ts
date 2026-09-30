@@ -384,17 +384,17 @@ describe("customerOrders: история заказов ЛК", () => {
   it("клиент — только через access коллекции и фильтр по своему id", async () => {
     const find = vi.fn(async () => ({ docs: [trackDoc] }));
     const user = { id: 5, collection: "customers" } as never;
-    const orders = await customerOrders({ find } as never, user);
-    expect(orders.map((o) => o.id)).toEqual(["ZP-2026-0007"]);
+    const res = await customerOrders({ find } as never, user);
+    expect(res.ok && res.orders.map((o) => o.id)).toEqual(["ZP-2026-0007"]);
     expect(find).toHaveBeenCalledWith(
       expect.objectContaining({ collection: "orders", where: { customer: { equals: 5 } }, overrideAccess: false, user, disableErrors: true }),
     );
   });
 
-  it("гость и сотрудник не получают заказы, БД не спрашиваем", async () => {
+  it("нет сессии клиента (истекла, сотрудник) — явный no-session, не пустая история; БД не спрашиваем", async () => {
     const find = vi.fn();
-    expect(await customerOrders({ find } as never, null)).toEqual([]);
-    expect(await customerOrders({ find } as never, { id: 1, collection: "users" } as never)).toEqual([]);
+    expect(await customerOrders({ find } as never, null)).toEqual({ ok: false, reason: "no-session" });
+    expect(await customerOrders({ find } as never, { id: 1, collection: "users" } as never)).toEqual({ ok: false, reason: "no-session" });
     expect(find).not.toHaveBeenCalled();
   });
 });

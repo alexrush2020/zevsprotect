@@ -375,16 +375,19 @@ export function toViewOrder(doc: OrderDoc): ViewOrder {
 
 /* ---------- история заказов клиента (ЛК) ---------- */
 
+export type CustomerOrdersResult = { ok: true; orders: ViewOrder[] } | { ok: false; reason: "no-session" };
+
 /**
  * Заказы клиента из сессии customers. Access коллекции (Orders.read: клиент — только свои) +
- * явный фильтр по клиенту; сотрудник или гость получают пустой список, а не чужие заказы.
+ * явный фильтр по клиенту; сотрудник или гость получают no-session, а не чужие заказы.
  * ponytail: последние 100 без пагинации — пагинация, когда у клиентов появятся сотни заказов.
  */
 export async function customerOrders(
   payload: Pick<Payload, "find">,
   user: TypedUser | null,
-): Promise<ViewOrder[]> {
-  if (user?.collection !== "customers" || user.id == null) return [];
+): Promise<CustomerOrdersResult> {
+  // нет сессии клиента (истекла, сотрудник) — явный признак, а не пустая история
+  if (user?.collection !== "customers" || user.id == null) return { ok: false, reason: "no-session" };
   const { docs } = await payload.find({
     collection: "orders",
     where: { customer: { equals: user.id } },
@@ -395,7 +398,7 @@ export async function customerOrders(
     user,
     disableErrors: true,
   });
-  return docs.map(toViewOrder);
+  return { ok: true, orders: docs.map(toViewOrder) };
 }
 
 /* ---------- отслеживание по номеру + email (CONTRA-1) ---------- */

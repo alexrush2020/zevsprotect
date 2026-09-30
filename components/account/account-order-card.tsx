@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -115,29 +115,52 @@ export function ordersForUser(orders: Order[], email: string) {
 
 /**
  * Заказы кабинета: у клиента с сессией Payload — из коллекции orders (демо-заказы localStorage не показываем),
- * у демо-входа прототипа — как раньше из localStorage. null — ещё загружаются.
+ * у демо-входа прототипа — как раньше из localStorage. orders: null — загружаются или не загрузились;
+ * notice — сообщение вместо списка (сбой загрузки с «Повторить», истёкшая сессия со ссылкой на вход).
  */
-export function useAccountOrders(): (Order | ViewOrder)[] | null {
+export function useAccountOrders(): { orders: (Order | ViewOrder)[] | null; notice: ReactNode } {
   const { user, orders } = useStore();
   const customer = user?.authProvider === "password" ? user.customerId : undefined;
-  const [remote, setRemote] = useState<{ customer: string; orders: ViewOrder[] } | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const [remote, setRemote] = useState<{
+    key: string;
+    state: { ok: true; orders: ViewOrder[] } | { ok: false; reason: "no-session" | "error" };
+  } | null>(null);
+  const key = `${customer}:${attempt}`;
 
   useEffect(() => {
     if (!customer) return;
     let live = true;
     myOrders()
-      .then((list) => live && setRemote({ customer, orders: list }))
-      .catch(() => {
-        if (!live) return;
-        toast.error("Не удалось загрузить заказы. Обновите страницу.");
-        setRemote({ customer, orders: [] });
-      });
+      .then((state) => live && setRemote({ key, state }))
+      .catch(() => live && setRemote({ key, state: { ok: false, reason: "error" } }));
     return () => {
       live = false;
     };
-  }, [customer]);
+  }, [customer, key]);
 
-  if (!user) return null;
-  if (!customer) return ordersForUser(orders, user.email);
-  return remote?.customer === customer ? remote.orders : null;
+  if (!user) return { orders: null, notice: null };
+  if (!customer) return { orders: ordersForUser(orders, user.email), notice: null };
+  const state = remote?.key === key ? remote.state : null;
+  if (!state) return { orders: null, notice: null };
+  if (state.ok) return { orders: state.orders, notice: null };
+  return {
+    orders: null,
+    notice:
+      state.reason === "no-session" ? (
+        <div className="rounded-2xl border bg-card p-5 text-sm text-steel">
+          <p>Сессия истекла — заказы не показаны.</p>
+          <Button nativeButton={false} render={<Link href="/login" />} variant="outline" size="sm" className="mt-3">
+            Войдите снова
+          </Button>
+        </div>
+      ) : (
+        <div className="rounded-2xl border bg-card p-5 text-sm text-steel" role="alert">
+          <p>Не удалось загрузить заказы.</p>
+          <Button variant="outline" size="sm" className="mt-3" onClick={() => setAttempt((n) => n + 1)}>
+            Повторить
+          </Button>
+        </div>
+      ),
+  };
 }
