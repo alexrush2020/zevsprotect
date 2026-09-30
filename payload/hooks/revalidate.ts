@@ -3,6 +3,7 @@ import type { CollectionAfterChangeHook, CollectionAfterDeleteHook } from 'paylo
 
 /** Сброс кэша lib/server/catalog.ts. Теги: 'catalog' (товары, категории, отзывы), 'blog' (статьи, рубрики). */
 const bust = (tag: string, logger?: { warn: (msg: string) => void }) => {
+  if (process.env.SEED_RUN) return
   try {
     revalidateTag(tag, { expire: 0 })
   } catch (e) {

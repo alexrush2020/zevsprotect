@@ -1,6 +1,7 @@
 import type { Article, Product } from "@/lib/types";
 import type { ProductReview } from "@/lib/data/product-reviews";
 import type { CatalogCategory } from "@/lib/server/map";
+import { validateKnitClass } from "@/payload/validators";
 
 /** Чистый маппинг мок-данных прототипа -> данные коллекций Payload (без БД). Обратный к lib/server/map.ts. */
 
@@ -55,7 +56,8 @@ export function productData(p: Product, r: ProductRefs) {
     coatingType: p.coatingType,
     colors: p.color.split(",").map((s) => s.trim()).filter(Boolean),
     sizes: p.sizes,
-    knitClass: p.knitClass,
+    // класс вязки вне правила коллекции (напр. «7.5» в прототипе) не сидим — решение бизнеса, см. CONTRADICTIONS
+    knitClass: validateKnitClass(p.knitClass) === true ? p.knitClass : undefined,
     tex: p.tex,
     weight: p.weight,
     length: p.length,

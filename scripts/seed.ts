@@ -6,6 +6,7 @@
  *   SEED_FETCH_IMAGES=1 — скачивать картинки с zevsprotect.ru в Media (иначе пропускаются и перечисляются)
  * Перед запуском — бэкап БД.
  */
+process.env.SEED_RUN = "1"; // хуки revalidate вне запроса Next не шумят
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { getPayload } from "payload";
