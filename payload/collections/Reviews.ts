@@ -11,19 +11,14 @@ export const Reviews: CollectionConfig = {
   admin: { group: 'Каталог', useAsTitle: 'authorName', defaultColumns: ['authorName', 'product', 'rating', 'approved', 'createdAt'], listSearchableFields: ['authorName', 'company', 'city'], components: docTitle('Новый отзыв') },
   access: {
     read: (args) => (moderators(args) ? true : { approved: { equals: true } }),
-    create: ({ req }) => ['users', 'customers'].includes(String(req.user?.collection)),
+    // витрина пишет только через server action submitReview (lib/server/review-action.ts): валидация, спам-защита, approved=false
+    create: moderators,
     update: moderators,
     delete: moderators,
   },
   hooks: {
     afterChange: [revalidateAfterChange('catalog')],
     afterDelete: [revalidateAfterDelete('catalog')],
-    beforeChange: [
-      ({ data, operation, req }) => {
-        if (operation === 'create' && req.user?.collection === 'customers') data.customer = req.user.id
-        return data
-      },
-    ],
   },
   fields: [
     { name: 'product', type: 'relationship', relationTo: 'products', label: 'Модель', required: true },
@@ -51,7 +46,7 @@ export const Reviews: CollectionConfig = {
         { label: 'Упаковка', value: 'pack' },
       ],
     },
-    { name: 'customer', type: 'relationship', relationTo: 'customers', label: 'Клиент', admin: { readOnly: true, position: 'sidebar' } },
+    { name: 'customer', type: 'relationship', relationTo: 'customers', label: 'Клиент', access: { read: moderators }, admin: { readOnly: true, position: 'sidebar' } },
     {
       name: 'approved',
       type: 'checkbox',

@@ -157,38 +157,24 @@ export const sampleProductReviews: ProductReview[] = [
   },
 ];
 
-function readUserReviewsSafe(): ProductReview[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem("zp-user-reviews");
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as unknown;
-    return Array.isArray(parsed) ? parsed.filter(isProductReview) : [];
-  } catch {
-    return [];
-  }
+/**
+ * Свои отзывы автора на модерации — с сервера (myPendingReviews: сессия клиента / подписанная cookie),
+ * не из localStorage: подделать чужой «на модерации» нельзя. Видны только автору, сверху списка.
+ */
+let pendingReviews: ProductReview[] = [];
+
+export function setPendingReviews(list: ProductReview[]) {
+  pendingReviews = list;
+  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(REVIEWS_UPDATED_EVENT));
 }
 
-function isProductReview(value: unknown): value is ProductReview {
-  if (!value || typeof value !== "object") return false;
-  const row = value as Partial<ProductReview>;
-  return (
-    typeof row.id === "string" &&
-    typeof row.productSlug === "string" &&
-    typeof row.productTitle === "string" &&
-    typeof row.author === "string" &&
-    typeof row.rating === "number" &&
-    typeof row.text === "string" &&
-    typeof row.date === "string" &&
-    typeof row.orderDate === "string" &&
-    typeof row.shipped === "boolean" &&
-    Array.isArray(row.tags)
-  );
+export function listPendingReviews(): ProductReview[] {
+  return pendingReviews;
 }
 
 /** base — одобренные отзывы (с сервера, Payload); мок — по умолчанию. Локальные отзывы автора (на модерации) — сверху. */
 export function allProductReviews(base: ProductReview[] = sampleProductReviews): ProductReview[] {
-  return [...readUserReviewsSafe(), ...base];
+  return [...pendingReviews, ...base];
 }
 
 export function reviewsForProduct(slug: string, base?: ProductReview[]): ProductReview[] {
