@@ -13,34 +13,11 @@ import { submitLead } from "@/lib/server/lead-action";
 import { toast } from "sonner";
 import { useState } from "react";
 import { brand } from "@/lib/brand";
+import type { SiteContacts } from "@/lib/server/content";
 
-const messengers = [
-  { href: brand.maxHref, label: "MAX", className: "bg-[#471AFF] text-white hover:bg-[#3a14d6]" },
-] as const;
+const deskIcons = [Store, Calculator, Building2];
 
-const desks = [
-  {
-    icon: Store,
-    title: "Розница и мелкий опт",
-    phone: "+7 988 577-73-04",
-    phoneHref: "tel:+79885777304",
-    email: "zevs-magazine@yandex.ru",
-  },
-  {
-    icon: Calculator,
-    title: "Закупки и логистика",
-    phone: "+7 988 577-73-94",
-    phoneHref: "tel:+79885777394",
-    email: "zevs-zakup@yandex.ru",
-  },
-  {
-    icon: Building2,
-    title: "Бухгалтерия",
-    email: "zevs-glavbuh@yandex.ru",
-  },
-] as const;
-
-export default function ContactsPage() {
+export function ContactsView({ contacts }: { contacts: SiteContacts }) {
   const [sent, setSent] = useState(false);
   const [pending, setPending] = useState(false);
 
@@ -96,38 +73,40 @@ export default function ContactsPage() {
                 icon={<MapPin className="size-4" />}
                 label="Производство и офис"
               >
-                <p className="font-heading text-ink">{brand.address}</p>
+                <p className="font-heading text-ink">{contacts.address}</p>
                 <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-navy/5 px-2.5 py-1 text-xs text-navy">
                   <Clock className="size-3.5" />
-                  Пн–Пт 8:00–17:00
+                  {contacts.hours}
                 </p>
               </ContactCard>
             </StaggerItem>
 
             <StaggerItem>
               <ContactCard icon={<Phone className="size-4" />} label="Отдел продаж">
-                <a className="block font-heading text-ink transition hover:text-orange" href={brand.phoneHref}>
-                  {brand.phone}
+                <a className="block font-heading text-ink transition hover:text-orange" href={contacts.phoneHref}>
+                  {contacts.phone}
                 </a>
                 <a
                   className="mt-1 block text-sm text-steel underline-offset-4 hover:text-ink hover:underline"
-                  href={`mailto:${brand.email}`}
+                  href={`mailto:${contacts.email}`}
                 >
-                  {brand.email}
+                  {contacts.email}
                 </a>
               </ContactCard>
             </StaggerItem>
 
             <StaggerItem>
               <div className="divide-y rounded-2xl border bg-card">
-                {desks.map((desk) => (
+                {contacts.desks.map((desk, i) => {
+                  const Icon = deskIcons[i % deskIcons.length];
+                  return (
                   <div key={desk.title} className="flex items-start gap-3 p-4 transition hover:bg-paper/80">
                     <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-navy text-orange">
-                      <desk.icon className="size-4" />
+                      <Icon className="size-4" />
                     </span>
                     <div className="min-w-0">
                       <p className="text-xs uppercase tracking-[0.16em] text-steel">{desk.title}</p>
-                      {"phone" in desk ? (
+                      {desk.phone ? (
                         <a className="mt-1 block text-ink hover:text-orange" href={desk.phoneHref}>
                           {desk.phone}
                         </a>
@@ -140,7 +119,8 @@ export default function ContactsPage() {
                       </a>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </StaggerItem>
           </Stagger>
@@ -157,7 +137,7 @@ export default function ContactsPage() {
                 src="https://yandex.ru/map-widget/v1/?ll=38.935%2C47.236&z=16&text=%D0%A2%D0%B0%D0%B3%D0%B0%D0%BD%D1%80%D0%BE%D0%B3%20%D0%9F%D0%BE%D0%BB%D1%8F%D0%BA%D0%BE%D0%B2%D1%81%D0%BA%D0%BE%D0%B5%20%D1%88%D0%BE%D1%81%D1%81%D0%B5%2017"
               />
               <div className="pointer-events-none absolute left-3 top-3 rounded-full bg-navy/90 px-3 py-1 text-xs text-paper">
-                {brand.address}
+                {contacts.address}
               </div>
             </div>
           </Reveal>
@@ -206,14 +186,14 @@ export default function ContactsPage() {
                     <Checkbox name="consent" required defaultChecked />
                     Согласен с политикой обработки персональных данных
                   </label>
-                  <MessengerRow />
+                  <MessengerRow href={contacts.maxHref} />
                   <input name="website" tabIndex={-1} autoComplete="off" aria-hidden className="hidden" />
                   <Button type="submit" className="btn-press-in h-11" disabled={pending}>
                     Отправить
                   </Button>
                 </form>
               )}
-              {sent ? <div className="mt-3"><MessengerRow /></div> : null}
+              {sent ? <div className="mt-3"><MessengerRow href={contacts.maxHref} /></div> : null}
               <InquiryDialog
                 type="price"
                 trigger={
@@ -255,7 +235,10 @@ function ContactCard({
   );
 }
 
-function MessengerRow() {
+function MessengerRow({ href }: { href: string }) {
+  const messengers = [
+    { href, label: "MAX", className: "bg-[#471AFF] text-white hover:bg-[#3a14d6]" },
+  ] as const;
   return (
     <div className="grid gap-2">
       {messengers.map((item) => (

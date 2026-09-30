@@ -9,8 +9,9 @@ import { InquiryDialog } from "@/components/inquiry-dialog";
 import { useStore } from "@/lib/store";
 import { formatPrice } from "@/lib/format";
 import { cartWeightKg, quoteCarriers } from "@/lib/delivery";
+import type { DeliveryContent } from "@/lib/server/content";
 
-export default function DeliveryPage() {
+export function DeliveryView({ intro, terms }: DeliveryContent) {
   const { orderable, catalog } = useStore();
   const cartWeight = cartWeightKg(orderable, catalog);
 
@@ -27,11 +28,11 @@ export default function DeliveryPage() {
     <div className="mx-auto max-w-5xl px-4 py-10">
       <p className="text-xs uppercase tracking-[0.22em] text-orange">Логистика</p>
       <h1 className="mt-2 font-heading text-4xl">Сравнить стоимость доставки</h1>
-      <p className="mt-3 max-w-2xl text-steel">
-        Мок калькуляторов СДЭК, Деловых линий, ПЭК и «Энергии» плюс самовывоз
-        с площадки в Таганроге. Те же котировки подставляются на оформлении
-        заказа.
-      </p>
+      {intro.map((p) => (
+        <p key={p} className="mt-3 max-w-2xl text-steel">
+          {p}
+        </p>
+      ))}
 
       <form
         className="mt-8 grid gap-3 rounded-2xl border bg-card p-5 sm:grid-cols-3"
@@ -97,11 +98,7 @@ export default function DeliveryPage() {
       )}
 
       <div className="mt-10 grid gap-4 md:grid-cols-3">
-        {[
-          ["Виджеты ТК", "Три iframe на одной странице. Честно, но тяжёлый UX и три разных UI."],
-          ["Сравнение в нашей таблице", "Как здесь: один запрос, сортировка, выбор ТК в заказе. В бою — живые API."],
-          ["Агрегатор", "ApiShip / CDEK + ДЛ через одного подрядчика. Меньше интеграций, комиссия."],
-        ].map(([t, d]) => (
+        {terms.map(({ title: t, text: d }) => (
           <div key={t} className="rounded-2xl border p-5">
             <h2 className="font-heading">{t}</h2>
             <p className="mt-2 text-sm text-steel">{d}</p>
