@@ -30,6 +30,8 @@ export function toProfile(d: Doc): UserProfile {
     bankName: str(d.bankName),
     bankAccount: str(d.bankAccount),
     bik: str(d.bik),
+    // "password" на клиенте = аккаунт с сессией Payload (в т.ч. вошедший через Яндекс ID): store берёт его
+    // из /api/customers/me, выходит и сохраняет профиль через сервер. Способ входа из БД здесь не нужен.
     authProvider: "password",
   };
 }
