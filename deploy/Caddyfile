@@ -1,0 +1,51 @@
+# TLS от Let's Encrypt выпускает и продлевает Caddy сам; http → https — автоматически.
+{
+	email {$ACME_EMAIL}
+	servers {
+		timeouts {
+			read_header 30s
+			read_body 10m
+			idle 5m
+		}
+	}
+}
+
+www.{$SITE_DOMAIN} {
+	redir https://{$SITE_DOMAIN}{uri} permanent
+}
+
+{$SITE_DOMAIN} {
+	encode zstd gzip
+
+	# 1С присылает файлы обмена частями (ONEC_EXCHANGE_FILE_LIMIT, по умолчанию 10 МБ), медиа в админке — до 25 МБ
+	request_body {
+		max_size 100MB
+	}
+
+	header Strict-Transport-Security "max-age=31536000"
+
+	# Smoke IP клиента (docs/DEPLOY.md §11): временно раскомментировать, `caddy reload`, проверить remote_ip в `dc logs caddy`
+	# log {
+	# 	output stdout
+	# }
+
+	# Необязательно: закрыть /admin паролем на время запуска (хеш: dc exec caddy caddy hash-password)
+	# basic_auth /admin* {
+	# 	admin <хеш>
+	# }
+
+	# /_next/static Next отдаёт сам с immutable; картинки/видео из public и медиа — кэш на неделю
+	@assets path *.png *.jpg *.jpeg *.webp *.avif *.svg *.ico *.mp4 *.woff2
+	header @assets >Cache-Control "public, max-age=604800"
+
+	reverse_proxy app:3000 {
+		# ARCHITECTURE, Решение 6: rate limit берёт IP из X-Real-IP — перезаписываем, клиентское значение не проходит.
+		# X-Forwarded-For Caddy формирует сам и не доверяет входящему (trusted_proxies не заданы).
+		header_up X-Real-IP {remote_host}
+		transport http {
+			dial_timeout 5s
+			# шаг импорта 1С (mode=import) может идти минуты
+			response_header_timeout 300s
+		}
+	}
+}
