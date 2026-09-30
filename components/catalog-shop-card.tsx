@@ -15,6 +15,7 @@ import { toManagerChatProduct } from "@/lib/manager-chat";
 import { categories } from "@/lib/data/catalog";
 import { defaultVolumeQty } from "@/lib/volume-quote";
 import type { Product } from "@/lib/types";
+import { MediaImage } from "@/components/media-image";
 
 export function CatalogShopCard({ product }: { product: Product }) {
   const [qty, setQty] = useState(() => defaultVolumeQty(product));
@@ -24,8 +25,7 @@ export function CatalogShopCard({ product }: { product: Product }) {
     <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#12141c] p-2.5">
       <div className="relative aspect-[5/4] overflow-hidden rounded-xl bg-white/5">
         <Link href={`/product/${product.slug}`} className="block size-full">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <MediaImage
             src={product.image}
             alt={product.name}
             className="size-full object-cover object-center"

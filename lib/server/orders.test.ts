@@ -152,6 +152,14 @@ describe("buildOrder: деньги считает сервер", () => {
     expect(noKpp.guest?.kpp).toBeUndefined();
   });
 
+  it("ручной адрес без города — город не подставляется (QA-D1)", () => {
+    for (const city of [undefined, "", "   "]) {
+      const d = built({ delivery: { carrier: "cdek", city, address: "Таганрог, ул. Клиентская, 5" } }).data.delivery;
+      expect(d?.city).toBeUndefined();
+      expect(d?.address).toBe("Таганрог, ул. Клиентская, 5");
+    }
+  });
+
   it("гость — без customer, контакты в guest; клиент — customer из сессии", () => {
     const guest = built();
     expect(guest.data).not.toHaveProperty("customer");

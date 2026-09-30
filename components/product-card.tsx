@@ -14,6 +14,7 @@ import {
   ProductCardHoverActions,
   ProductHoverDetails,
 } from "@/components/product-card-hover-actions";
+import { MediaImage } from "@/components/media-image";
 
 function updateHoverSide(el: HTMLElement | null) {
   if (!el) return;
@@ -50,8 +51,7 @@ export function ProductCard({
       <div className="product-card__body flex min-h-0 flex-col overflow-visible rounded-2xl border border-border bg-card shadow-sm transition-[border-radius,border-color,box-shadow] duration-300">
         <div className="product-card__media relative aspect-square w-full shrink-0 overflow-hidden rounded-t-2xl bg-muted">
           <Link href={href} className="block h-full w-full">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <MediaImage
               src={product.image}
               alt={product.name}
               className="absolute inset-0 size-full object-cover object-center transition duration-500 group-hover/card:scale-105"

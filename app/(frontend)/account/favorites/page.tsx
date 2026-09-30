@@ -10,6 +10,7 @@ import { ProductVolumePrice } from "@/components/product-volume-price";
 import { useStore } from "@/lib/store";
 import { defaultVolumeQty } from "@/lib/volume-quote";
 import type { Product } from "@/lib/types";
+import { MediaImage } from "@/components/media-image";
 
 export default function AccountFavoritesPage() {
   const { favoriteIds, toggleFavorite, getProduct } = useStore();
@@ -57,8 +58,7 @@ function FavoriteRow({
   return (
     <div className="flex flex-wrap gap-4 rounded-2xl border bg-card p-4">
       <Link href={`/product/${product.slug}`} className="size-20 shrink-0 overflow-hidden rounded-xl bg-muted">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={product.image} alt="" className="size-full object-cover" />
+        <MediaImage src={product.image} alt="" className="size-full object-cover" />
       </Link>
       <div className="min-w-0 flex-1">
         <p className="text-xs uppercase tracking-[0.16em] text-steel">{product.sku}</p>

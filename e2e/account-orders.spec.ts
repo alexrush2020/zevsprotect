@@ -1,5 +1,5 @@
 import { expect, type Browser, type Page } from "@playwright/test";
-import { test, freshPage, addProductToCart, cleanup, emailOf, marker, orderByNumber } from "./helpers";
+import { test, freshPage, addProductToCart, cleanup, emailOf, marker, orderByNumber, sql } from "./helpers";
 
 /**
  * Сценарий 3 (КП 10.1, 10.3): заказ клиента из корзины → виден в ЛК, карточка заказа, «Повторить заказ»
@@ -37,12 +37,20 @@ test("клиент оформляет заказ из корзины, заказ
   expect(order.payment_method).toBe("invoice_auto");
   expect(order.total).toBe(28833);
   expect(items.map((i) => [i.title, i.qty, i.price])).toEqual([["Перчатки «Атлант»", 1050, 27.46]]);
+  // QA-D1: у ручного адреса поля города нет — фиктивный город по умолчанию в заказ не пишется
+  const [delivery] = await sql<{ city: string | null; address: string }>(
+    "select delivery_city as city, delivery_address as address from orders where number = $1",
+    [number],
+  );
+  expect(delivery).toEqual({ city: null, address: "Таганрог, ул. Клиентская, 5" });
 
   await page.goto("/account/orders");
   const card = page.locator("div.rounded-2xl").filter({ has: page.getByRole("link", { name: number }) });
   await expect(card).toBeVisible();
   await expect(card.getByText(/28\s833\s₽/)).toBeVisible();
   await expect(card.getByText("Перчатки «Атлант» × 1050 пар")).toBeVisible();
+  await expect(card.getByText("СДЭК", { exact: true })).toBeVisible(); // без «· город»
+  await expect(card.getByText(/Ростов-на-Дону/)).toHaveCount(0);
 
   await card.getByRole("link", { name: number }).click();
   await page.waitForURL(new RegExp(`/order/${number}$`));

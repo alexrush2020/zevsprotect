@@ -4,6 +4,7 @@ import { formatDate } from "@/lib/format";
 import { brand } from "@/lib/brand";
 
 import { pageMeta } from "@/lib/seo-jsonld";
+import { MediaImage } from "@/components/media-image";
 
 export const metadata = pageMeta("Статьи", `Материалы ${brand.markRu} для закупщиков: подбор, покрытия, производство.`, "/blog");
 
@@ -23,8 +24,7 @@ export default async function BlogPage() {
             className="flex h-full flex-col overflow-hidden rounded-2xl border bg-card"
           >
             <div className="aspect-[4/3] bg-muted">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={a.image} alt="" className="h-full w-full object-contain object-center" />
+              <MediaImage src={a.image} alt="" className="h-full w-full object-contain object-center" />
             </div>
               <div className="p-5">
                 <p className="text-xs text-steel">

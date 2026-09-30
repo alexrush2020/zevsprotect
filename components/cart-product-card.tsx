@@ -13,6 +13,7 @@ import { formatVolumeQty, quoteVolume, snapVolumeQty } from "@/lib/volume-quote"
 import { useStore } from "@/lib/store";
 import type { CartItem, Product } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { MediaImage } from "@/components/media-image";
 
 const cartChipClass = "rounded-md border px-2 py-1 text-xs leading-none";
 
@@ -341,8 +342,7 @@ export function CartProductCard({
   return (
     <div className="rounded-2xl border bg-card p-4">
       <div className="flex gap-4">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <MediaImage
           src={product.image}
           alt=""
           className="size-24 shrink-0 rounded-xl object-cover"

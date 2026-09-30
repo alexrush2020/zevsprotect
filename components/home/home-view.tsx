@@ -21,6 +21,7 @@ import { PassageBoard } from "@/components/home/passage-board";
 import type { HomeContent } from "@/lib/server/content";
 import type { CatalogCategory } from "@/lib/server/map";
 import type { Article, Product } from "@/lib/types";
+import { MediaImage } from "@/components/media-image";
 
 export function HomeView({
   content,
@@ -245,8 +246,7 @@ export function HomeView({
                 className="group flex h-full flex-col overflow-hidden rounded-2xl border bg-card"
               >
                 <div className="aspect-[4/3] bg-muted">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <MediaImage
                     src={a.image}
                     alt=""
                     className="h-full w-full object-contain object-center"

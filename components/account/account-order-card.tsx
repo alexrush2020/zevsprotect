@@ -60,7 +60,8 @@ export function AccountOrderCard({ order }: { order: Order | ViewOrder }) {
         {formatPrice(order.total)}
       </p>
       <p className="text-xs text-steel">
-        {order.carrierName} · {order.city}
+        {order.carrierName}
+        {order.city ? ` · ${order.city}` : ""}
       </p>
       <div className="mt-3">
         <StatusTimeline status={order.status} />
