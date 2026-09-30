@@ -140,11 +140,16 @@ describe("buildOrder: деньги считает сервер", () => {
     for (const over of bad) expect(buildOrder(input(over), catalog, { now }).ok, JSON.stringify(over)).toBe(false);
   });
 
-  it("самовывоз — адрес склада; ТК — «терминал» с названием из справочника; КПП — в комментарий", () => {
+  it("самовывоз — адрес склада; ТК — «терминал» с названием из справочника; КПП — в guest.kpp, не в комментарий", () => {
     expect(built({ delivery: { carrier: "pickup", address: "" } }).data.delivery).toMatchObject({ carrier: "pickup", city: "Таганрог", address: "Таганрог, Поляковское шоссе, 17" });
     expect(built({ delivery: { carrier: "dl", city: "Казань", address: "Ленина, 1" } }).data.delivery).toMatchObject({ carrier: "terminal", carrierName: "Деловые линии" });
     expect(built({ delivery: { carrier: "terminal", city: "Казань", address: "Ленина, 1" } }).data.delivery).toMatchObject({ carrier: "terminal", carrierName: "Терминал ТК" });
-    expect(built({ comment: "Срочно", contact: { ...input().contact, kpp: "770701001" } }).data.comment).toBe("Срочно\nКПП: 770701001");
+    const withKpp = built({ comment: "Срочно", contact: { ...input().contact, kpp: "770701001" } }).data;
+    expect(withKpp.comment).toBe("Срочно");
+    expect(withKpp.guest?.kpp).toBe("770701001");
+    const noKpp = built().data;
+    expect(noKpp).not.toHaveProperty("comment");
+    expect(noKpp.guest?.kpp).toBeUndefined();
   });
 
   it("гость — без customer, контакты в guest; клиент — customer из сессии", () => {
@@ -173,7 +178,8 @@ function deps(over: Partial<OrderDeps> = {}) {
 describe("createOrderReceiver", () => {
   it("создаёт заказ, письма клиенту и менеджеру с серверными суммами", async () => {
     const d = deps();
-    const r = await createOrderReceiver()(d, { input: input({ items: [{ productId: "tkan", size: "L", qty: 50, price: 1 }] }), ip: "1.1.1.1", now });
+    const contact = { ...input().contact, kpp: "770701001" };
+    const r = await createOrderReceiver()(d, { input: input({ contact, items: [{ productId: "tkan", size: "L", qty: 50, price: 1 }] }), ip: "1.1.1.1", now });
     expect(r).toEqual({ ok: true, number: "ZP-2026-0001" });
     expect(d.create).toHaveBeenCalledOnce();
     const calls = vi.mocked(d.sendEmail).mock.calls;
@@ -181,6 +187,7 @@ describe("createOrderReceiver", () => {
     const [client] = calls[0];
     expect(client.text).toContain("Итого: 5");
     expect(client.text).toContain("Ткань · L — 50 × 100 ₽");
+    expect(calls[1][0].text).toContain("КПП: 770701001"); // КПП больше не в комментарии — менеджер видит его в контактах
   });
 
   it("повтор той же формы (двойной клик, повторный запрос) не создаёт дубль", async () => {
@@ -304,6 +311,13 @@ describe("toViewOrder: страницы берут снапшот, а не те�
     expect(v.lines).toEqual([{ key: "a", title: "Ткань (старое имя)", sku: "ZP-T", size: "L", qty: 50, unit: "пара", unitPrice: 77.77, total: 3888.5 }]);
     expect(v).toMatchObject({ id: "ZP-2026-0007", total: 3888.5, guest: true, paymentStatus: "pending", items: [{ productId: "tkan", size: "L", qty: 50 }] });
     expect(v).not.toHaveProperty("deliveryCost"); // доставку ещё не рассчитал менеджер
+    expect(v.profile.kpp).toBe("");
+  });
+
+  it("КПП для счёта: из guest.kpp заказа, иначе из профиля клиента", () => {
+    const view = (over: object) => toViewOrder({ ...trackDoc, ...over } as OrderDoc);
+    expect(view({ guest: { ...trackDoc.guest, kpp: "770701001" }, customer: { id: 5, kpp: "616401001" } }).profile.kpp).toBe("770701001");
+    expect(view({ customer: { id: 5, kpp: "616401001" } }).profile.kpp).toBe("616401001");
   });
 });
 

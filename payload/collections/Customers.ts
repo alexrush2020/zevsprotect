@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 import { docTitle } from '../admin-ui'
 import { hasRole, isAdmin } from '../access'
 import { validateInn } from '../validators'
+import { enqueueB24Sync } from '../../lib/b24/sync'
 import { registrationMail, resetPasswordMail } from '../../lib/mail/templates'
 
 const SESSION_SECONDS = 3 * 24 * 60 * 60 // сессия «2–3 дня»
@@ -27,6 +28,7 @@ export const Customers: CollectionConfig = {
     afterChange: [
       async ({ doc, operation, req }) => {
         if (operation !== 'create') return
+        await enqueueB24Sync(req.payload, 'company', doc.id) // компания/контакт в Б24 (I-B24-COMP); не бросает
         const m = registrationMail({ name: doc.name })
         try {
           await req.payload.sendEmail({ to: doc.email, subject: m.subject, text: m.text, html: m.html })
@@ -103,14 +105,15 @@ export const Customers: CollectionConfig = {
         { label: 'Яндекс ID', value: 'yandex' },
       ],
     },
-    { name: 'yandexId', type: 'text', label: 'Yandex ID', index: true, unique: true, access: { create: isAdmin, update: isAdmin } },
+    // служебные ID и диагностика обмена — не клиенту (как syncField в Orders)
+    { name: 'yandexId', type: 'text', label: 'Yandex ID', index: true, unique: true, access: { read: staffRead, create: isAdmin, update: isAdmin } },
     { name: 'favorites', type: 'relationship', relationTo: 'products', hasMany: true, label: 'Избранное' },
     { name: 'consentPdAt', type: 'date', label: 'Согласие на обработку ПДн', access: { create: isAdmin, update: isAdmin }, admin: { readOnly: true } },
     ...['b24CompanyId', 'b24ContactId', 'onecId', 'syncError'].map((name) => ({
       name,
       type: 'text' as const,
       label: name,
-      access: { create: isAdmin, update: isAdmin },
+      access: { read: staffRead, create: isAdmin, update: isAdmin },
       admin: { position: 'sidebar' as const, readOnly: true },
     })),
   ],

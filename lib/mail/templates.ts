@@ -29,7 +29,7 @@ export function orderManagerMail(o: {
   number: string
   items: OrderMailItem[]
   total: number
-  contact: { name: string; phone: string; email: string; company?: string | null; inn?: string | null }
+  contact: { name: string; phone: string; email: string; company?: string | null; inn?: string | null; kpp?: string | null }
   customer: boolean
   delivery: string
   payment: string
@@ -42,6 +42,7 @@ export function orderManagerMail(o: {
     `Контакт: ${o.contact.name}, ${o.contact.phone}, ${o.contact.email}`,
     ...(o.contact.company ? [`Организация: ${o.contact.company}`] : []),
     ...(o.contact.inn ? [`ИНН: ${o.contact.inn}`] : []),
+    ...(o.contact.kpp ? [`КПП: ${o.contact.kpp}`] : []),
     `Доставка: ${o.delivery}`,
     `Оплата: ${o.payment}`,
     ...(o.comment ? [`Комментарий: ${o.comment}`] : []),

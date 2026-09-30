@@ -128,7 +128,7 @@ export function buildOrder(input: unknown, catalog: Product[], ctx: { customerId
     data: {
       ...(ctx.customerId ? { customer: ctx.customerId } : {}),
       // контакты по заказу — и для гостя, и для клиента (снапшот покупателя для счёта)
-      guest: { name, phone, email, company: company || undefined, inn: inn || undefined },
+      guest: { name, phone, email, company: company || undefined, inn: inn || undefined, kpp: kpp || undefined },
       items: lines.map((l) => ({
         product: Number(l.product!.id),
         sku: l.product!.sku,
@@ -139,8 +139,7 @@ export function buildOrder(input: unknown, catalog: Product[], ctx: { customerId
         qty: l.qty,
       })),
       delivery: { city: city || undefined, carrier: carrier.carrier, carrierName: carrier.name, address },
-      // ponytail: у orders.guest нет поля КПП — пишем в комментарий; поле guest.kpp — вместе с миграцией
-      ...(comment || kpp ? { comment: [comment, kpp && `КПП: ${kpp}`].filter(Boolean).join("\n") } : {}),
+      ...(comment ? { comment } : {}),
       paymentMethod: payment,
       status: "accepted",
       consentPdAt: ctx.now.toISOString(),
@@ -263,7 +262,7 @@ async function sendOrderMails(deps: OrderDeps, number: string, total: number, da
           number,
           items,
           total,
-          contact: { name: guest.name!, phone: guest.phone!, email: guest.email!, company: guest.company, inn: guest.inn },
+          contact: { name: guest.name!, phone: guest.phone!, email: guest.email!, company: guest.company, inn: guest.inn, kpp: guest.kpp },
           customer: !!data.customer,
           delivery: [data.delivery?.carrierName, data.delivery?.address].filter(Boolean).join(", "),
           payment: PAYMENT_LABEL[data.paymentMethod],
@@ -356,7 +355,7 @@ export function toViewOrder(doc: OrderDoc): ViewOrder {
       email: g.email || customer?.email || "",
       company: g.company || customer?.company || "",
       inn: g.inn || customer?.inn || "",
-      kpp: customer?.kpp ?? "",
+      kpp: g.kpp || customer?.kpp || "",
       address: doc.delivery?.address ?? "",
     },
     comment: doc.comment ?? "",

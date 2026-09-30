@@ -60,21 +60,86 @@ export function orderableItems(lines: PricedCartLine[]): CartItem[] {
     .map(({ productId, size, coating, qty }) => ({ productId, size, qty, ...(coating ? { coating } : {}) }));
 }
 
+/** Строка снапшота заказа: позиция + название и цена за единицу на момент оформления (у демо-заказов их нет). */
+export type RepeatLine = CartItem & { title?: string; price?: number };
+export type RepeatChange = { title: string; was: number; now: number };
+export type RepeatResult = {
+  /** Позиции в корзину; цены по ним пересчитает priceCart — те же, что в priceChanges.now. */
+  items: CartItem[];
+  /** Названия строк снапшота, которые в корзину не попали. */
+  unavailable: string[];
+  /** Цена за единицу в снапшоте ≠ текущей (с учётом скидки по объёму повторяемого состава), по одной на товар и цену. */
+  priceChanges: RepeatChange[];
+  /** qty поднят до минимума/кратности упаковки текущего каталога. */
+  qtyChanges: RepeatChange[];
+  /** Товар есть, но stock меньше суммарного qty — позиция остаётся (под заказ), как в корзине и при оформлении. */
+  backorder: string[];
+};
+
 /**
  * «Повторить заказ»: строки снапшота заказа → позиции корзины по текущему каталогу (цены — не из снапшота,
  * корзина пересчитает их priceCart, как и сервер при оформлении). Пропускаются: модели нет в каталоге,
- * нет цены (уточнит менеджер), размер или покрытие больше не выпускаются. skipped — число таких строк снапшота.
+ * нет цены (уточнит менеджер), размер или покрытие больше не выпускаются. Отчёт — что изменилось против снапшота.
  */
-export function repeatOrderItems(items: CartItem[], catalog: Product[]): { items: CartItem[]; skipped: number } {
-  const available = priceCart(normalizeCart(items, catalog), catalog).lines.filter((l) => {
+export function repeatOrderItems(snapshot: RepeatLine[], catalog: Product[]): RepeatResult {
+  const titleOf = (s: RepeatLine) =>
+    [s.title || catalog.find((p) => p.slug === s.productId)?.name || s.productId || "Позиция", s.size, s.coating]
+      .filter(Boolean)
+      .join(" · ");
+  const lineTitle = (l: CartItem) => titleOf(snapshot.find((x) => cartLineKey(x) === cartLineKey(l)) ?? l);
+  const kept = priceCart(normalizeCart(snapshot, catalog), catalog).lines.filter((l) => {
     if (!l.available) return false;
     const p = l.product!;
     const coatings = productCoatingOptions(p);
     return (!p.sizes?.length || p.sizes.includes(l.size)) && (!l.coating || !coatings.length || coatings.includes(l.coating));
   });
-  const kept = new Set(available.map(cartLineKey));
-  return { items: orderableItems(available), skipped: items.filter((i) => !kept.has(cartLineKey(i))).length };
+  const items = orderableItems(kept);
+  const keys = new Set(items.map(cartLineKey));
+  // скидка по объёму — от состава, который реально уйдёт в корзину (без выпавших размеров)
+  const lines = priceCart(items, catalog).lines;
+
+  const wasQty = new Map<string, number>();
+  for (const s of snapshot) wasQty.set(cartLineKey(s), (wasQty.get(cartLineKey(s)) ?? 0) + Number(s.qty));
+  const productQty = new Map<string, number>();
+  for (const l of lines) productQty.set(l.productId, (productQty.get(l.productId) ?? 0) + l.qty);
+
+  const priceChanges = new Map<string, RepeatChange>();
+  const qtyChanges: RepeatChange[] = [];
+  const backorder = new Set<string>();
+  for (const l of lines) {
+    const s = snapshot.find((x) => cartLineKey(x) === cartLineKey(l));
+    const name = s?.title || l.product!.name;
+    if (typeof s?.price === "number" && Math.abs(s.price - l.unitPrice) >= 0.005)
+      priceChanges.set(`${name}|${s.price}|${l.unitPrice}`, { title: name, was: s.price, now: l.unitPrice });
+    const was = wasQty.get(cartLineKey(l)) ?? l.qty;
+    if (was !== l.qty) qtyChanges.push({ title: lineTitle(l), was, now: l.qty });
+    if (l.product!.stock < productQty.get(l.productId)!) backorder.add(l.product!.name);
+  }
+  return {
+    items,
+    // по строке снапшота, без схлопывания: у удалённых товаров productId "" и ключи совпадают, а названия разные
+    unavailable: snapshot.filter((s) => !keys.has(cartLineKey(s))).map(titleOf),
+    priceChanges: [...priceChanges.values()],
+    qtyChanges,
+    backorder: [...backorder],
+  };
 }
+
+/** «1 позиция недоступна», «3 позиции недоступны», «5 позиций недоступно». */
+export function unavailableLabel(n: number) {
+  const d = n % 10;
+  const teen = n % 100 >= 11 && n % 100 <= 14;
+  if (d === 1 && !teen) return `${n} позиция недоступна`;
+  if (d >= 2 && d <= 4 && !teen) return `${n} позиции недоступны`;
+  return `${n} позиций недоступно`;
+}
+
+/** Строка тоста о недоступных позициях; пусто — нечего сообщать. */
+export const unavailableNote = (list: string[]) => (list.length ? `${unavailableLabel(list.length)}: ${list.join(", ")}` : "");
+
+/** Тост, когда повторять нечего. */
+export const repeatFailText = (list: string[]) =>
+  [unavailableNote(list) || "Повторить заказ не получилось", "Модели сняты с продажи или цену уточнит менеджер."].join(". ");
 
 /**
  * Корзина из localStorage: мусор отбрасывается, одинаковые строки сливаются, qty приводится к упаковке.

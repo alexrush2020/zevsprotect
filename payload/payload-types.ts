@@ -447,6 +447,7 @@ export interface Order {
     email?: string | null;
     company?: string | null;
     inn?: string | null;
+    kpp?: string | null;
   };
   /**
    * Названия и цены зафиксированы на момент оформления и не меняются вслед за каталогом.
@@ -1091,6 +1092,7 @@ export interface OrdersSelect<T extends boolean = true> {
         email?: T;
         company?: T;
         inn?: T;
+        kpp?: T;
       };
   items?:
     | T

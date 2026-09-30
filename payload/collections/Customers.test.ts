@@ -26,6 +26,17 @@ describe('Customers/Orders access', () => {
     }
   })
 
+  it('служебные ID CRM/1С/Яндекса и syncError читает только персонал', () => {
+    for (const name of ['b24CompanyId', 'b24ContactId', 'onecId', 'syncError', 'yandexId']) {
+      const f = Customers.fields.find((x) => 'name' in x && x.name === name) as { access: Record<string, (a: never) => boolean> }
+      expect(f.access.read(as(customer()))).toBe(false)
+      expect(f.access.read(as(null))).toBe(false)
+      expect(f.access.read(as(staff('content')))).toBe(false)
+      expect(f.access.read(as(staff('manager')))).toBe(true)
+      expect(f.access.update(as(customer()))).toBe(false)
+    }
+  })
+
   it('клиент не удаляет профили; регистрация открыта', () => {
     expect((Customers.access!.delete as (a: never) => boolean)(as(customer()))).toBe(false)
     expect((Customers.access!.create as () => boolean)()).toBe(true)
