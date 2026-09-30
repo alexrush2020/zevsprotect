@@ -31,7 +31,7 @@ function setup(extraEnv: Record<string, string> = {}) {
     cookie = `${name}=${value}`
     return r
   }
-  return { dir, f, call, login, revalidate }
+  return { dir, f, env, call, login, revalidate, cookie: async () => cookie }
 }
 
 const fixture = (name: string) => readFileSync(path.join(__dirname, '__fixtures__', name))
@@ -156,5 +156,32 @@ describe('init → file → import', () => {
     expect((await s.call('type=sale&mode=query')).text).toMatch(/^failure/)
     expect((await s.call('type=catalog&mode=zzz')).text).toMatch(/^failure/)
     expect((await s.call('type=catalog&mode=complete')).text).toBe('success')
+  })
+
+  it('XML больше ONEC_EXCHANGE_XML_LIMIT — failure в file; картинка того же размера проходит', async () => {
+    const s = setup({ ONEC_EXCHANGE_XML_LIMIT: '100' })
+    await s.login()
+    await s.call('type=catalog&mode=init')
+    const big = 'x'.repeat(101)
+    expect((await s.call('type=catalog&mode=file&filename=import.xml', { body: big })).text).toMatch(/^failure\n.*ONEC_EXCHANGE_XML_LIMIT/)
+    expect((await s.call('type=catalog&mode=import&filename=import.xml')).text).toMatch(/не получен/)
+    expect((await s.call('type=catalog&mode=file&filename=pic.jpg', { body: big })).text).toBe('success')
+  })
+
+  it('XML больше лимита на import (лимит уменьшили между file и import) — failure', async () => {
+    const s = setup()
+    await s.login()
+    await s.call('type=catalog&mode=init')
+    await s.call('type=catalog&mode=file&filename=import.xml', { body: fixture('import.xml') })
+    const res = await handleExchange(
+      {
+        url: 'http://site/api/1c-exchange?type=catalog&mode=import&filename=import.xml',
+        headers: new Headers({ cookie: (await s.cookie()) }),
+        body: async () => undefined,
+      },
+      { payload: s.f.payload, env: { ...s.env, ONEC_EXCHANGE_XML_LIMIT: '100' } as unknown as NodeJS.ProcessEnv },
+    )
+    expect(await res.text()).toMatch(/^failure\nФайл import\.xml больше 100 байт/)
+    expect(s.f.writes).toEqual([])
   })
 })

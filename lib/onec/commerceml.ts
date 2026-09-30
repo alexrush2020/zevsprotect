@@ -36,7 +36,14 @@ export function parseNumber(s: string | undefined): number {
   return /^-?\d+(\.\d+)?$/.test(t) ? Number(t) : NaN
 }
 
-function parseGroups(node: XmlNode | undefined, parentId: string | undefined, out: Group[], errors: string[]) {
+const MAX_GROUP_DEPTH = 20
+
+function parseGroups(node: XmlNode | undefined, parentId: string | undefined, out: Group[], errors: string[], depth = 0) {
+  if (!node) return
+  if (depth >= MAX_GROUP_DEPTH) {
+    errors.push(`Вложенность групп глубже ${MAX_GROUP_DEPTH} (под группой ${parentId ?? '?'})`)
+    return
+  }
   for (const g of kids(node, 'Группа')) {
     const id = text(g, 'Ид')
     const title = text(g, 'Наименование')
@@ -45,7 +52,7 @@ function parseGroups(node: XmlNode | undefined, parentId: string | undefined, ou
       continue
     }
     out.push({ id, title, parentId })
-    parseGroups(child(g, 'Группы'), id, out, errors)
+    parseGroups(child(g, 'Группы'), id, out, errors, depth + 1)
   }
 }
 
@@ -108,7 +115,8 @@ function parseCatalog(root: XmlNode, catalog: XmlNode, errors: string[], warning
       sku: text(t, 'Артикул'),
       title,
       groupIds: kids(child(t, 'Группы'), 'Ид').map((g) => g.text.trim()).filter(Boolean),
-      description: child(t, 'Описание') ? (text(t, 'Описание') ?? '') : undefined,
+      // пустое <Описание/> не стирает описание сайта
+      description: text(t, 'Описание'),
       images: kids(t, 'Картинка').map((p) => p.text.trim()).filter(Boolean),
       props: propValues,
       requisites,

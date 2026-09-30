@@ -59,7 +59,11 @@ function mapProps(label: string, props: Prop[], requisites: Prop[], warnings: st
     if (field === 'knitClass' && validateKnitClass(p.value) !== true) {
       warnings.push(`${label}: класс вязки «${p.value}» вне правила сайта — записан в характеристики`)
       specs.push({ key: p.name, value: p.value })
-    } else if (field) data[field] = LIST_FIELDS.has(field) ? p.value.split(/[,;]/).map((s) => s.trim()).filter(Boolean) : p.value
+    } else if (field) {
+      const value = LIST_FIELDS.has(field) ? p.value.split(/[,;]/).map((s) => s.trim()).filter(Boolean) : p.value.trim()
+      // пустое значение из 1С не затирает заполненное на сайте
+      if (value.length) data[field] = value
+    }
     else if (toSpecs) specs.push({ key: p.name, value: p.value })
   }
   props.forEach((p) => put(p, true))
@@ -117,6 +121,11 @@ export function planImport(pkg: CmlPackage, snap: Snapshot, opts: PlanOptions = 
       seenSku.set(p.sku, p.id)
     }
     let existing = byGuid.get(p.id)
+    const skuOwner = p.sku ? bySku.get(p.sku) : undefined
+    if (existing && skuOwner && skuOwner.id !== existing.id) {
+      errors.push(`${label}: новый артикул ${p.sku} уже у другого товара на сайте (id ${skuOwner.id})`)
+      continue
+    }
     const data: Record<string, unknown> = { title: p.title, ...mapProps(label, p.props, p.requisites, warnings) }
     if (!existing && p.sku) {
       const bySkuDoc = bySku.get(p.sku)

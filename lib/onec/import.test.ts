@@ -192,4 +192,34 @@ describe('runImport', () => {
     expect(f.db.products[0]).toMatchObject({ price: 31, stock: 280, unit: 'пар', title: 'Атлант' })
     expect(r.warnings.join()).toMatch(/нет на сайте/)
   })
+
+  it('пустое <Описание/> и пустые свойства из 1С не стирают данные сайта; повтор идемпотентен', async () => {
+    const lex = { root: { type: 'root', children: [{ type: 'paragraph', children: [{ type: 'text', text: 'Описание сайта' }] }] } }
+    const init = seeded()
+    init.products[0] = { ...init.products[0], guid1c: ATL, description: lex, base: 'Хлопок' } as never
+    const f = fakePayload(init)
+    const xml = `<КоммерческаяИнформация><Классификатор><Свойства><Свойство><Ид>pb</Ид><Наименование>Основа</Наименование></Свойство></Свойства></Классификатор>
+      <Каталог><Товары><Товар><Ид>${ATL}</Ид><Артикул>ZP-ATL-01</Артикул><Наименование>Атлант</Наименование><Описание/>
+      <ЗначенияСвойств><ЗначенияСвойства><Ид>pb</Ид><Значение> </Значение></ЗначенияСвойства></ЗначенияСвойств></Товар></Товары></Каталог></КоммерческаяИнформация>`
+    const parsed = parseCommerceMl(Buffer.from(xml))
+    if (!parsed.ok) throw new Error(parsed.errors.join())
+    const r1 = await runImport(f.payload, parsed.pkg, { dir: dir() })
+    expect(r1).toMatchObject({ ok: true, unchanged: 1, updated: 0 })
+    expect(f.db.products[0]).toMatchObject({ description: lex, base: 'Хлопок' })
+    const r2 = await runImport(f.payload, parsed.pkg, { dir: dir() })
+    expect(r2).toMatchObject({ ok: true, unchanged: 1, updated: 0 })
+  })
+
+  it('смена артикула на занятый другим товаром — ошибка пакета до записи', async () => {
+    const init = seeded()
+    init.products.push({ ...EMPTY, id: 11, title: 'Феникс', slug: 'feniks', sku: 'ZP-FEN-01', guid1c: 'fen-site', _status: 'published' } as never)
+    init.products[0] = { ...init.products[0], guid1c: ATL } as never
+    const pkg = both()
+    pkg.catalog!.products = pkg.catalog!.products.filter((p) => p.id === ATL).map((p) => ({ ...p, sku: 'ZP-FEN-01' }))
+    const f = fakePayload(init)
+    const r = await runImport(f.payload, pkg, { dir: dir(), priceTypeId: 'pt-opt' })
+    expect(r.ok).toBe(false)
+    expect(r.errors.join()).toMatch(/новый артикул ZP-FEN-01 уже у другого товара/)
+    expect(f.writes).toEqual([])
+  })
 })

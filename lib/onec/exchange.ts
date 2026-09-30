@@ -13,13 +13,16 @@ import { runImport, type ImportReport } from './import'
 
 export const SESSION_COOKIE = 'ZEVS_1C_SESSION'
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000
-/** Потолок размера одного файла пакета (сумма частей). */
+/** Потолок размера файла пакета (сумма частей): картинки; XML — ONEC_EXCHANGE_XML_LIMIT (разбирается в памяти). */
 const MAX_FILE_BYTES = 200 * 1024 * 1024
+const isXml = (name: string) => /\.xml$/i.test(name)
 const ALLOWED_EXT = /\.(xml|jpe?g|png|webp)$/i
 
 export function onecConfig(env: NodeJS.ProcessEnv = process.env) {
   const limit = Number(env.ONEC_EXCHANGE_FILE_LIMIT)
+  const xmlLimit = Number(env.ONEC_EXCHANGE_XML_LIMIT)
   return {
+    xmlLimit: Number.isInteger(xmlLimit) && xmlLimit > 0 ? xmlLimit : 50 * 1024 * 1024,
     user: env.ONEC_EXCHANGE_USER?.trim() || undefined,
     password: env.ONEC_EXCHANGE_PASSWORD || undefined,
     dir: env.ONEC_EXCHANGE_DIR?.trim() || path.join(tmpdir(), 'zevs-1c'),
@@ -139,19 +142,27 @@ export async function handleExchange(req: ExchangeRequest, deps: ExchangeDeps): 
     // ponytail: протокол без смещений — дубль части внутри сессии не отличить от следующей; такой файл
     // не пройдёт разбор при import (failure без записей), и 1С повторит обмен с init
     await appendFile(file, data)
-    if ((await stat(file)).size > MAX_FILE_BYTES) {
+    const max = isXml(name) ? cfg.xmlLimit : MAX_FILE_BYTES
+    if ((await stat(file)).size > max) {
       await rm(file, { force: true })
-      return failure(`Файл ${name} больше ${MAX_FILE_BYTES / 1024 / 1024} МБ`)
+      return failure(`Файл ${name} больше ${max} байт${isXml(name) ? ' (ONEC_EXCHANGE_XML_LIMIT)' : ''}`)
     }
     return reply('success')
   }
 
   if (mode === 'import') {
     const name = safeFileName(q.get('filename'))
-    if (!name || !/\.xml$/i.test(name)) return failure('Для import нужен filename=*.xml')
-    const buf = await readFile(path.join(dir, name)).catch(() => null)
-    if (!buf) return failure(`Файл ${name} не получен в этой сессии (mode=file)`)
-    const parsed = parseCommerceMl(buf)
+    if (!name || !isXml(name)) return failure('Для import нужен filename=*.xml')
+    const size = (await stat(path.join(dir, name)).catch(() => null))?.size
+    if (size === undefined) return failure(`Файл ${name} не получен в этой сессии (mode=file)`)
+    if (size > cfg.xmlLimit) return failure(`Файл ${name} больше ${cfg.xmlLimit} байт (ONEC_EXCHANGE_XML_LIMIT)`)
+    let parsed: ReturnType<typeof parseCommerceMl>
+    try {
+      parsed = parseCommerceMl(await readFile(path.join(dir, name)))
+    } catch (e) {
+      // непредвиденный сбой разбора (в т.ч. переполнение стека) — ответ 1С, а не 500
+      return failure(`${name}: пакет не применён\nОшибка разбора: ${e instanceof Error ? e.message : String(e)}`)
+    }
     if (!parsed.ok) return failure(`${name}: пакет не применён\n${parsed.errors.slice(0, 50).join('\n')}`)
     let report: ImportReport
     try {
