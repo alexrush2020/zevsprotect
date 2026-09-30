@@ -1,6 +1,7 @@
 'use client'
 import { Button, useConfig, useDocumentInfo, useFormFields } from '@payloadcms/ui'
 import { useState } from 'react'
+import { showB24Retry, type B24Kind } from '@/lib/b24/target'
 
 const MESSAGES: Record<string, string> = {
   queued: 'Поставлено в очередь — отправка в течение минуты.',
@@ -10,12 +11,15 @@ const MESSAGES: Record<string, string> = {
 }
 
 // «Отправить в Б24 повторно» — для сохранённого документа без b24-id. Сервер повторно проверяет роль и b24-id.
-export function B24Retry({ kind, idField }: { kind: 'order' | 'lead' | 'company'; idField: string }) {
+// Готовность — та же syncedId, что у сервера (lib/b24/target.ts).
+export function B24Retry({ kind }: { kind: B24Kind }) {
   const { id } = useDocumentInfo()
-  const b24Id = useFormFields(([fields]) => fields[idField]?.value)
+  const show = useFormFields(([fields]) =>
+    showB24Retry(kind, id, Object.fromEntries(Object.entries(fields).map(([name, f]) => [name, f?.value]))),
+  )
   const { config } = useConfig()
   const [state, setState] = useState<{ busy: boolean; message?: string }>({ busy: false })
-  if (!id || b24Id) return null
+  if (!show) return null
 
   async function retry() {
     setState({ busy: true })

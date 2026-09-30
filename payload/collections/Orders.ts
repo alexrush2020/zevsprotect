@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { docTitle, statusCell } from '../admin-ui'
+import { b24RetryField, docTitle, statusCell } from '../admin-ui'
 import { hasRole, isAdmin, ownOrRoles } from '../access'
 import { enqueueB24Sync } from '../../lib/b24/sync'
 import { computeTotal, resolveDeliveryCost, formatOrderNumber, nextOrderSeq, hasCustomerOrGuest, nextStatusHistory, onecFieldsChanged } from '../hooks/orders'
@@ -197,10 +197,6 @@ export const Orders: CollectionConfig = {
     { name: 'onecExportedAt', type: 'date', label: 'Выгружен в 1С', access: { create: isAdmin, update: isAdmin }, admin: { position: 'sidebar', readOnly: true } },
     syncField('b24DealId', 'ID сделки Б24'),
     syncField('syncError', 'Ошибка синхронизации'),
-    {
-      name: 'b24Retry',
-      type: 'ui',
-      admin: { position: 'sidebar', components: { Field: { path: '/payload/components/B24Retry#B24Retry', clientProps: { kind: 'order', idField: 'b24DealId' } } } },
-    },
+    b24RetryField('order'),
   ],
 }
