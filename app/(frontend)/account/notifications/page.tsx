@@ -65,6 +65,11 @@ export default function AccountNotificationsPage() {
           ) : null}
         </div>
         <AccountScroll className="mt-4">
+          {notices.length === 0 ? (
+            <p className="rounded-2xl border bg-card p-4 text-sm text-steel">
+              Уведомлений пока нет. Статусы заказов смотрите в разделе «Заказы».
+            </p>
+          ) : null}
           {notices.map((n) => (
             <button
               key={n.id}

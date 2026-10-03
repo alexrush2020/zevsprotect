@@ -2,24 +2,19 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { useStore } from "@/lib/store";
 import { brand } from "@/lib/brand";
 import { formatDate, formatPrice } from "@/lib/format";
-import { orderLinesFromCatalog } from "@/lib/lots";
 import { splitVat } from "@/lib/vat";
 import type { ViewOrder } from "@/lib/server/orders";
 
-/** Счёт по заказу Payload (строки — снапшот цен на момент оформления) или по демо-заказу из localStorage. */
-export function InvoiceView({ id, serverOrder }: { id: string; serverOrder: ViewOrder | null }) {
-  const { orders, getProduct, user } = useStore();
-  // клиенту с сессией Payload демо-заказы localStorage не показываем
-  const order = serverOrder ?? (user?.authProvider === "password" ? undefined : orders.find((o) => o.id === id));
+/** Счёт по заказу Payload (строки — снапшот цен на момент оформления). */
+export function InvoiceView({ serverOrder: order }: { serverOrder: ViewOrder | null }) {
 
   if (!order) {
     return (
       <div className="mx-auto max-w-xl px-4 py-20 text-center">
         <h1 className="font-heading text-3xl">Счёт не найден</h1>
-        <p className="mt-2 text-steel">Нужен заказ из этого браузера.</p>
+        <p className="mt-2 text-steel">Проверьте номер заказа.</p>
         <Button nativeButton={false} render={<Link href="/track" />} className="mt-6">
           Найти заказ
         </Button>
@@ -27,7 +22,7 @@ export function InvoiceView({ id, serverOrder }: { id: string; serverOrder: View
     );
   }
 
-  const lines = serverOrder?.lines ?? orderLinesFromCatalog(order.items, getProduct);
+  const lines = order.lines;
   const goods = order.total - (order.deliveryCost ?? 0);
   const vat = splitVat(order.total);
 

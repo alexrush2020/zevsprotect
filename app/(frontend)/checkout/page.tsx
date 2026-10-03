@@ -252,7 +252,7 @@ export default function CheckoutPage() {
               <span>
                 <span className="block font-medium">Счёт от менеджера</span>
                 <span className="text-sm text-steel">
-                  Сайт письмо не шлёт, менеджер выставит счёт вручную.
+                  Менеджер свяжется с вами и выставит счёт.
                 </span>
               </span>
             </label>

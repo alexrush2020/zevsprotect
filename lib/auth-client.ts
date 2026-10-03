@@ -87,6 +87,25 @@ export async function updateRequest(p: UserProfile): Promise<UserProfile | null>
   return json?.doc?.email ? toProfile(json.doc) : null;
 }
 
+/** Смена пароля: текущий проверяется входом (email из профиля), затем PATCH пароля сессионным cookie. */
+export async function changePasswordRequest(p: UserProfile, current: string, next: string): Promise<void> {
+  if (!p.customerId) throw new Error("Нет активной сессии");
+  await call("/login", { email: p.email, password: current }).catch(() => {
+    throw new Error("Текущий пароль указан неверно");
+  });
+  const res = await fetch(`/api/customers/${p.customerId}`, {
+    method: "PATCH",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password: next }),
+  });
+  if (!res.ok) {
+    const json = await res.json().catch(() => ({}));
+    const first = json?.errors?.[0];
+    throw new Error(first?.data?.errors?.[0]?.message ?? first?.message ?? "Не удалось сменить пароль");
+  }
+}
+
 export const logoutRequest = async () => {
   const res = await fetch("/api/customers/logout", { method: "POST", credentials: "same-origin" });
   if (!res.ok) throw new Error("Не удалось выйти");

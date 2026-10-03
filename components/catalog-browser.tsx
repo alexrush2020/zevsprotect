@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
+import { useSearchParams } from "next/navigation";
 import { SlidersHorizontal, X } from "lucide-react";
 import { ProductCard } from "@/components/product-card";
 import { CatalogShopCard } from "@/components/catalog-shop-card";
@@ -335,24 +335,50 @@ export function CatalogBrowser({
   categories: CatalogCategory[];
 }) {
   const params = useSearchParams();
-  const router = useRouter();
   const initialCategory = params.get("category") || "all";
   const initialQ = params.get("q") || "";
 
   const [category, setCategory] = useState(initialCategory);
   const [q, setQ] = useState(initialQ);
-  const [base, setBase] = useState<string[]>([]);
-  const [coating, setCoating] = useState<string[]>([]);
-  const [color, setColor] = useState<string[]>([]);
-  const [size, setSize] = useState<string[]>([]);
-  const [length, setLength] = useState<string[]>([]);
-  const [weight, setWeight] = useState<string[]>([]);
-  const [tex, setTex] = useState<string[]>([]);
-  const [knitClass, setKnitClass] = useState<string[]>([]);
-  const [sort, setSort] = useState("popular");
-  const [inStockOnly, setInStockOnly] = useState(false);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState<PageSize>(25);
+  // фильтры стартуют из URL (ссылка и «Назад» сохраняют выбор); дальше состояние пишется обратно эффектом ниже
+  const [base, setBase] = useState<string[]>(() => params.getAll("base"));
+  const [coating, setCoating] = useState<string[]>(() => params.getAll("coating"));
+  const [color, setColor] = useState<string[]>(() => params.getAll("color"));
+  const [size, setSize] = useState<string[]>(() => params.getAll("size"));
+  const [length, setLength] = useState<string[]>(() => params.getAll("length"));
+  const [weight, setWeight] = useState<string[]>(() => params.getAll("weight"));
+  const [tex, setTex] = useState<string[]>(() => params.getAll("tex"));
+  const [knitClass, setKnitClass] = useState<string[]>(() => params.getAll("knit"));
+  const [sort, setSort] = useState(() => {
+    const v = params.get("sort");
+    return SORT_OPTIONS.some((o) => o.value === v) ? (v as string) : "popular";
+  });
+  const [inStockOnly, setInStockOnly] = useState(() => params.get("stock") === "1");
+  const [page, setPage] = useState(() => Math.max(1, Number.parseInt(params.get("page") ?? "", 10) || 1));
+  const [pageSize, setPageSize] = useState<PageSize>(() => (params.get("ps") === "50" ? 50 : 25));
+
+  // шапка/ссылка меняет ?q= на самой странице каталога — подхватываем (state инициализируется один раз)
+  const urlQ = params.get("q") || "";
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- синхронизация с внешним изменением URL
+    setQ((cur) => (cur === urlQ ? cur : urlQ));
+  }, [urlQ]);
+
+  useEffect(() => {
+    const sp = new URLSearchParams();
+    if (category !== "all") sp.set("category", category);
+    if (q) sp.set("q", q);
+    for (const [key, values] of [["base", base], ["coating", coating], ["color", color], ["size", size], ["length", length], ["weight", weight], ["tex", tex], ["knit", knitClass]] as const)
+      for (const v of values) sp.append(key, v);
+    if (sort !== "popular") sp.set("sort", sort);
+    if (inStockOnly) sp.set("stock", "1");
+    if (page > 1) sp.set("page", String(page));
+    if (pageSize !== 25) sp.set("ps", String(pageSize));
+    const qs = sp.toString();
+    if (qs !== window.location.search.replace(/^\?/, "")) {
+      window.history.replaceState(window.history.state, "", `/catalog${qs ? `?${qs}` : ""}`);
+    }
+  }, [category, q, base, coating, color, size, length, weight, tex, knitClass, sort, inStockOnly, page, pageSize]);
 
   const filtered = useMemo(() => {
     let list = products.filter((p) => {
@@ -390,10 +416,6 @@ export function CatalogBrowser({
   function setCat(next: string) {
     setCategory(next);
     setPage(1);
-    const sp = new URLSearchParams(params.toString());
-    if (next === "all") sp.delete("category");
-    else sp.set("category", next);
-    router.replace(`/catalog${sp.toString() ? `?${sp}` : ""}`, { scroll: false });
     if (typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches) {
       document.getElementById("catalog-models")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }

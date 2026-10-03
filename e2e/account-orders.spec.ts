@@ -85,7 +85,8 @@ test("второй клиент и гость не видят чужой зак�
   await expect(page.getByRole("heading", { name: "Счёт не найден" })).toBeVisible();
 
   // REST под сессией второго клиента: access коллекции отдаёт только свои заказы
-  const res = await page.request.get(`/api/orders?where[number][equals]=${number}`);
+  // Payload принимает cookie-сессию только при same-origin (Sec-Fetch-Site); page.request его не шлёт — как fetch страницы
+  const res = await page.request.get(`/api/orders?where[number][equals]=${number}`, { headers: { "Sec-Fetch-Site": "same-origin" } });
   expect(res.ok()).toBe(true);
   expect((await res.json()).docs).toHaveLength(0);
   await page.context().close();

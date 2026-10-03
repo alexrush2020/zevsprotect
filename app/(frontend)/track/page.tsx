@@ -2,20 +2,16 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { StatusTimeline } from "@/components/status-timeline";
-import { useStore } from "@/lib/store";
 import { trackOrder } from "@/lib/server/order-action";
 import type { TrackView } from "@/lib/server/orders";
 import { formatDate, formatPrice, PAYMENT_LABEL, STATUS_LABEL } from "@/lib/format";
 import { formatVolumeQty } from "@/lib/volume-quote";
 
 export default function TrackPage() {
-  const { orders } = useStore();
-  const router = useRouter();
   const [id, setId] = useState("");
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
@@ -29,22 +25,10 @@ export default function TrackPage() {
     if (number) setId(number);
   }, []);
 
-  const recentGuest = orders.filter((o) => o.guest).slice(0, 3);
-
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setFound(null);
-    // демо-заказы прототипа (localStorage этого браузера) — как раньше, со своей страницей
-    const needle = id.trim().toUpperCase();
-    const mail = email.trim().toLowerCase();
-    const local = orders.find(
-      (o) => o.id.toUpperCase() === needle && o.profile.email.toLowerCase() === mail
-    );
-    if (local) {
-      router.push(`/order/${local.id}`);
-      return;
-    }
     setBusy(true);
     const res = await trackOrder(id, email).catch(() => ({
       ok: false as const,
@@ -113,34 +97,6 @@ export default function TrackPage() {
           </ul>
         </div>
       ) : null}
-
-      {recentGuest.length ? (
-        <div className="mt-10">
-          <p className="text-sm font-medium">Гостевые заказы в этом браузере</p>
-          <ul className="mt-3 space-y-3">
-            {recentGuest.map((order) => (
-              <li key={order.id} className="rounded-2xl border bg-card p-4">
-                <Link href={`/order/${order.id}`} className="font-heading">
-                  {order.id}
-                </Link>
-                <p className="text-sm text-steel">
-                  {formatDate(order.createdAt)} · {STATUS_LABEL[order.status]} ·{" "}
-                  {PAYMENT_LABEL[order.paymentStatus]} · {formatPrice(order.total)}
-                </p>
-                <p className="text-xs text-steel">{order.profile.email}</p>
-                <div className="mt-3">
-                  <StatusTimeline status={order.status} />
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : (
-        <p className="mt-8 text-sm text-steel">
-          Нет гостевых заказов. Оформите заказ без регистрации — номер появится
-          здесь.
-        </p>
-      )}
     </div>
   );
 }

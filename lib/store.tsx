@@ -17,19 +17,18 @@ import {
   orderableItems,
   priceCart,
 } from "@/lib/cart-pricing";
-import { legacySlug } from "@/lib/legacy-product-ids";
 import { cartLineKey } from "@/lib/lots";
 import { snapOrderQty } from "@/lib/order-qty";
 import type { CatalogCategory } from "@/lib/server/map";
 import { toast } from "sonner";
 import { logoutRequest, meRequest, updateRequest } from "@/lib/auth-client";
 import { createOrder } from "@/lib/server/order-action";
+import { syncFavorites } from "@/lib/server/favorites-action";
 import { track } from "@/lib/analytics";
 import type { OrderInput, OrderResult } from "@/lib/server/orders";
 import type {
   CartItem,
   Lead,
-  Order,
   Product,
   UserProfile,
 } from "@/lib/types";
@@ -39,7 +38,6 @@ const CART_KEY = "zp-cart:v2";
 const LEGACY_CART_KEY = "zp-cart";
 const USER_KEY = "zp-user";
 const LAST_USER_KEY = "zp-last-user";
-const ORDERS_KEY = "zp-orders";
 const LEADS_KEY = "zp-leads";
 const FAVORITES_KEY = "zp-favorites:v2";
 const LEGACY_FAVORITES_KEY = "zp-favorites";
@@ -77,7 +75,6 @@ type Store = {
   user: UserProfile | null;
   lastUser: UserProfile | null;
   ready: boolean;
-  orders: Order[];
   leads: Lead[];
   favoriteIds: string[];
   /** Товары каталога Payload (лёгкая проекция из layout); productId позиций — slug. */
@@ -98,7 +95,6 @@ type Store = {
   updateProfile: (profile: UserProfile) => void;
   /** Заказ в Payload (server action): позиции — доступные строки корзины, цены считает сервер. Успех очищает корзину. */
   placeOrder: (input: Omit<OrderInput, "items">) => Promise<OrderResult>;
-  updateOrder: (id: string, patch: Partial<Order>) => void;
   addLead: (type: string, payload: Record<string, string>) => Lead;
   toggleFavorite: (productId: string) => boolean;
   isFavorite: (productId: string) => boolean;
@@ -108,12 +104,6 @@ type Store = {
 };
 
 const StoreContext = createContext<Store | null>(null);
-
-function sortOrders(orders: Order[]) {
-  return [...orders].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-  );
-}
 
 /** Запись в localStorage без падения (приватный режим, квота); null — удалить ключ. */
 function writeStorage(key: string, value: string | null) {
@@ -139,7 +129,6 @@ export function StoreProvider({
   const [cart, setCart] = useState<CartItem[]>([]);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [lastUser, setLastUser] = useState<UserProfile | null>(null);
-  const [orders, setOrders] = useState<Order[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [ready, setReady] = useState(false);
@@ -149,21 +138,12 @@ export function StoreProvider({
     const nextUser = readJson<UserProfile | null>(USER_KEY, null);
     const nextLastUser =
       readJson<UserProfile | null>(LAST_USER_KEY, null);
-    // история заказов: старые id → slug (идемпотентно), неизвестные оставляем как есть
-    const storedOrders = readJson<unknown>(ORDERS_KEY, []);
-    const nextOrders = (Array.isArray(storedOrders) ? (storedOrders as Order[]) : [])
-      .filter((o) => o && typeof o === "object" && Array.isArray(o.items)) // битый заказ пропускаем
-      .map((o) => ({
-        ...o,
-        items: o.items.map((i) => ({ ...i, productId: legacySlug(i?.productId) ?? i?.productId })),
-      }));
     const nextLeads = readJson<Lead[]>(LEADS_KEY, []);
     const nextFavorites = readVersioned(FAVORITES_KEY, LEGACY_FAVORITES_KEY, migrateLegacyFavorites);
     /* eslint-disable react-hooks/set-state-in-effect -- гидратация из localStorage только на клиенте (SSR-безопасно) */
     setCart(nextCart);
     setUser(nextUser);
     setLastUser(nextLastUser);
-    setOrders(sortOrders(nextOrders));
     setLeads(nextLeads);
     setFavoriteIds(
       Array.isArray(nextFavorites) ? nextFavorites.filter((id): id is string => typeof id === "string") : [],
@@ -211,11 +191,6 @@ export function StoreProvider({
 
   useEffect(() => {
     if (!ready) return;
-    writeStorage(ORDERS_KEY, JSON.stringify(orders));
-  }, [orders, ready]);
-
-  useEffect(() => {
-    if (!ready) return;
     writeStorage(LEADS_KEY, JSON.stringify(leads));
   }, [leads, ready]);
 
@@ -223,6 +198,23 @@ export function StoreProvider({
     if (!ready) return;
     writeStorage(FAVORITES_KEY, JSON.stringify(favoriteIds));
   }, [favoriteIds, ready]);
+
+  // вход клиента: объединяем локальный список (гостевой) с сохранённым на сервере, один раз на клиента
+  const customerId = user?.authProvider === "password" ? user.customerId : undefined;
+  const favoritesRef = useRef(favoriteIds);
+  useEffect(() => {
+    favoritesRef.current = favoriteIds;
+  });
+  useEffect(() => {
+    if (!ready || !customerId) return;
+    let live = true;
+    syncFavorites(favoritesRef.current, "merge")
+      .then((merged) => live && merged && setFavoriteIds(merged))
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [ready, customerId]);
 
   const addToCart = useCallback((productId: string, size: string, qty: number, coating?: string) => {
     const product = bySlug.get(productId);
@@ -344,10 +336,6 @@ export function StoreProvider({
     [orderable, priced.goods]
   );
 
-  const updateOrder = useCallback((id: string, patch: Partial<Order>) => {
-    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, ...patch } : o)));
-  }, []);
-
   const addLead = useCallback((type: string, payload: Record<string, string>) => {
     const lead: Lead = {
       id: uid("LEAD"),
@@ -361,13 +349,12 @@ export function StoreProvider({
 
   const toggleFavorite = useCallback((productId: string) => {
     const added = !favoriteIds.includes(productId);
-    setFavoriteIds((prev) =>
-      prev.includes(productId)
-        ? prev.filter((id) => id !== productId)
-        : [...prev, productId]
-    );
+    const next = added ? [...favoriteIds, productId] : favoriteIds.filter((id) => id !== productId);
+    setFavoriteIds(next);
+    // клиент с сессией — сохраняем и на сервере (Customers.favorites); сбой не мешает: локальный список остаётся
+    if (customerId) syncFavorites(next, "replace").catch(() => undefined);
     return added;
-  }, [favoriteIds]);
+  }, [favoriteIds, customerId]);
 
   const isFavorite = useCallback(
     (productId: string) => favoriteIds.includes(productId),
@@ -387,7 +374,6 @@ export function StoreProvider({
       user,
       lastUser,
       ready,
-      orders,
       leads,
       favoriteIds,
       addToCart,
@@ -399,7 +385,6 @@ export function StoreProvider({
       logout,
       updateProfile,
       placeOrder,
-      updateOrder,
       addLead,
       toggleFavorite,
       isFavorite,
@@ -415,7 +400,6 @@ export function StoreProvider({
       user,
       lastUser,
       ready,
-      orders,
       leads,
       favoriteIds,
       addToCart,
@@ -427,7 +411,6 @@ export function StoreProvider({
       logout,
       updateProfile,
       placeOrder,
-      updateOrder,
       addLead,
       toggleFavorite,
       isFavorite,
