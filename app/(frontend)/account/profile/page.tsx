@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AccountScroll } from "@/components/account/account-scroll";
+import Link from "next/link";
+import { changePasswordRequest } from "@/lib/auth-client";
 import { formatRuPhone } from "@/lib/format";
 import { addressesOf, formatAddressLine } from "@/lib/addresses";
 import { useStore } from "@/lib/store";
@@ -214,6 +216,68 @@ export default function AccountProfilePage() {
           </Button>
         </form>
       </div>
+
+      <PasswordForm />
     </div>
+  );
+}
+
+function PasswordForm() {
+  const { user } = useStore();
+  const [busy, setBusy] = useState(false);
+
+  async function submit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!user) return;
+    const form = e.currentTarget;
+    const data = new FormData(form);
+    const current = String(data.get("current") || "");
+    const next = String(data.get("next") || "");
+    if (next.length < 8) {
+      toast.error("Новый пароль — не короче 8 символов");
+      return;
+    }
+    if (next !== String(data.get("repeat") || "")) {
+      toast.error("Пароли не совпадают");
+      return;
+    }
+    setBusy(true);
+    try {
+      await changePasswordRequest(user, current, next);
+      form.reset();
+      toast.success("Пароль изменён");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Не удалось сменить пароль");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="grid gap-3 rounded-2xl border bg-card p-5 lg:col-span-2">
+      <h2 className="font-heading text-xl">Смена пароля</h2>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-1.5">
+          <Label htmlFor="pw-current">Текущий пароль</Label>
+          <Input id="pw-current" name="current" type="password" autoComplete="current-password" required />
+        </div>
+        <div className="grid gap-1.5">
+          <Label htmlFor="pw-next">Новый пароль</Label>
+          <Input id="pw-next" name="next" type="password" autoComplete="new-password" minLength={8} required />
+        </div>
+        <div className="grid gap-1.5">
+          <Label htmlFor="pw-repeat">Повторите новый пароль</Label>
+          <Input id="pw-repeat" name="repeat" type="password" autoComplete="new-password" minLength={8} required />
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-4">
+        <Button type="submit" disabled={busy} className="w-fit">
+          {busy ? "Сохраняем…" : "Сменить пароль"}
+        </Button>
+        <Link href="/forgot" className="text-sm text-steel underline-offset-4 hover:text-ink hover:underline">
+          Не помню текущий пароль
+        </Link>
+      </div>
+    </form>
   );
 }
