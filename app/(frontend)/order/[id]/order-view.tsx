@@ -3,19 +3,13 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { StatusTimeline } from "@/components/status-timeline";
-import { IntegrationLog } from "@/components/integration-log";
-import { useStore } from "@/lib/store";
 import { formatDate, formatPrice, PAYMENT_LABEL, STATUS_LABEL } from "@/lib/format";
-import { orderLinesFromCatalog } from "@/lib/lots";
 import { splitVat } from "@/lib/vat";
 import { formatVolumeQty } from "@/lib/volume-quote";
 import type { ViewOrder } from "@/lib/server/orders";
 
-/** Заказ Payload (serverOrder, строки — снапшот) или демо-заказ из localStorage. */
-export function OrderView({ id, serverOrder }: { id: string; serverOrder: ViewOrder | null }) {
-  const { orders, getProduct, user } = useStore();
-  // клиенту с сессией Payload демо-заказы localStorage не показываем
-  const order = serverOrder ?? (user?.authProvider === "password" ? undefined : orders.find((o) => o.id === id));
+/** Заказ Payload (строки — снапшот цен на момент оформления). */
+export function OrderView({ serverOrder: order }: { serverOrder: ViewOrder | null }) {
 
   if (!order) {
     return (
@@ -36,7 +30,7 @@ export function OrderView({ id, serverOrder }: { id: string; serverOrder: ViewOr
     );
   }
 
-  const lines = serverOrder?.lines ?? orderLinesFromCatalog(order.items, getProduct);
+  const lines = order.lines;
   const goods = order.total - (order.deliveryCost ?? 0);
   const vat = splitVat(order.total);
 
@@ -86,23 +80,8 @@ export function OrderView({ id, serverOrder }: { id: string; serverOrder: ViewOr
         <p>
           Оплата: {PAYMENT_LABEL[order.payment]} · {PAYMENT_LABEL[order.paymentStatus]}
         </p>
-        {serverOrder ? (
-          order.guest ? <p className="mt-2">Гостевой заказ. Сохраните номер {order.id}.</p> : null
-        ) : order.guest ? (
-          <p className="mt-2">
-            Гостевой заказ: в Битрикс24 создан лид, компания не заводится, пока
-            нет регистрации. Сохраните номер {order.id} для отслеживания.
-          </p>
-        ) : (
-          <p className="mt-2">Сделка создана в Битрикс24. Статус заказа ведёт менеджер в CRM.</p>
-        )}
+        {order.guest ? <p className="mt-2">Гостевой заказ. Сохраните номер {order.id}.</p> : null}
       </div>
-
-      {serverOrder ? null : (
-        <div className="mt-4">
-          <IntegrationLog order={order} />
-        </div>
-      )}
 
       <div className="mt-6 flex flex-wrap gap-3">
         {order.payment === "invoice_auto" || order.paymentStatus === "invoiced" || order.paymentStatus === "paid" ? (
@@ -110,16 +89,10 @@ export function OrderView({ id, serverOrder }: { id: string; serverOrder: ViewOr
             Открыть счёт
           </Button>
         ) : null}
-        {/* онлайн-оплаты у реальных заказов пока нет (BIZ-4), /pay — мок для демо-заказов */}
-        {!serverOrder && order.payment === "online" && order.paymentStatus !== "paid" ? (
-          <Button nativeButton={false} render={<Link href={`/pay/${order.id}`} />}>
-            Оплатить онлайн
-          </Button>
-        ) : null}
         <Button nativeButton={false} render={<Link href="/catalog" />} variant="outline">
           Продолжить покупки
         </Button>
-        <Button nativeButton={false} render={<Link href={order.guest ? (serverOrder ? `/track?number=${order.id}` : "/track") : "/account"} />} variant="outline">
+        <Button nativeButton={false} render={<Link href={order.guest ? `/track?number=${order.id}` : "/account"} />} variant="outline">
           {order.guest ? "Отслеживание" : "Личный кабинет"}
         </Button>
       </div>

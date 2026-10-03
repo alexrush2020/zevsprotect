@@ -8,25 +8,20 @@ import { Button } from "@/components/ui/button";
 import { StatusTimeline } from "@/components/status-timeline";
 import { useStore } from "@/lib/store";
 import { formatDate, formatPrice, PAYMENT_LABEL, STATUS_LABEL } from "@/lib/format";
-import { cartLineKey, cartLineOfferLabel } from "@/lib/lots";
 import { repeatFailText, repeatOrderItems, unavailableNote } from "@/lib/cart-pricing";
 import { myOrders } from "@/lib/server/order-action";
 import { formatVolumeQty } from "@/lib/volume-quote";
 import type { ViewOrder } from "@/lib/server/orders";
-import type { Order } from "@/lib/types";
 
-/** Заказ Payload (строки — снапшот) или демо-заказ из localStorage. */
-export function AccountOrderCard({ order }: { order: Order | ViewOrder }) {
-  const { addToCart, clearCart, getProduct, catalog } = useStore();
+/** Заказ Payload (строки — снапшот). */
+export function AccountOrderCard({ order }: { order: ViewOrder }) {
+  const { addToCart, clearCart, catalog } = useStore();
   const router = useRouter();
-  const server = "lines" in order;
 
   function repeat() {
     // позиции — по текущему каталогу; корзина и сервер при оформлении считают цену одним priceCart.
     // У заказа Payload строки items и lines идут в одном порядке — берём из снапшота название и цену.
-    const snapshot = server
-      ? order.items.map((item, i) => ({ ...item, title: order.lines[i]?.title, price: order.lines[i]?.unitPrice }))
-      : order.items;
+    const snapshot = order.items.map((item, i) => ({ ...item, title: order.lines[i]?.title, price: order.lines[i]?.unitPrice }));
     const r = repeatOrderItems(snapshot, catalog);
     if (!r.items.length) {
       toast.error(repeatFailText(r.unavailable));
@@ -67,20 +62,11 @@ export function AccountOrderCard({ order }: { order: Order | ViewOrder }) {
         <StatusTimeline status={order.status} />
       </div>
       <ul className="mt-2 text-sm text-steel">
-        {server
-          ? order.lines.map((line) => (
-              <li key={line.key}>
-                {line.title} × {formatVolumeQty(line.qty, line.unit)}
-              </li>
-            ))
-          : order.items.map((item) => {
-              const p = getProduct(item.productId);
-              return (
-                <li key={cartLineKey(item)}>
-                  {p?.name} {p ? cartLineOfferLabel(p, item) : `× ${item.qty}`}
-                </li>
-              );
-            })}
+        {order.lines.map((line) => (
+          <li key={line.key}>
+            {line.title} × {formatVolumeQty(line.qty, line.unit)}
+          </li>
+        ))}
       </ul>
       <div className="mt-3 flex flex-wrap gap-2">
         <Button variant="outline" size="sm" onClick={repeat}>
@@ -94,33 +80,17 @@ export function AccountOrderCard({ order }: { order: Order | ViewOrder }) {
         >
           Счёт
         </Button>
-        {/* онлайн-оплаты у реальных заказов пока нет (BIZ-4), /pay — мок для демо-заказов */}
-        {!server && order.payment === "online" && order.paymentStatus !== "paid" ? (
-          <Button
-            nativeButton={false}
-            render={<Link href={`/pay/${order.id}`} />}
-            variant="outline"
-            size="sm"
-          >
-            Оплатить
-          </Button>
-        ) : null}
       </div>
     </div>
   );
 }
 
-export function ordersForUser(orders: Order[], email: string) {
-  return orders.filter((o) => !o.guest || o.profile.email === email);
-}
-
 /**
- * Заказы кабинета: у клиента с сессией Payload — из коллекции orders (демо-заказы localStorage не показываем),
- * у демо-входа прототипа — как раньше из localStorage. orders: null — загружаются или не загрузились;
+ * Заказы кабинета — из коллекции orders (сессия Payload). orders: null — загружаются или не загрузились;
  * notice — сообщение вместо списка (сбой загрузки с «Повторить», истёкшая сессия со ссылкой на вход).
  */
-export function useAccountOrders(): { orders: (Order | ViewOrder)[] | null; notice: ReactNode } {
-  const { user, orders } = useStore();
+export function useAccountOrders(): { orders: ViewOrder[] | null; notice: ReactNode } {
+  const { user } = useStore();
   const customer = user?.authProvider === "password" ? user.customerId : undefined;
   const [attempt, setAttempt] = useState(0);
   const [remote, setRemote] = useState<{
@@ -141,7 +111,7 @@ export function useAccountOrders(): { orders: (Order | ViewOrder)[] | null; noti
   }, [customer, key]);
 
   if (!user) return { orders: null, notice: null };
-  if (!customer) return { orders: ordersForUser(orders, user.email), notice: null };
+  if (!customer) return { orders: [], notice: null };
   const state = remote?.key === key ? remote.state : null;
   if (!state) return { orders: null, notice: null };
   if (state.ok) return { orders: state.orders, notice: null };

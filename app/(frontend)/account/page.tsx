@@ -105,6 +105,9 @@ export default function AccountHomePage() {
               </Link>
             </div>
             <div className="mt-3 space-y-3">
+              {notices.length === 0 ? (
+                <p className="text-sm text-steel">Новых уведомлений нет.</p>
+              ) : null}
               {notices.map((n) => (
                 <div key={n.id} className="rounded-2xl border bg-card p-4">
                   <p className="text-xs uppercase tracking-[0.16em] text-steel">

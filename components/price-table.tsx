@@ -27,6 +27,7 @@ export function PriceTable() {
     <>
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="flex flex-wrap gap-3">
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- API-маршрут (CSV), не страница */}
           <Button nativeButton={false} render={<a href="/api/pricelist" />}>
             Скачать CSV
           </Button>

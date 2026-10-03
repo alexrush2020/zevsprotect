@@ -25,7 +25,9 @@ export function QtyInput({
   const [focused, setFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const onQtyChangeRef = useRef(onQtyChange);
-  onQtyChangeRef.current = onQtyChange;
+  useEffect(() => {
+    onQtyChangeRef.current = onQtyChange;
+  });
 
   function commit(raw: string) {
     const parsed = Number.parseInt(raw.replace(/\s/g, ""), 10);

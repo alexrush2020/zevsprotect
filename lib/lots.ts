@@ -27,29 +27,6 @@ export function cartLineTotal(
   return Math.round(volumeUnitPrice(product, productQty) * item.qty * 100) / 100;
 }
 
-/** Строки демо-заказа из localStorage по текущему каталогу (у заказа Payload строки — снапшот, см. toViewOrder). */
-export function orderLinesFromCatalog(
-  items: CartItem[],
-  getProduct: (slug: string) => Product | undefined,
-): OrderLineView[] {
-  return items.flatMap((item) => {
-    const p = getProduct(item.productId);
-    if (!p) return [];
-    const total = cartLineTotal(p, item, cartProductQty(items, item.productId));
-    return [{
-      key: cartLineKey(item),
-      title: p.name,
-      sku: p.sku,
-      size: item.size,
-      ...(item.coating ? { coating: item.coating } : {}),
-      qty: item.qty,
-      unit: p.unit,
-      unitPrice: item.qty ? total / item.qty : p.price,
-      total,
-    }];
-  });
-}
-
 export function cartLineCaption(product: Product, item: CartItem) {
   const coating = item.coating ? ` · ${item.coating}` : "";
   return `${product.sku} · размер ${item.size}${coating} · ${formatVolumeQty(item.qty, product.unit)}`;

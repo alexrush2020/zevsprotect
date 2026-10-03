@@ -88,6 +88,7 @@ export function AdminNav({ user }: ServerProps) {
               <strong>{name}</strong>
               {role && <small>{ROLE_LABEL[role]}</small>}
             </div>
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- маршрут админки Payload */}
             <a href="/admin/logout" className="zp-nav__logout" aria-label="Выйти">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M9 4H5v16h4M16 8l4 4-4 4M20 12H9" />
