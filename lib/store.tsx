@@ -17,13 +17,13 @@ import {
   orderableItems,
   priceCart,
 } from "@/lib/cart-pricing";
-import { legacySlug } from "@/lib/legacy-product-ids";
 import { cartLineKey } from "@/lib/lots";
 import { snapOrderQty } from "@/lib/order-qty";
 import type { CatalogCategory } from "@/lib/server/map";
 import { toast } from "sonner";
 import { logoutRequest, meRequest, updateRequest } from "@/lib/auth-client";
 import { createOrder } from "@/lib/server/order-action";
+import { syncFavorites } from "@/lib/server/favorites-action";
 import { track } from "@/lib/analytics";
 import type { OrderInput, OrderResult } from "@/lib/server/orders";
 import type {
@@ -199,6 +199,23 @@ export function StoreProvider({
     writeStorage(FAVORITES_KEY, JSON.stringify(favoriteIds));
   }, [favoriteIds, ready]);
 
+  // вход клиента: объединяем локальный список (гостевой) с сохранённым на сервере, один раз на клиента
+  const customerId = user?.authProvider === "password" ? user.customerId : undefined;
+  const favoritesRef = useRef(favoriteIds);
+  useEffect(() => {
+    favoritesRef.current = favoriteIds;
+  });
+  useEffect(() => {
+    if (!ready || !customerId) return;
+    let live = true;
+    syncFavorites(favoritesRef.current, "merge")
+      .then((merged) => live && merged && setFavoriteIds(merged))
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [ready, customerId]);
+
   const addToCart = useCallback((productId: string, size: string, qty: number, coating?: string) => {
     const product = bySlug.get(productId);
     if (!product) return false;
@@ -332,13 +349,12 @@ export function StoreProvider({
 
   const toggleFavorite = useCallback((productId: string) => {
     const added = !favoriteIds.includes(productId);
-    setFavoriteIds((prev) =>
-      prev.includes(productId)
-        ? prev.filter((id) => id !== productId)
-        : [...prev, productId]
-    );
+    const next = added ? [...favoriteIds, productId] : favoriteIds.filter((id) => id !== productId);
+    setFavoriteIds(next);
+    // клиент с сессией — сохраняем и на сервере (Customers.favorites); сбой не мешает: локальный список остаётся
+    if (customerId) syncFavorites(next, "replace").catch(() => undefined);
     return added;
-  }, [favoriteIds]);
+  }, [favoriteIds, customerId]);
 
   const isFavorite = useCallback(
     (productId: string) => favoriteIds.includes(productId),
