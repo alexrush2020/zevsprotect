@@ -60,3 +60,7 @@ playwright/.cache/
 test-results/
 *.log
 /html/
+
+# VitePress (docs/user-guide)
+docs/user-guide/.vitepress/cache/
+docs/user-guide/.vitepress/dist/
